@@ -9,7 +9,7 @@ const Login = ({ onLogin }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('http://localhost:5000/api/login', { username, password });
+      const response = await axios.post('https://varun-nutrition.onrender.com/api/login', { username, password });
       onLogin(response.data);
     } catch (err) {
       setError('Invalid username or password');
