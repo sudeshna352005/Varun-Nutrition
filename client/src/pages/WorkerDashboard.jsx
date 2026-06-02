@@ -57,6 +57,7 @@ await axios.post(
     }
   }
 );
+console.log("Visit saved");
     setSelectedShop(null);
 setNotes('');
 setPhoto(null);
