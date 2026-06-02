@@ -17,9 +17,9 @@ const WorkerDashboard = ({ user }) => {
 
   const fetchData = async () => {
     const [shopsRes, routesRes, visitsRes] = await Promise.all([
-      axios.get('http://localhost:5000/api/shops'),
-      axios.get('http://localhost:5000/api/routes'),
-      axios.get('http://localhost:5000/api/visits')
+      axios.get('https://varun-nutrition.onrender.com/api/shops'),
+      axios.get('https://varun-nutrition.onrender.com/api/routes'),
+      axios.get('https://varun-nutrition.onrender.com/api/visits')
     ]);
     setShops(shopsRes.data);
     setRoutes(routesRes.data);
@@ -27,7 +27,7 @@ const WorkerDashboard = ({ user }) => {
   };
 
   const checkWorkingStatus = async () => {
-    const res = await axios.get('http://localhost:5000/api/attendance');
+    const res = await axios.get('https://varun-nutrition.onrender.com/api/attendance');
     const active = res.data.find(a => a.workerName === user.name && a.status === 'working');
     setIsWorking(!!active);
   };
@@ -37,7 +37,7 @@ const WorkerDashboard = ({ user }) => {
       alert('You must mark start work in Attendance before visiting shops.');
       return;
     }
-    await axios.post('http://localhost:5000/api/visits', {
+    await axios.post('https://varun-nutrition.onrender.com/api/visits', {
       shopName: selectedShop.name,
       workerName: user.name,
       notes: notes

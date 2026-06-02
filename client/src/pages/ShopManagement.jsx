@@ -21,21 +21,21 @@ const ShopManagement = () => {
   }, []);
 
   const fetchShops = async () => {
-    const res = await axios.get('http://localhost:5000/api/shops');
+    const res = await axios.get('https://varun-nutrition.onrender.com/api/shops');
     setShops(res.data);
   };
 
   const fetchRoutes = async () => {
-    const res = await axios.get('http://localhost:5000/api/routes');
+    const res = await axios.get('https://varun-nutrition.onrender.com/api/routes');
     setRoutes(res.data);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (editingShop) {
-      await axios.put(`http://localhost:5000/api/shops/${editingShop.id}`, formData);
+      await axios.put(`https://varun-nutrition.onrender.com/api/shops/${editingShop.id}`, formData);
     } else {
-      await axios.post('http://localhost:5000/api/shops', formData);
+      await axios.post('https://varun-nutrition.onrender.com/api/shops', formData);
     }
     setIsModalOpen(false);
     setEditingShop(null);
@@ -51,7 +51,7 @@ const ShopManagement = () => {
 
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this shop?')) {
-      await axios.delete(`http://localhost:5000/api/shops/${id}`);
+      await axios.delete(`https://varun-nutrition.onrender.com/api/shops/${id}`);
       fetchShops();
     }
   };

@@ -11,7 +11,7 @@ const WorkerAttendance = ({ user }) => {
   }, []);
 
   const checkActiveSession = async () => {
-    const res = await axios.get('http://localhost:5000/api/attendance');
+    const res = await axios.get('https://varun-nutrition.onrender.com/api/attendance');
     const active = res.data.find(a => a.workerName === user.name && a.status === 'working');
     if (active) setSession(active);
   };
@@ -26,7 +26,7 @@ const WorkerAttendance = ({ user }) => {
     formData.append('photo', photo);
 
     try {
-      const res = await axios.post('http://localhost:5000/api/attendance/start', formData);
+      const res = await axios.post('https://varun-nutrition.onrender.com/api/attendance/start', formData);
       setSession(res.data);
       setPhoto(null);
     } catch (err) {
@@ -36,7 +36,7 @@ const WorkerAttendance = ({ user }) => {
 
   const handleEndWork = async () => {
     try {
-      await axios.post('http://localhost:5000/api/attendance/end', { workerName: user.name });
+      await axios.post('https://varun-nutrition.onrender.com/api/attendance/end', { workerName: user.name });
       setSession(null);
     } catch (err) {
       console.error(err);
@@ -73,11 +73,12 @@ const WorkerAttendance = ({ user }) => {
             <div className="mb-6">
               <label className="block w-full border-2 border-dashed border-gray-300 rounded-lg p-4 cursor-pointer hover:border-blue-400 transition">
                 <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => setPhoto(e.target.files[0])}
-                />
+  type="file"
+  accept="image/*"
+  capture="environment"
+  className="hidden"
+  onChange={(e) => setPhoto(e.target.files[0])}
+/>
                 <span className="text-sm text-gray-600">
                   {photo ? photo.name : 'Click to select photo'}
                 </span>

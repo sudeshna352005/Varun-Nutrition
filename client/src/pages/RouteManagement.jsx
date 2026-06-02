@@ -13,19 +13,19 @@ const RouteManagement = () => {
   }, []);
 
   const fetchRoutes = async () => {
-    const res = await axios.get('http://localhost:5000/api/routes');
+    const res = await axios.get('http://varun-nutrition.onrender.com/api/routes');
     setRoutes(res.data);
   };
 
   const fetchShops = async () => {
-    const res = await axios.get('http://localhost:5000/api/shops');
+    const res = await axios.get('http://varun-nutrition.onrender.com/api/shops');
     setShops(res.data);
   };
 
   const handleAddRoute = async (e) => {
     e.preventDefault();
     if (!newRoute) return;
-    await axios.post('http://localhost:5000/api/routes', { name: newRoute });
+    await axios.post('http://varun-nutrition.onrender.com/api/routes', { name: newRoute });
     setNewRoute('');
     fetchRoutes();
   };
