@@ -111,15 +111,19 @@ app.post('/api/attendance/end', (req, res) => {
 
 app.get('/api/attendance', (req, res) => res.json(attendance));
 
-app.post('/api/visits', (req, res) => {
-  const visit = { ...req.body, id: Date.now(), timestamp: new Date() };
+app.post('/api/visits', upload.single('photo'), (req, res) => {
+
+  const visit = {
+    id: Date.now(),
+    shopName: req.body.shopName,
+    workerName: req.body.workerName,
+    notes: req.body.notes,
+    timestamp: new Date(),
+    photo: req.file ? req.file.path : null
+  };
+
   visits.push(visit);
+
   res.status(201).json(visit);
 });
-
-app.get('/api/visits', (req, res) => res.json(visits));
-
-
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Server running on port ${PORT}`);
-});
+  

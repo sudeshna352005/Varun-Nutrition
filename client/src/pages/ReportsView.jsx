@@ -55,9 +55,20 @@ const ReportsView = () => {
                 <div className="bg-gray-50 p-4 rounded-md flex items-start">
                   <MessageSquare className="w-4 h-4 mr-2 mt-1 text-gray-400" />
                   <div>
-                    <p className="text-xs font-semibold text-gray-500 uppercase mb-1">Notes</p>
-                    <p className="text-gray-700">{visit.notes}</p>
-                  </div>
+  <p className="text-xs font-semibold text-gray-500 uppercase mb-1">
+    Notes
+  </p>
+
+  <p className="text-gray-700">{visit.notes}</p>
+
+  {visit.photo && (
+    <img
+      src={`https://varun-nutrition.onrender.com/${visit.photo}`}
+      alt="Visit"
+      className="w-32 h-32 object-cover rounded mt-2"
+    />
+  )}
+</div>
                 </div>
               )}
             </div>

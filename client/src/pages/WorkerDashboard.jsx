@@ -7,7 +7,7 @@ const WorkerDashboard = ({ user }) => {
   const [routes, setRoutes] = useState([]);
   const [isWorking, setIsWorking] = useState(false);
   const [selectedShop, setSelectedShop] = useState(null);
-  const [notes, setNotes] = useState('');
+  const [photo, setPhoto] = useState(null);
   const [visitHistory, setVisitHistory] = useState([]);
 
   useEffect(() => {
@@ -37,14 +37,29 @@ const WorkerDashboard = ({ user }) => {
       alert('You must mark start work in Attendance before visiting shops.');
       return;
     }
-    await axios.post('https://varun-nutrition.onrender.com/api/visits', {
-      shopName: selectedShop.name,
-      workerName: user.name,
-      notes: notes
-    });
+    const formData = new FormData();
+
+formData.append('shopName', selectedShop.name);
+formData.append('workerName', user.name);
+formData.append('notes', notes);
+
+if (photo) {
+  formData.append('photo', photo);
+}
+
+await axios.post(
+  'https://varun-nutrition.onrender.com/api/visits',
+  formData,
+  {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  }
+);
     setSelectedShop(null);
-    setNotes('');
-    fetchData();
+setNotes('');
+setPhoto(null);
+fetchData();
   };
 
   const hasVisitedToday = (shopName) => {
@@ -130,10 +145,17 @@ const WorkerDashboard = ({ user }) => {
             
             <textarea
               placeholder="e.g., Stock checked, order placed for 50 units."
+              
               className="w-full border rounded-md p-3 h-32 mb-4 focus:ring-2 focus:ring-blue-500 outline-none"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
             />
+            <input
+  type="file"
+  accept="image/*"
+  onChange={(e) => setPhoto(e.target.files[0])}
+  className="w-full border rounded-md p-2 mb-4"
+/>
             
             <div className="flex justify-end space-x-3">
               <button
