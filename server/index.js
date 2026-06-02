@@ -27,7 +27,7 @@ let routeGroups = [
 ];
 let attendance = [];
 let visits = [];
-const fs = require('fs');
+
 
 const uploadsDir = path.join(__dirname, 'uploads');
 
@@ -119,7 +119,6 @@ app.post('/api/visits', (req, res) => {
 
 app.get('/api/visits', (req, res) => res.json(visits));
 
-const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on port ${PORT}`);
