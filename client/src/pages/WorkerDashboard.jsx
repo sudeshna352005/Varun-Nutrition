@@ -58,10 +58,11 @@ await axios.post(
   }
 );
 console.log("Visit saved");
+window.location.reload();
     setSelectedShop(null);
 setNotes('');
 setPhoto(null);
-fetchData();
+await fetchData();
   };
 
   const hasVisitedToday = (shopName) => {
