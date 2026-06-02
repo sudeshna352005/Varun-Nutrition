@@ -7,6 +7,7 @@ const WorkerDashboard = ({ user }) => {
   const [routes, setRoutes] = useState([]);
   const [isWorking, setIsWorking] = useState(false);
   const [selectedShop, setSelectedShop] = useState(null);
+  const [notes, setNotes] = useState('');
   const [photo, setPhoto] = useState(null);
   const [visitHistory, setVisitHistory] = useState([]);
 
