@@ -36,10 +36,11 @@ if (!fs.existsSync(uploadsDir)) {
 // Multer setup for simulated photo upload
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-  cb(null, uploadsDir);
-}
+    cb(null, uploadsDir);
+  },
+
   filename: function (req, file, cb) {
-    cb(null, Date.now() + '-' + file.originalname)
+    cb(null, Date.now() + '-' + file.originalname);
   }
 });
 const upload = multer({ storage: storage });
