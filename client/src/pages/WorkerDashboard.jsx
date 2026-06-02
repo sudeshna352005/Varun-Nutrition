@@ -25,6 +25,7 @@ const WorkerDashboard = ({ user }) => {
     setShops(shopsRes.data);
     setRoutes(routesRes.data);
     setVisitHistory(visitsRes.data.filter(v => v.workerName === user.name));
+    console.log("Visit History:", visitsRes.data);
   };
 
   const checkWorkingStatus = async () => {
