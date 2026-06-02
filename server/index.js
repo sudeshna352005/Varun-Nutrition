@@ -26,12 +26,18 @@ let routeGroups = [
 ];
 let attendance = [];
 let visits = [];
+const fs = require('fs');
 
+const uploadsDir = path.join(__dirname, 'uploads');
+
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
 // Multer setup for simulated photo upload
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'uploads/')
-  },
+  cb(null, uploadsDir);
+}
   filename: function (req, file, cb) {
     cb(null, Date.now() + '-' + file.originalname)
   }
