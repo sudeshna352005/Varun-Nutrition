@@ -10,7 +10,7 @@ const AttendanceView = () => {
   }, []);
 
   const fetchAttendance = async () => {
-    const res = await axios.get('http://localhost:5000/api/attendance');
+    const res = await axios.get('https://varun-nutrition.onrender.com/api/attendance');
     setAttendance(res.data);
   };
 
@@ -66,7 +66,7 @@ const AttendanceView = () => {
                       <div className="relative group cursor-pointer">
                         <Camera className="w-6 h-6 text-blue-500" />
                         <div className="absolute hidden group-hover:block z-10 p-2 bg-white border rounded shadow-lg mt-2">
-                          <img src={`http://localhost:5000/${record.photo}`} alt="Attendance" className="w-32 h-32 object-cover" />
+                          <img src={`https:///varun-nutrition.onrender.com${record.photo}`} alt="Attendance" className="w-32 h-32 object-cover" />
                         </div>
                       </div>
                     ) : <span className="text-gray-400">-</span>}

@@ -11,7 +11,7 @@ const ReportsView = () => {
   }, []);
 
   const fetchVisits = async () => {
-    const res = await axios.get('http://localhost:5000/api/visits');
+    const res = await axios.get('https://varun-nutrition.onrender.com/api/visits');
     setVisits(res.data);
   };
 

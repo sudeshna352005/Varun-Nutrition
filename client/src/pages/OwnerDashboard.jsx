@@ -13,10 +13,10 @@ const OwnerDashboard = () => {
   useEffect(() => {
     const fetchStats = async () => {
       const [shops, routes, attendance, visits] = await Promise.all([
-        axios.get('http://localhost:5000/api/shops'),
-        axios.get('http://localhost:5000/api/routes'),
-        axios.get('http://localhost:5000/api/attendance'),
-        axios.get('http://localhost:5000/api/visits')
+        axios.get('https://varun-nutrition.onrender.com/api/shops'),
+        axios.get('https://varun-nutrition.onrender.com/api/routes'),
+        axios.get('https://varun-nutrition.onrender.com/api/attendance'),
+        axios.get('https://varun-nutrition.onrender.com/api/visits')
       ]);
 
       const active = attendance.data.filter(a => a.status === 'working').length;
