@@ -49,21 +49,20 @@ if (photo) {
   formData.append('photo', photo);
 }
 
-await api.post(
-  '/api/visits',
-  formData,
-  {
-    headers: {
-      'Content-Type': 'multipart/form-data'
-    }
-  }
-);
-console.log("Visit saved");
-window.location.reload();
+    await api.post(
+      '/api/visits',
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      }
+    );
+    console.log("Visit saved");
     setSelectedShop(null);
-setNotes('');
-setPhoto(null);
-await fetchData();
+    setNotes('');
+    setPhoto(null);
+    await fetchData();
   };
 
   const hasVisitedToday = (shopName) => {
@@ -117,8 +116,9 @@ await fetchData();
                     </div>
                     <div className="ml-4 flex-shrink-0">
                       {hasVisitedToday(shop.name) ? (
-                        <div className="bg-green-500/10 text-green-500 p-2 rounded-full">
-                          <CheckCircle className="w-6 h-6" />
+                        <div className="flex items-center gap-2 text-green-500 font-bold bg-green-500/10 px-4 py-2 rounded-xl border border-green-500/20">
+                          <CheckCircle className="w-5 h-5" />
+                          <span className="text-sm">Visited</span>
                         </div>
                       ) : (
                         <button
@@ -174,7 +174,7 @@ await fetchData();
               </button>
               <button
                 onClick={handleVisit}
-                className="flex-2 px-6 py-3 bg-green-600 text-zinc-900 font-bold rounded-xl hover:bg-green-500 transition-all shadow-lg shadow-green-600/20 flex items-center justify-center"
+                className="flex-[2] px-6 py-3 bg-green-600 text-zinc-900 font-bold rounded-xl hover:bg-green-500 transition-all shadow-lg shadow-green-600/20 flex items-center justify-center"
               >
                 <CheckCircle className="w-5 h-5 mr-2" /> Finish Visit
               </button>

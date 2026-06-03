@@ -29,7 +29,7 @@ function App() {
 
   return (
     <Router>
-      <div className="min-h-screen bg-gray-100">
+      <div className="min-h-screen bg-zinc-950 text-zinc-100">
         {user && <Navbar user={user} onLogout={handleLogout} />}
         <main className="container mx-auto py-6 px-4">
           <Routes>

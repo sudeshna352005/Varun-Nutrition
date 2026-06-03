@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api from '../api';
+import api, { API_BASE_URL } from '../api';
 import { Calendar, Store, MessageSquare, ClipboardList } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -80,7 +80,7 @@ const ReportsView = () => {
                     {visit.photo && (
                       <div className="mt-4">
                         <img
-                          src={`http://localhost:5000/${visit.photo.replace(/\\/g, '/')}`}
+                          src={`${API_BASE_URL}/${visit.photo.replace(/\\/g, '/')}`}
                           alt="Visit Evidence"
                           className="w-48 h-48 object-cover rounded-lg border border-zinc-700 shadow-md hover:scale-105 transition-transform cursor-zoom-in"
                         />

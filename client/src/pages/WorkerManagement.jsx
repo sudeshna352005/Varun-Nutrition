@@ -184,7 +184,7 @@ const WorkerManagement = () => {
                 </button>
                 <button
                   type="submit"
-                  className="flex-2 px-6 py-3 bg-green-600 text-zinc-900 font-bold rounded-xl hover:bg-green-500 transition-all shadow-lg shadow-green-600/20"
+                  className="flex-[2] px-6 py-3 bg-green-600 text-zinc-900 font-bold rounded-xl hover:bg-green-500 transition-all shadow-lg shadow-green-600/20"
                 >
                   {editingWorker ? 'Save Changes' : 'Add Worker'}
                 </button>
