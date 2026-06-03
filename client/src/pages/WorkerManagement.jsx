@@ -81,10 +81,10 @@ const WorkerManagement = () => {
           <table className="min-w-full divide-y divide-zinc-800">
             <thead className="bg-zinc-800/50">
               <tr>
-                <th className="px-6 py-4 text-left text-xs font-bold text-zinc-500 uppercase tracking-widest">Name</th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-zinc-500 uppercase tracking-widest">Username</th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-zinc-500 uppercase tracking-widest">Password</th>
-                <th className="px-6 py-4 text-right text-xs font-bold text-zinc-500 uppercase tracking-widest">Actions</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-zinc-400 uppercase tracking-widest">Name</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-zinc-400 uppercase tracking-widest">Username</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-zinc-400 uppercase tracking-widest">Password</th>
+                <th className="px-6 py-4 text-right text-xs font-bold text-zinc-400 uppercase tracking-widest">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800">
@@ -97,16 +97,16 @@ const WorkerManagement = () => {
                   <tr key={worker.id} className="hover:bg-zinc-800/30 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <Link to={`/worker/${worker.id}`} className="flex items-center text-green-500 hover:text-green-400 font-bold">
-                        <div className="w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center mr-3 text-zinc-500 border border-zinc-700">
+                        <div className="w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center mr-3 text-zinc-400 border border-zinc-700">
                           <User className="w-4 h-4" />
                         </div>
                         {worker.name}
                       </Link>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-400 font-medium">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-300 font-medium">
                       {worker.username}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-600">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-500">
                       ••••••••
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

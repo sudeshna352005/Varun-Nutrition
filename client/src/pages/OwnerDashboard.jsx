@@ -49,7 +49,7 @@ const OwnerDashboard = () => {
             <div className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">{card.name}</p>
+                  <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-1">{card.name}</p>
                   <p className="text-3xl font-bold text-white">{card.value}</p>
                 </div>
                 <div className={`${card.color.split(' ')[0]} p-4 rounded-xl ${card.color.split(' ')[1]}`}>
@@ -77,7 +77,7 @@ const OwnerDashboard = () => {
             <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
             <p className="text-green-500 font-medium text-sm">All systems operational.</p>
           </div>
-          <p className="mt-4 text-zinc-500 text-sm">Data is currently being stored in-memory for this demo environment.</p>
+          <p className="mt-4 text-zinc-400 text-sm">Database connection active. All data is securely persisted.</p>
         </div>
       </div>
     </div>

@@ -86,11 +86,11 @@ const ShopManagement = () => {
                 </button>
               </div>
               <h3 className="text-xl font-bold text-white mb-4 pr-16">{shop.name}</h3>
-              <div className="space-y-3 text-zinc-400">
+              <div className="space-y-3 text-zinc-300">
                 <p className="flex items-start text-sm"><MapPin className="w-4 h-4 mr-3 text-green-500 flex-shrink-0 mt-1" /> {shop.address}</p>
                 <p className="flex items-center text-sm"><Phone className="w-4 h-4 mr-3 text-blue-500 flex-shrink-0" /> {shop.phone}</p>
                 <div className="pt-2">
-                  <span className="inline-block px-3 py-1 bg-zinc-800 text-zinc-300 border border-zinc-700 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                  <span className="inline-block px-3 py-1 bg-zinc-800 text-zinc-200 border border-zinc-700 rounded-full text-[10px] font-bold uppercase tracking-wider">
                     {shop.routeGroup}
                   </span>
                 </div>

@@ -65,17 +65,17 @@ const ReportsView = () => {
                       ) : visit.workerName}
                     </span>
                     <span className="text-zinc-600">•</span>
-                    <span className="text-sm text-zinc-500">{new Date(visit.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    <span className="text-sm text-zinc-400">{new Date(visit.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
                 </div>
               </div>
 
               <div className="bg-zinc-800/50 p-6 rounded-xl border border-zinc-800">
                 <div className="flex items-start gap-4">
-                  <MessageSquare className="w-5 h-5 mt-1 text-zinc-600 flex-shrink-0" />
+                  <MessageSquare className="w-5 h-5 mt-1 text-zinc-500 flex-shrink-0" />
                   <div className="flex-1">
-                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2">Notes & Evidence</p>
-                    <p className="text-zinc-300 mb-4 leading-relaxed">{visit.notes || <span className="italic opacity-50">No notes provided</span>}</p>
+                    <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-2">Notes & Evidence</p>
+                    <p className="text-zinc-300 mb-4 leading-relaxed">{visit.notes || <span className="italic opacity-60">No notes provided</span>}</p>
 
                     {visit.photo && (
                       <div className="mt-4">

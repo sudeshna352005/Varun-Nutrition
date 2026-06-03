@@ -74,7 +74,7 @@ const AttendanceView = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center text-sm text-zinc-500 font-medium">
+                      <div className="flex items-center text-sm text-zinc-400 font-medium">
                         <Clock className="w-4 h-4 mr-2" /> {formatTime(record.endTime)}
                       </div>
                     </td>
