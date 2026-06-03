@@ -1,16 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../api';
 import { User, Clock, Camera, CheckCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const AttendanceView = () => {
   const [attendance, setAttendance] = useState([]);
+  const [workers, setWorkers] = useState([]);
 
   useEffect(() => {
     fetchAttendance();
+    fetchWorkers();
   }, []);
 
+  const fetchWorkers = async () => {
+    const res = await api.get('/api/workers');
+    setWorkers(res.data);
+  };
+
   const fetchAttendance = async () => {
-    const res = await axios.get('https://varun-nutrition.onrender.com/api/attendance');
+    const res = await api.get('/api/attendance');
     setAttendance(res.data);
   };
 
@@ -21,68 +29,80 @@ const AttendanceView = () => {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Worker Attendance</h1>
-      <div className="bg-white rounded-lg shadow-md overflow-x-auto">
-        <table className="min-w-[900px] divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Worker</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Start Time</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">End Time</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Photo</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {attendance.length === 0 ? (
+      <h1 className="text-3xl font-bold mb-8 text-white">Worker Attendance</h1>
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl shadow-xl overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-zinc-800">
+            <thead className="bg-zinc-800/50">
               <tr>
-                <td colSpan="6" className="px-6 py-4 text-center text-gray-500 italic">No attendance records found.</td>
+                <th className="px-6 py-4 text-left text-xs font-bold text-zinc-500 uppercase tracking-widest">Worker</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-zinc-500 uppercase tracking-widest">Date</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-zinc-500 uppercase tracking-widest">Start Time</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-zinc-500 uppercase tracking-widest">End Time</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-zinc-500 uppercase tracking-widest">Photo</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-zinc-500 uppercase tracking-widest">Status</th>
               </tr>
-            ) : (
-              attendance.map((record) => (
-                <tr key={record.id}>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <User className="w-5 h-5 mr-2 text-gray-400" />
-                      <div className="text-sm font-medium text-gray-900">{record.workerName}</div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{new Date(record.startTime).toLocaleDateString()}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center text-sm text-gray-900">
-                      <Clock className="w-4 h-4 mr-1 text-green-500" /> {formatTime(record.startTime)}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center text-sm text-gray-900">
-                      <Clock className="w-4 h-4 mr-1 text-red-500" /> {formatTime(record.endTime)}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {record.photo ? (
-                      <div className="relative group cursor-pointer">
-                        <Camera className="w-6 h-6 text-blue-500" />
-                        <div className="absolute hidden group-hover:block z-10 p-2 bg-white border rounded shadow-lg mt-2">
-                          <img src={`https:///varun-nutrition.onrender.com${record.photo}`} alt="Attendance" className="w-32 h-32 object-cover" />
+            </thead>
+            <tbody className="divide-y divide-zinc-800">
+              {attendance.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="px-6 py-10 text-center text-zinc-500 italic">No attendance records found.</td>
+                </tr>
+              ) : (
+                attendance.map((record) => (
+                  <tr key={record.id} className="hover:bg-zinc-800/30 transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center mr-3 text-zinc-400 border border-zinc-700">
+                          <User className="w-4 h-4" />
+                        </div>
+                        <div className="text-sm font-bold text-white">
+                          {workers.find(w => w.name === record.workerName) ? (
+                            <Link to={`/worker/${workers.find(w => w.name === record.workerName).id}`} className="hover:text-green-500 transition-colors">
+                              {record.workerName}
+                            </Link>
+                          ) : record.workerName}
                         </div>
                       </div>
-                    ) : <span className="text-gray-400">-</span>}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      record.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {record.status === 'completed' ? 'Completed' : 'Working'}
-                    </span>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-zinc-400">{new Date(record.startTime).toLocaleDateString()}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center text-sm text-green-500 font-medium">
+                        <Clock className="w-4 h-4 mr-2" /> {formatTime(record.startTime)}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center text-sm text-zinc-500 font-medium">
+                        <Clock className="w-4 h-4 mr-2" /> {formatTime(record.endTime)}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {record.photo ? (
+                        <div className="relative group cursor-pointer inline-block">
+                          <Camera className="w-6 h-6 text-blue-500 hover:text-blue-400 transition-colors" />
+                          <div className="absolute hidden group-hover:block z-20 p-2 bg-zinc-800 border border-zinc-700 rounded-xl shadow-2xl mt-2 -left-12">
+                            <img src={`http://localhost:5000/${record.photo.replace(/\\/g, '/')}`} alt="Attendance" className="w-48 h-48 object-cover rounded-lg" />
+                          </div>
+                        </div>
+                      ) : <span className="text-zinc-600">-</span>}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-3 py-1 inline-flex text-[10px] leading-5 font-bold rounded-full uppercase tracking-widest border ${
+                        record.status === 'completed'
+                        ? 'bg-green-500/10 text-green-500 border-green-500/20'
+                        : 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
+                      }`}>
+                        {record.status === 'completed' ? 'Completed' : 'Working'}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

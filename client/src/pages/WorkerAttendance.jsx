@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../api';
 import { Camera, Play, Square, CheckCircle, MessageSquare, MapPin } from 'lucide-react';
 
 const WorkerAttendance = ({ user }) => {
@@ -11,7 +11,7 @@ const WorkerAttendance = ({ user }) => {
   }, []);
 
   const checkActiveSession = async () => {
-    const res = await axios.get('https://varun-nutrition.onrender.com/api/attendance');
+    const res = await api.get('/api/attendance');
     const active = res.data.find(a => a.workerName === user.name && a.status === 'working');
     if (active) setSession(active);
   };
@@ -26,7 +26,7 @@ const WorkerAttendance = ({ user }) => {
     formData.append('photo', photo);
 
     try {
-      const res = await axios.post('https://varun-nutrition.onrender.com/api/attendance/start', formData);
+      const res = await api.post('/api/attendance/start', formData);
       setSession(res.data);
       setPhoto(null);
     } catch (err) {
@@ -36,7 +36,7 @@ const WorkerAttendance = ({ user }) => {
 
   const handleEndWork = async () => {
     try {
-      await axios.post('https://varun-nutrition.onrender.com/api/attendance/end', { workerName: user.name });
+      await api.post('/api/attendance/end', { workerName: user.name });
       setSession(null);
     } catch (err) {
       console.error(err);
@@ -44,52 +44,57 @@ const WorkerAttendance = ({ user }) => {
   };
 
   return (
-    <div className="max-w-md mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Attendance</h1>
+    <div className="max-w-md mx-auto pt-10">
+      <h1 className="text-3xl font-bold mb-10 text-center text-white">Attendance</h1>
       
-      <div className="bg-white p-8 rounded-xl shadow-md text-center">
+      <div className="bg-zinc-900 border border-zinc-800 p-10 rounded-3xl shadow-2xl text-center">
         {session ? (
           <div>
-            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Play className="w-10 h-10 text-green-600 ml-1" />
+            <div className="w-24 h-24 bg-green-500/10 border border-green-500/20 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner shadow-green-500/20">
+              <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center animate-pulse">
+                <Play className="w-8 h-8 text-zinc-900 ml-1" fill="currentColor" />
+              </div>
             </div>
-            <h2 className="text-xl font-bold text-gray-800">Work in Progress</h2>
-            <p className="text-gray-500 mb-6">Started at {new Date(session.startTime).toLocaleTimeString()}</p>
+            <h2 className="text-2xl font-bold text-white mb-2">Work in Progress</h2>
+            <p className="text-zinc-500 text-sm mb-10 uppercase tracking-widest font-bold">Started at {new Date(session.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
             <button
               onClick={handleEndWork}
-              className="w-full bg-red-600 text-white py-3 rounded-lg font-bold flex items-center justify-center hover:bg-red-700 transition"
+              className="w-full bg-zinc-800 border border-red-500/50 text-red-500 py-4 rounded-2xl font-bold flex items-center justify-center hover:bg-red-500 hover:text-zinc-900 transition-all shadow-lg"
             >
-              <Square className="w-5 h-5 mr-2" /> Mark End Work
+              <Square className="w-5 h-5 mr-3" fill="currentColor" /> Mark End Work
             </button>
           </div>
         ) : (
           <div>
-            <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Camera className="w-10 h-10 text-blue-600" />
+            <div className="w-24 h-24 bg-zinc-800 border border-zinc-700 rounded-full flex items-center justify-center mx-auto mb-8 text-green-500">
+              <Camera className="w-10 h-10" />
             </div>
-            <h2 className="text-xl font-bold text-gray-800">Start Your Shift</h2>
-            <p className="text-gray-500 mb-6">Upload a photo to begin</p>
+            <h2 className="text-2xl font-bold text-white mb-2">Start Your Shift</h2>
+            <p className="text-zinc-500 text-sm mb-10 uppercase tracking-widest font-bold">Identity verification required</p>
             
-            <div className="mb-6">
-              <label className="block w-full border-2 border-dashed border-gray-300 rounded-lg p-4 cursor-pointer hover:border-blue-400 transition">
+            <div className="mb-10">
+              <label className="block w-full bg-zinc-800/50 border-2 border-dashed border-zinc-700 rounded-2xl p-6 cursor-pointer hover:border-green-500/50 hover:bg-zinc-800 transition-all group">
                 <input
-  type="file"
-  accept="image/*"
-  capture="environment"
-  className="hidden"
-  onChange={(e) => setPhoto(e.target.files[0])}
-/>
-                <span className="text-sm text-gray-600">
-                  {photo ? photo.name : 'Click to select photo'}
-                </span>
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={(e) => setPhoto(e.target.files[0])}
+                />
+                <div className="flex flex-col items-center">
+                  <Camera className="w-8 h-8 text-zinc-600 mb-2 group-hover:text-green-500 transition-colors" />
+                  <span className="text-sm font-medium text-zinc-400 group-hover:text-zinc-200 transition-colors">
+                    {photo ? photo.name : 'Take a selfie to begin'}
+                  </span>
+                </div>
               </label>
             </div>
 
             <button
               onClick={handleStartWork}
-              className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold flex items-center justify-center hover:bg-blue-700 transition"
+              className="w-full bg-green-600 text-zinc-900 py-4 rounded-2xl font-extrabold flex items-center justify-center hover:bg-green-500 transition-all shadow-lg shadow-green-600/20"
             >
-              <Play className="w-5 h-5 mr-2" /> Mark Start Work
+              <Play className="w-5 h-5 mr-3" fill="currentColor" /> Mark Start Work
             </button>
           </div>
         )}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../api';
 import { MapPin, Plus, List } from 'lucide-react';
 
 const RouteManagement = () => {
@@ -13,51 +13,51 @@ const RouteManagement = () => {
   }, []);
 
   const fetchRoutes = async () => {
-    const res = await axios.get('https://varun-nutrition.onrender.com/api/routes');
+    const res = await api.get('/api/routes');
     setRoutes(res.data);
   };
 
   const fetchShops = async () => {
-    const res = await axios.get('https://varun-nutrition.onrender.com/api/shops');
+    const res = await api.get('/api/shops');
     setShops(res.data);
   };
 
   const handleAddRoute = async (e) => {
     e.preventDefault();
     if (!newRoute) return;
-    await axios.post('https://varun-nutrition.onrender.com/api/routes', { name: newRoute });
+    await api.post('/api/routes', { name: newRoute });
     setNewRoute('');
     fetchRoutes();
   };
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Route Management</h1>
+      <h1 className="text-3xl font-bold mb-8 text-white">Route Management</h1>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div className="md:col-span-1">
-          <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-            <h2 className="text-lg font-semibold mb-4">Create New Route</h2>
-            <form onSubmit={handleAddRoute} className="flex gap-2">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+        <div className="md:col-span-1 space-y-8">
+          <div className="bg-zinc-900 border border-zinc-800 p-8 rounded-2xl shadow-lg">
+            <h2 className="text-lg font-bold mb-6 text-white uppercase tracking-wider text-sm">Create New Route</h2>
+            <form onSubmit={handleAddRoute} className="flex gap-3">
               <input
                 type="text"
                 placeholder="Route Name"
-                className="flex-1 border rounded px-3 py-2"
+                className="flex-1 bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-white focus:ring-2 focus:ring-green-500 outline-none transition-all"
                 value={newRoute}
                 onChange={(e) => setNewRoute(e.target.value)}
               />
-              <button className="bg-green-600 text-white p-2 rounded hover:bg-green-700">
+              <button className="bg-green-600 text-zinc-900 p-3 rounded-xl hover:bg-green-500 transition-all shadow-lg shadow-green-600/20">
                 <Plus className="w-5 h-5" />
               </button>
             </form>
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-lg font-semibold mb-4 text-blue-600">Route List</h2>
-            <ul className="space-y-2">
+          <div className="bg-zinc-900 border border-zinc-800 p-8 rounded-2xl shadow-lg">
+            <h2 className="text-lg font-bold mb-6 text-green-500 uppercase tracking-wider text-sm">Route List</h2>
+            <ul className="space-y-3">
               {routes.map(route => (
-                <li key={route.id} className="flex items-center p-2 hover:bg-gray-50 rounded border-b">
-                  <MapPin className="w-4 h-4 mr-2 text-gray-400" />
+                <li key={route.id} className="flex items-center p-3 hover:bg-zinc-800 rounded-xl transition-colors border border-transparent hover:border-zinc-700 text-zinc-300">
+                  <MapPin className="w-4 h-4 mr-3 text-green-500" />
                   {route.name}
                 </li>
               ))}
@@ -66,27 +66,29 @@ const RouteManagement = () => {
         </div>
 
         <div className="md:col-span-2">
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-lg font-semibold mb-4">Shops by Route</h2>
-            {routes.map(route => (
-              <div key={route.id} className="mb-6 last:mb-0">
-                <h3 className="font-bold text-blue-600 border-b pb-1 mb-3 flex items-center">
-                  <List className="w-4 h-4 mr-2" /> {route.name}
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {shops.filter(s => s.routeGroup === route.name).length > 0 ? (
-                    shops.filter(s => s.routeGroup === route.name).map(shop => (
-                      <div key={shop.id} className="text-sm p-3 bg-gray-50 rounded border">
-                        <p className="font-semibold">{shop.name}</p>
-                        <p className="text-gray-500 text-xs">{shop.address}</p>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-sm text-gray-400 italic">No shops assigned to this route.</p>
-                  )}
+          <div className="bg-zinc-900 border border-zinc-800 p-8 rounded-2xl shadow-lg">
+            <h2 className="text-xl font-bold mb-8 text-white">Shops by Route</h2>
+            <div className="space-y-10">
+              {routes.map(route => (
+                <div key={route.id}>
+                  <h3 className="font-bold text-blue-500 border-b border-zinc-800 pb-2 mb-4 flex items-center uppercase tracking-widest text-xs">
+                    <List className="w-4 h-4 mr-2" /> {route.name}
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {shops.filter(s => s.routeGroup === route.name).length > 0 ? (
+                      shops.filter(s => s.routeGroup === route.name).map(shop => (
+                        <div key={shop.id} className="p-4 bg-zinc-800/50 rounded-xl border border-zinc-800 hover:border-zinc-700 transition-all">
+                          <p className="font-bold text-zinc-200">{shop.name}</p>
+                          <p className="text-zinc-500 text-xs mt-1">{shop.address}</p>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-zinc-600 italic">No shops assigned to this route.</p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </div>

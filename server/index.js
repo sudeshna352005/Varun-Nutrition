@@ -25,6 +25,9 @@ let routeGroups = [
   { id: 5, name: 'Rajajinagar' },
   { id: 6, name: 'Others' },
 ];
+let workers = [
+  { id: 1, name: 'Sales Worker', username: 'worker', password: 'worker123' }
+];
 let attendance = [];
 let visits = [];
 
@@ -74,16 +77,40 @@ app.post('/api/routes', (req, res) => {
   res.status(201).json(route);
 });
 
+// Workers API
+app.get('/api/workers', (req, res) => res.json(workers));
+app.post('/api/workers', (req, res) => {
+  const worker = { ...req.body, id: Date.now() };
+  workers.push(worker);
+  res.status(201).json(worker);
+});
+app.put('/api/workers/:id', (req, res) => {
+  const index = workers.findIndex(w => w.id == req.params.id);
+  if (index !== -1) {
+    workers[index] = { ...workers[index], ...req.body };
+    res.json(workers[index]);
+  } else {
+    res.status(404).json({ message: 'Worker not found' });
+  }
+});
+app.delete('/api/workers/:id', (req, res) => {
+  workers = workers.filter(w => w.id != req.params.id);
+  res.status(204).send();
+});
+
 app.post('/api/login', (req, res) => {
   const { username, password } = req.body;
-  // Simple demo login
+
   if (username === 'owner' && password === 'owner123') {
-    res.json({ role: 'owner', name: 'Varun Owner' });
-  } else if (username === 'worker' && password === 'worker123') {
-    res.json({ role: 'worker', name: 'Sales Worker' });
-  } else {
-    res.status(401).json({ message: 'Invalid credentials' });
+    return res.json({ role: 'owner', name: 'Varun Owner' });
   }
+
+  const worker = workers.find(w => w.username === username && w.password === password);
+  if (worker) {
+    return res.json({ role: 'worker', name: worker.name, id: worker.id });
+  }
+
+  res.status(401).json({ message: 'Invalid credentials' });
 });
 
 app.post('/api/attendance/start', upload.single('photo'), (req, res) => {
@@ -126,4 +153,9 @@ app.post('/api/visits', upload.single('photo'), (req, res) => {
 
   res.status(201).json(visit);
 });
-  
+
+app.get('/api/visits', (req, res) => res.json(visits));
+
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
