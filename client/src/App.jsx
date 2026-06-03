@@ -9,6 +9,8 @@ import AttendanceView from './pages/AttendanceView';
 import ReportsView from './pages/ReportsView';
 import WorkerDashboard from './pages/WorkerDashboard';
 import WorkerAttendance from './pages/WorkerAttendance';
+import WorkerManagement from './pages/WorkerManagement';
+import WorkerProfile from './pages/WorkerProfile';
 
 function App() {
   const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')));
@@ -27,7 +29,7 @@ function App() {
 
   return (
     <Router>
-      <div className="min-h-screen bg-gray-100">
+      <div className="min-h-screen bg-zinc-950 text-zinc-100">
         {user && <Navbar user={user} onLogout={handleLogout} />}
         <main className="container mx-auto py-6 px-4">
           <Routes>
@@ -44,6 +46,8 @@ function App() {
             <Route path="/routes" element={user?.role === 'owner' ? <RouteManagement /> : <Navigate to="/" />} />
             <Route path="/attendance" element={user?.role === 'owner' ? <AttendanceView /> : <Navigate to="/" />} />
             <Route path="/reports" element={user?.role === 'owner' ? <ReportsView /> : <Navigate to="/" />} />
+            <Route path="/workers" element={user?.role === 'owner' ? <WorkerManagement /> : <Navigate to="/" />} />
+            <Route path="/worker/:id" element={user?.role === 'owner' ? <WorkerProfile /> : <Navigate to="/" />} />
 
             {/* Worker Routes */}
             <Route path="/worker-attendance" element={user?.role === 'worker' ? <WorkerAttendance user={user} /> : <Navigate to="/" />} />

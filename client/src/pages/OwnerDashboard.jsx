@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../api';
 import { Store, Users, MapPin, ClipboardCheck } from 'lucide-react';
 
 const OwnerDashboard = () => {
@@ -13,10 +13,10 @@ const OwnerDashboard = () => {
   useEffect(() => {
     const fetchStats = async () => {
       const [shops, routes, attendance, visits] = await Promise.all([
-        axios.get('https://varun-nutrition.onrender.com/api/shops'),
-        axios.get('https://varun-nutrition.onrender.com/api/routes'),
-        axios.get('https://varun-nutrition.onrender.com/api/attendance'),
-        axios.get('https://varun-nutrition.onrender.com/api/visits')
+        api.get('/api/shops'),
+        api.get('/api/routes'),
+        api.get('/api/attendance'),
+        api.get('/api/visits')
       ]);
 
       const active = attendance.data.filter(a => a.status === 'working').length;
@@ -34,25 +34,25 @@ const OwnerDashboard = () => {
   }, []);
 
   const cards = [
-    { name: 'Total Shops', value: stats.shops, icon: Store, color: 'bg-blue-500' },
-    { name: 'Route Groups', value: stats.routes, icon: MapPin, color: 'bg-green-500' },
-    { name: 'Active Workers', value: stats.activeWorkers, icon: Users, color: 'bg-purple-500' },
-    { name: 'Visits Today', value: stats.todayVisits, icon: ClipboardCheck, color: 'bg-orange-500' },
+    { name: 'Total Shops', value: stats.shops, icon: Store, color: 'bg-green-500/20 text-green-500' },
+    { name: 'Route Groups', value: stats.routes, icon: MapPin, color: 'bg-blue-500/20 text-blue-500' },
+    { name: 'Active Workers', value: stats.activeWorkers, icon: Users, color: 'bg-purple-500/20 text-purple-500' },
+    { name: 'Visits Today', value: stats.todayVisits, icon: ClipboardCheck, color: 'bg-orange-500/20 text-orange-500' },
   ];
 
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-8 text-gray-800">Owner Dashboard</h1>
+      <h1 className="text-3xl font-bold mb-8 text-white">Owner Dashboard</h1>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {cards.map((card) => (
-          <div key={card.name} className="bg-white rounded-xl shadow-md overflow-hidden">
+          <div key={card.name} className="bg-zinc-900 border border-zinc-800 rounded-2xl shadow-lg overflow-hidden">
             <div className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600 uppercase">{card.name}</p>
-                  <p className="text-2xl font-bold text-gray-900">{card.value}</p>
+                  <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">{card.name}</p>
+                  <p className="text-3xl font-bold text-white">{card.value}</p>
                 </div>
-                <div className={`${card.color} p-3 rounded-lg text-white`}>
+                <div className={`${card.color.split(' ')[0]} p-4 rounded-xl ${card.color.split(' ')[1]}`}>
                   <card.icon className="w-6 h-6" />
                 </div>
               </div>
@@ -62,18 +62,22 @@ const OwnerDashboard = () => {
       </div>
       
       <div className="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="bg-white p-6 rounded-xl shadow-md">
-          <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
+        <div className="bg-zinc-900 border border-zinc-800 p-8 rounded-2xl shadow-lg">
+          <h2 className="text-xl font-bold mb-6 text-white">Quick Actions</h2>
           <div className="space-y-4">
-            <a href="/shops" className="block w-full text-center py-3 bg-blue-50 text-blue-700 rounded-lg font-medium hover:bg-blue-100 transition">Manage Shops</a>
-            <a href="/routes" className="block w-full text-center py-3 bg-green-50 text-green-700 rounded-lg font-medium hover:bg-green-100 transition">Configure Routes</a>
-            <a href="/attendance" className="block w-full text-center py-3 bg-purple-50 text-purple-700 rounded-lg font-medium hover:bg-purple-100 transition">View Attendance</a>
+            <a href="/shops" className="block w-full text-center py-4 bg-zinc-800 text-green-500 rounded-xl font-bold hover:bg-zinc-700 transition">Manage Shops</a>
+            <a href="/routes" className="block w-full text-center py-4 bg-zinc-800 text-blue-500 rounded-xl font-bold hover:bg-zinc-700 transition">Configure Routes</a>
+            <a href="/workers" className="block w-full text-center py-4 bg-zinc-800 text-purple-500 rounded-xl font-bold hover:bg-zinc-700 transition">Manage Workers</a>
           </div>
         </div>
         
-        <div className="bg-white p-6 rounded-xl shadow-md">
-          <h2 className="text-xl font-semibold mb-4">System Status</h2>
-          <p className="text-gray-600">All systems operational. Data is currently being stored in-memory for this demo.</p>
+        <div className="bg-zinc-900 border border-zinc-800 p-8 rounded-2xl shadow-lg">
+          <h2 className="text-xl font-bold mb-6 text-white">System Status</h2>
+          <div className="flex items-center gap-3 p-4 bg-green-500/10 border border-green-500/20 rounded-xl">
+            <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
+            <p className="text-green-500 font-medium text-sm">All systems operational.</p>
+          </div>
+          <p className="mt-4 text-zinc-500 text-sm">Data is currently being stored in-memory for this demo environment.</p>
         </div>
       </div>
     </div>
