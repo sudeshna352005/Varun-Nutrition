@@ -8,11 +8,18 @@ const Login = ({ onLogin }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
     try {
       const response = await api.post('/api/login', { username, password });
       onLogin(response.data);
     } catch (err) {
-      setError('Invalid username or password');
+      if (err.response) {
+        setError(err.response.data.message || 'Invalid username or password');
+      } else if (err.request) {
+        setError('Server is not responding. Please check your internet or try again later.');
+      } else {
+        setError('An unexpected error occurred. Please try again.');
+      }
     }
   };
 
