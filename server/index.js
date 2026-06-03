@@ -16,9 +16,13 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI;
 
-mongoose.connect(MONGO_URI)
+if (!MONGO_URI) {
+  console.error('FATAL ERROR: MONGO_URI is not defined in environment variables.');
+}
+
+mongoose.connect(MONGO_URI || 'mongodb://localhost:27017/varun-nutrition')
   .then(async () => {
-    console.log('Connected to MongoDB Atlas');
+    console.log('Connected to MongoDB');
     await seedData();
   })
   .catch(err => console.error('MongoDB connection error:', err));
@@ -51,6 +55,12 @@ async function seedData() {
   if (workerCount === 0) {
     await Worker.create({ name: 'Sales Worker', username: 'worker', password: 'worker123' });
     console.log('Initial worker seeded');
+  } else {
+    // Ensure the default worker exists or update it to be lowercase
+    const worker = await Worker.findOne({ username: 'worker' });
+    if (!worker) {
+      await Worker.create({ name: 'Sales Worker', username: 'worker', password: 'worker123' });
+    }
   }
 }
 
@@ -116,7 +126,11 @@ app.get('/api/workers', async (req, res) => {
   res.json(workersList);
 });
 app.post('/api/workers', async (req, res) => {
-  const worker = new Worker(req.body);
+  const workerData = { ...req.body };
+  if (workerData.username) {
+    workerData.username = workerData.username.toLowerCase().trim();
+  }
+  const worker = new Worker(workerData);
   await worker.save();
   res.status(201).json(worker);
 });
@@ -140,9 +154,12 @@ app.post('/api/login', async (req, res) => {
     return res.json({ role: 'owner', name: 'Varun Owner' });
   }
 
-  const worker = await Worker.findOne({ username, password });
+  const worker = await Worker.findOne({
+    username: username.toLowerCase().trim(),
+    password: password
+  });
   if (worker) {
-    return res.json({ role: 'worker', name: worker.name, id: worker._id });
+    return res.json({ role: 'worker', name: worker.name, id: worker.id });
   }
 
   res.status(401).json({ message: 'Invalid credentials' });
