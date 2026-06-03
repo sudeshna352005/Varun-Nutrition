@@ -151,7 +151,7 @@ app.post('/api/login', async (req, res) => {
 app.post('/api/attendance/start', upload.single('photo'), async (req, res) => {
   const entry = new Attendance({
     workerName: req.body.workerName,
-    photo: req.file ? req.file.path : null,
+    photo: req.file ? `uploads/${req.file.filename}` : null,
     status: 'working'
   });
   await entry.save();
@@ -181,7 +181,7 @@ app.post('/api/visits', upload.single('photo'), async (req, res) => {
     shopName: req.body.shopName,
     workerName: req.body.workerName,
     notes: req.body.notes,
-    photo: req.file ? req.file.path : null
+    photo: req.file ? `uploads/${req.file.filename}` : null
   });
 
   await visit.save();
