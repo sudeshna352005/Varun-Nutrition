@@ -4,6 +4,8 @@ const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
 const mongoose = require('mongoose');
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 require('dotenv').config();
 
 const Shop = require('./models/Shop');
@@ -71,26 +73,23 @@ async function seedData() {
 
 app.use(cors());
 app.use(express.json());
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Cloudinary configuration
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
 
-
-const uploadsDir = path.join(__dirname, 'uploads');
-
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-// Multer setup for simulated photo upload
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, uploadsDir);
-  },
-
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + '-' + file.originalname);
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'varun-nutrition',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp']
   }
 });
-const upload = multer({ storage: storage });
+
+const upload = multer({ storage });
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -232,7 +231,7 @@ app.post('/api/attendance/start', upload.single('photo'), async (req, res) => {
   try {
     const entry = new Attendance({
       workerName: req.body.workerName,
-      photo: req.file ? `uploads/${req.file.filename}` : null,
+      photo: req.file ? req.file.path : null,
       status: 'working'
     });
     await entry.save();
@@ -273,7 +272,7 @@ app.post('/api/visits', upload.single('photo'), async (req, res) => {
       shopName: req.body.shopName,
       workerName: req.body.workerName,
       notes: req.body.notes,
-      photo: req.file ? `uploads/${req.file.filename}` : null
+      photo: req.file ? req.file.path : null
     });
     await visit.save();
     res.status(201).json(visit);

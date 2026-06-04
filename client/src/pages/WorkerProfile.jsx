@@ -165,7 +165,7 @@ const WorkerProfile = () => {
                         {item.photo && (
                           <div className="relative w-32 h-32 group">
                             <img
-                              src={`${API_BASE_URL}/${item.photo.replace(/\\/g, '/')}`}
+                              src={item.photo.startsWith('http') ? item.photo : `${API_BASE_URL}/${item.photo.replace(/\\/g, '/')}`}
                               alt="Visit"
                               className="w-full h-full object-cover rounded-lg shadow-sm"
                             />

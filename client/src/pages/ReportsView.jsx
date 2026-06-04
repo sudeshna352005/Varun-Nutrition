@@ -80,7 +80,7 @@ const ReportsView = () => {
                     {visit.photo && (
                       <div className="mt-4">
                         <img
-                          src={`${API_BASE_URL}/${visit.photo.replace(/\\/g, '/')}`}
+                          src={visit.photo.startsWith('http') ? visit.photo : `${API_BASE_URL}/${visit.photo.replace(/\\/g, '/')}`}
                           alt="Visit Evidence"
                           className="w-48 h-48 object-cover rounded-lg border border-zinc-700 shadow-md hover:scale-105 transition-transform cursor-zoom-in"
                         />

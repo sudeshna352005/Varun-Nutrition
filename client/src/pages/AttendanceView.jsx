@@ -83,7 +83,7 @@ const AttendanceView = () => {
                         <div className="relative group cursor-pointer inline-block">
                           <Camera className="w-6 h-6 text-blue-500 hover:text-blue-400 transition-colors" />
                           <div className="absolute hidden group-hover:block z-20 p-2 bg-zinc-800 border border-zinc-700 rounded-xl shadow-2xl mt-2 -left-12">
-                            <img src={`${API_BASE_URL}/${record.photo.replace(/\\/g, '/')}`} alt="Attendance" className="w-48 h-48 object-cover rounded-lg" />
+                            <img src={record.photo.startsWith('http') ? record.photo : `${API_BASE_URL}/${record.photo.replace(/\\/g, '/')}`} alt="Attendance" className="w-48 h-48 object-cover rounded-lg" />
                           </div>
                         </div>
                       ) : <span className="text-zinc-600">-</span>}
