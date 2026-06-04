@@ -181,7 +181,7 @@ app.post('/api/visits', upload.single('photo'), async (req, res) => {
     shopName: req.body.shopName,
     workerName: req.body.workerName,
     notes: req.body.notes,
-    photo: req.file ? req.file.path : null
+photo: req.file ? req.file.path : null
   });
 
   await visit.save();
