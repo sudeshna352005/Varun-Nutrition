@@ -104,16 +104,32 @@ app.get('/api/health', (req, res) => {
 app.get('/api/shops', async (req, res) => {
   try {
     const { workerId } = req.query;
+    console.log("GET /api/shops - Received workerId query param:", workerId);
     let query = {};
 
-    if (workerId) {
+    if (workerId && workerId !== 'undefined' && workerId !== 'null') {
+      if (!mongoose.Types.ObjectId.isValid(workerId)) {
+        console.warn("GET /api/shops - Invalid workerId format:", workerId);
+        return res.status(400).json({ message: "Invalid worker ID format" });
+      }
+
       const worker = await Worker.findById(workerId);
-      if (worker && worker.assignedRoutes && worker.assignedRoutes.length > 0) {
+      if (!worker) {
+        console.warn("GET /api/shops - Worker not found for ID:", workerId);
+        return res.status(404).json({ message: "Worker not found" });
+      }
+
+      console.log(`GET /api/shops - Worker: ${worker.name}, Assigned Routes: [${worker.assignedRoutes.join(', ')}]`);
+
+      if (worker.assignedRoutes && worker.assignedRoutes.length > 0) {
         query.routeGroup = { $in: worker.assignedRoutes };
-      } else if (worker) {
-        // If worker has no routes assigned, they see nothing
+        console.log("GET /api/shops - Applying filter query:", JSON.stringify(query));
+      } else {
+        console.log("GET /api/shops - Worker has no assigned routes, returning empty shops list");
         return res.json([]);
       }
+    } else {
+      console.log("GET /api/shops - No valid workerId provided, returning all shops (Owner view)");
     }
 
     const shops = await Shop.find(query);
@@ -155,15 +171,32 @@ app.delete('/api/shops/:id', async (req, res) => {
 app.get('/api/routes', async (req, res) => {
   try {
     const { workerId } = req.query;
+    console.log("GET /api/routes - Received workerId query param:", workerId);
     let query = {};
 
-    if (workerId) {
+    if (workerId && workerId !== 'undefined' && workerId !== 'null') {
+      if (!mongoose.Types.ObjectId.isValid(workerId)) {
+        console.warn("GET /api/routes - Invalid workerId format:", workerId);
+        return res.status(400).json({ message: "Invalid worker ID format" });
+      }
+
       const worker = await Worker.findById(workerId);
-      if (worker && worker.assignedRoutes && worker.assignedRoutes.length > 0) {
+      if (!worker) {
+        console.warn("GET /api/routes - Worker not found for ID:", workerId);
+        return res.status(404).json({ message: "Worker not found" });
+      }
+
+      console.log(`GET /api/routes - Worker: ${worker.name}, Assigned Routes: [${worker.assignedRoutes.join(', ')}]`);
+
+      if (worker.assignedRoutes && worker.assignedRoutes.length > 0) {
         query.name = { $in: worker.assignedRoutes };
-      } else if (worker) {
+        console.log("GET /api/routes - Applying filter query:", JSON.stringify(query));
+      } else {
+        console.log("GET /api/routes - Worker has no assigned routes, returning empty routes list");
         return res.json([]);
       }
+    } else {
+      console.log("GET /api/routes - No valid workerId provided, returning all routes (Owner view)");
     }
 
     const routeGroups = await Route.find(query);
@@ -193,12 +226,14 @@ app.get('/api/workers', async (req, res) => {
 });
 app.post('/api/workers', async (req, res) => {
   try {
+    console.log("POST /api/workers - Incoming data:", JSON.stringify(req.body, null, 2));
     const workerData = { ...req.body };
     if (workerData.username) {
       workerData.username = workerData.username.toLowerCase().trim();
     }
     const worker = new Worker(workerData);
     await worker.save();
+    console.log("POST /api/workers - Created worker:", worker.name, "with routes:", worker.assignedRoutes);
     res.status(201).json(worker);
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -206,8 +241,10 @@ app.post('/api/workers', async (req, res) => {
 });
 app.put('/api/workers/:id', async (req, res) => {
   try {
+    console.log("PUT /api/workers/:id - body:", req.body);
     const worker = await Worker.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (worker) {
+      console.log("Worker updated successfully:", worker.name, "assignedRoutes:", worker.assignedRoutes);
       res.json(worker);
     } else {
       res.status(404).json({ message: 'Worker not found' });
@@ -243,10 +280,13 @@ app.post('/api/login', async (req, res) => {
     });
 
     if (worker) {
+      console.log("Login successful for worker:", worker.username, "ID:", worker._id);
       return res.json({
         role: 'worker',
         name: worker.name,
-        id: worker.id,
+        id: worker._id, // Use _id explicitly to be safe
+        _id: worker._id,
+        username: worker.username,
         assignedRoutes: worker.assignedRoutes || []
       });
     }

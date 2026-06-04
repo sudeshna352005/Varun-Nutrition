@@ -40,15 +40,20 @@ const WorkerManagement = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log("Submitting worker data:", JSON.stringify(formData, null, 2));
     try {
       if (editingWorker) {
-        await api.put(`/api/workers/${editingWorker.id}`, formData);
+        const workerId = editingWorker.id || editingWorker._id;
+        console.log("Updating worker ID:", workerId);
+        const res = await api.put(`/api/workers/${workerId}`, formData);
+        console.log("Update response received:", JSON.stringify(res.data, null, 2));
       } else {
-        await api.post('/api/workers', formData);
+        const res = await api.post('/api/workers', formData);
+        console.log("Create response:", res.data);
       }
       setIsModalOpen(false);
       setEditingWorker(null);
-      setFormData({ name: '', username: '', password: '' });
+      setFormData({ name: '', username: '', password: '', assignedRoutes: [] });
       fetchWorkers();
     } catch (err) {
       console.error("Failed to save worker", err);
@@ -56,12 +61,13 @@ const WorkerManagement = () => {
   };
 
   const handleEdit = (worker) => {
+    console.log("Editing worker:", worker.name, "Current assignedRoutes:", worker.assignedRoutes);
     setEditingWorker(worker);
     setFormData({
       name: worker.name,
       username: worker.username,
       password: worker.password,
-      assignedRoutes: worker.assignedRoutes || []
+      assignedRoutes: Array.isArray(worker.assignedRoutes) ? [...worker.assignedRoutes] : []
     });
     setIsModalOpen(true);
   };
@@ -77,10 +83,11 @@ const WorkerManagement = () => {
     });
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (worker) => {
+    const workerId = worker.id || worker._id;
     if (window.confirm('Are you sure you want to delete this worker?')) {
       try {
-        await api.delete(`/api/workers/${id}`);
+        await api.delete(`/api/workers/${workerId}`);
         fetchWorkers();
       } catch (err) {
         console.error("Failed to delete worker", err);
@@ -118,9 +125,9 @@ const WorkerManagement = () => {
                 </tr>
               ) : (
                 workers.map((worker) => (
-                  <tr key={worker.id} className="hover:bg-slate-800/30 transition-colors">
+                  <tr key={worker.id || worker._id} className="hover:bg-slate-800/30 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <Link to={`/worker/${worker.id}`} className="flex items-center text-green-500 hover:text-green-400 font-bold">
+                      <Link to={`/worker/${worker.id || worker._id}`} className="flex items-center text-green-500 hover:text-green-400 font-bold">
                         <div className="w-8 h-8 bg-slate-800 rounded-full flex items-center justify-center mr-3 text-slate-400 border border-slate-700">
                           <User className="w-4 h-4" />
                         </div>
@@ -137,7 +144,7 @@ const WorkerManagement = () => {
                       <button onClick={() => handleEdit(worker)} className="text-blue-500 hover:text-blue-400 p-2 hover:bg-slate-800 rounded-lg transition-colors mr-2">
                         <Edit2 className="w-4 h-4" />
                       </button>
-                      <button onClick={() => handleDelete(worker.id)} className="text-red-500 hover:text-red-400 p-2 hover:bg-slate-800 rounded-lg transition-colors">
+                      <button onClick={() => handleDelete(worker)} className="text-red-500 hover:text-red-400 p-2 hover:bg-slate-800 rounded-lg transition-colors">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </td>

@@ -20,11 +20,14 @@ const WorkerDashboard = ({ user }) => {
   }, []);
 
   const fetchData = async () => {
+    const workerId = user.id || user._id;
+    console.log("Fetching data for worker dashboard, user ID:", workerId, "AssignedRoutes from user object:", user.assignedRoutes);
     const [shopsRes, routesRes, visitsRes] = await Promise.all([
-      api.get(`/api/shops?workerId=${user.id}`),
-      api.get(`/api/routes?workerId=${user.id}`),
+      api.get(`/api/shops?workerId=${workerId}`),
+      api.get(`/api/routes?workerId=${workerId}`),
       api.get('/api/visits')
     ]);
+    console.log("Dashboard fetch complete. Shops count:", shopsRes.data.length, "Routes count:", routesRes.data.length);
     setShops(shopsRes.data);
     setRoutes(routesRes.data);
     setVisitHistory(visitsRes.data.filter(v => v.workerName === user.name));
