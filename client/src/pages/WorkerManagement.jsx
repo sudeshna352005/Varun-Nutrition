@@ -1,21 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api';
-import { Plus, Edit2, Trash2, User, Lock, Mail } from 'lucide-react';
+import { Plus, Edit2, Trash2, User, Lock, Mail, MapPin } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const WorkerManagement = () => {
   const [workers, setWorkers] = useState([]);
+  const [routes, setRoutes] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingWorker, setEditingWorker] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
     username: '',
-    password: ''
+    password: '',
+    assignedRoutes: []
   });
 
   useEffect(() => {
     fetchWorkers();
+    fetchRoutes();
   }, []);
+
+  const fetchRoutes = async () => {
+    try {
+      const res = await api.get('/api/routes');
+      setRoutes(res.data);
+    } catch (err) {
+      console.error("Failed to fetch routes", err);
+    }
+  };
 
   const fetchWorkers = async () => {
     try {
@@ -48,9 +60,21 @@ const WorkerManagement = () => {
     setFormData({
       name: worker.name,
       username: worker.username,
-      password: worker.password
+      password: worker.password,
+      assignedRoutes: worker.assignedRoutes || []
     });
     setIsModalOpen(true);
+  };
+
+  const handleRouteChange = (routeName) => {
+    setFormData(prev => {
+      const currentRoutes = prev.assignedRoutes || [];
+      if (currentRoutes.includes(routeName)) {
+        return { ...prev, assignedRoutes: currentRoutes.filter(r => r !== routeName) };
+      } else {
+        return { ...prev, assignedRoutes: [...currentRoutes, routeName] };
+      }
+    });
   };
 
   const handleDelete = async (id) => {
@@ -171,6 +195,26 @@ const WorkerManagement = () => {
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Assign Routes</label>
+                  <div className="grid grid-cols-2 gap-3 mt-2 max-h-40 overflow-y-auto p-2 bg-slate-800 rounded-xl border border-slate-700">
+                    {routes.map(route => (
+                      <label key={route.id} className="flex items-center gap-3 cursor-pointer group">
+                        <input
+                          type="checkbox"
+                          className="size-4 rounded border-slate-600 bg-slate-700 text-green-500 focus:ring-offset-slate-900"
+                          checked={formData.assignedRoutes.includes(route.name)}
+                          onChange={() => handleRouteChange(route.name)}
+                        />
+                        <span className="text-sm text-slate-300 group-hover:text-white transition-colors flex items-center gap-2">
+                          <MapPin size={14} className="text-slate-500" /> {route.name}
+                        </span>
+                      </label>
+                    ))}
+                    {routes.length === 0 && <p className="text-xs text-slate-500 italic col-span-2">No routes found.</p>}
                   </div>
                 </div>
               </div>

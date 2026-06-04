@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api';
-import { MapPin, CheckCircle, ChevronRight, MessageSquare, ExternalLink, Info } from 'lucide-react';
+import { MapPin, CheckCircle, ChevronRight, MessageSquare, ExternalLink, Info, Search } from 'lucide-react';
 
 const WorkerDashboard = ({ user }) => {
   const [shops, setShops] = useState([]);
@@ -10,6 +10,9 @@ const WorkerDashboard = ({ user }) => {
   const [notes, setNotes] = useState('');
   const [photo, setPhoto] = useState(null);
   const [visitHistory, setVisitHistory] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const assignedRoutes = user.assignedRoutes || [];
 
   useEffect(() => {
     fetchData();
@@ -18,8 +21,8 @@ const WorkerDashboard = ({ user }) => {
 
   const fetchData = async () => {
     const [shopsRes, routesRes, visitsRes] = await Promise.all([
-      api.get('/api/shops'),
-      api.get('/api/routes'),
+      api.get(`/api/shops?workerId=${user.id}`),
+      api.get(`/api/routes?workerId=${user.id}`),
       api.get('/api/visits')
     ]);
     setShops(shopsRes.data);
@@ -72,9 +75,22 @@ if (photo) {
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-4xl font-extrabold text-white tracking-tight">Welcome, {user.name}</h1>
-        <p className="text-slate-500">Here are your assigned routes and shops for today.</p>
+      <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+          <h1 className="text-4xl font-extrabold text-white tracking-tight">Welcome, {user.name}</h1>
+          <p className="text-slate-500">Here are your assigned routes and shops for today.</p>
+        </div>
+
+        <div className="relative w-full md:w-80">
+          <Search className="absolute left-4 top-3.5 h-5 w-5 text-slate-500" />
+          <input
+            type="text"
+            placeholder="Search routes or shops..."
+            className="pl-12 block w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-green-500 outline-none transition-all placeholder-slate-600 shadow-xl"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
       </div>
 
       {!isWorking && (
@@ -88,8 +104,22 @@ if (photo) {
       )}
 
       <div className="space-y-12">
-        {routes.map(route => {
-          const routeShops = shops.filter(s => s.routeGroup === route.name);
+        {routes
+          .filter(route => {
+            const routeMatches = route.name.toLowerCase().includes(searchQuery.toLowerCase());
+            const shopMatches = shops.some(s => s.routeGroup === route.name && s.name.toLowerCase().includes(searchQuery.toLowerCase()));
+            return routeMatches || shopMatches;
+          })
+          .map(route => {
+          let routeShops = shops.filter(s => s.routeGroup === route.name);
+
+          if (searchQuery) {
+            const routeMatches = route.name.toLowerCase().includes(searchQuery.toLowerCase());
+            if (!routeMatches) {
+               routeShops = routeShops.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase()));
+            }
+          }
+
           if (routeShops.length === 0) return null;
 
           return (

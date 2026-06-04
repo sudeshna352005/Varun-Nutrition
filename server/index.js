@@ -103,7 +103,20 @@ app.get('/api/health', (req, res) => {
 // Routes
 app.get('/api/shops', async (req, res) => {
   try {
-    const shops = await Shop.find();
+    const { workerId } = req.query;
+    let query = {};
+
+    if (workerId) {
+      const worker = await Worker.findById(workerId);
+      if (worker && worker.assignedRoutes && worker.assignedRoutes.length > 0) {
+        query.routeGroup = { $in: worker.assignedRoutes };
+      } else if (worker) {
+        // If worker has no routes assigned, they see nothing
+        return res.json([]);
+      }
+    }
+
+    const shops = await Shop.find(query);
     res.json(shops);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -141,7 +154,19 @@ app.delete('/api/shops/:id', async (req, res) => {
 
 app.get('/api/routes', async (req, res) => {
   try {
-    const routeGroups = await Route.find();
+    const { workerId } = req.query;
+    let query = {};
+
+    if (workerId) {
+      const worker = await Worker.findById(workerId);
+      if (worker && worker.assignedRoutes && worker.assignedRoutes.length > 0) {
+        query.name = { $in: worker.assignedRoutes };
+      } else if (worker) {
+        return res.json([]);
+      }
+    }
+
+    const routeGroups = await Route.find(query);
     res.json(routeGroups);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -218,7 +243,12 @@ app.post('/api/login', async (req, res) => {
     });
 
     if (worker) {
-      return res.json({ role: 'worker', name: worker.name, id: worker.id });
+      return res.json({
+        role: 'worker',
+        name: worker.name,
+        id: worker.id,
+        assignedRoutes: worker.assignedRoutes || []
+      });
     }
 
     res.status(401).json({ message: 'Invalid username or password' });
