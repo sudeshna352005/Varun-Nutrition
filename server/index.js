@@ -1,10 +1,17 @@
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const fs = require('fs');
 const path = require('path');
 const mongoose = require('mongoose');
 require('dotenv').config();
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
 
 const Shop = require('./models/Shop');
 const Route = require('./models/Route');
@@ -60,22 +67,15 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 
 
-const uploadsDir = path.join(__dirname, 'uploads');
-
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-// Multer setup for simulated photo upload
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, uploadsDir);
-  },
-
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + '-' + file.originalname);
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'varun-nutrition',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp']
   }
 });
-const upload = multer({ storage: storage });
+
+const upload = multer({ storage });
 
 // Routes
 app.get('/api/shops', async (req, res) => {
@@ -151,7 +151,7 @@ app.post('/api/login', async (req, res) => {
 app.post('/api/attendance/start', upload.single('photo'), async (req, res) => {
   const entry = new Attendance({
     workerName: req.body.workerName,
-    photo: req.file ? `uploads/${req.file.filename}` : null,
+    photo: req.file ? req.file.path : null,
     status: 'working'
   });
   await entry.save();
@@ -181,7 +181,7 @@ app.post('/api/visits', upload.single('photo'), async (req, res) => {
     shopName: req.body.shopName,
     workerName: req.body.workerName,
     notes: req.body.notes,
-    photo: req.file ? `uploads/${req.file.filename}` : null
+    photo: req.file ? req.file.path : null
   });
 
   await visit.save();
