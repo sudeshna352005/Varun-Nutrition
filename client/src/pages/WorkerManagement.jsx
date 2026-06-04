@@ -76,28 +76,28 @@ const WorkerManagement = () => {
         </button>
       </div>
 
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl shadow-xl overflow-hidden">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-zinc-800">
-            <thead className="bg-zinc-800/50">
+            <thead className="bg-slate-800/50">
               <tr>
-                <th className="px-6 py-4 text-left text-xs font-bold text-zinc-400 uppercase tracking-widest">Name</th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-zinc-400 uppercase tracking-widest">Username</th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-zinc-400 uppercase tracking-widest">Password</th>
-                <th className="px-6 py-4 text-right text-xs font-bold text-zinc-400 uppercase tracking-widest">Actions</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-widest">Name</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-widest">Username</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-widest">Password</th>
+                <th className="px-6 py-4 text-right text-xs font-bold text-slate-400 uppercase tracking-widest">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800">
               {workers.length === 0 ? (
                 <tr>
-                  <td colSpan="4" className="px-6 py-10 text-center text-zinc-500 italic">No workers found.</td>
+                  <td colSpan="4" className="px-6 py-10 text-center text-slate-500 italic">No workers found.</td>
                 </tr>
               ) : (
                 workers.map((worker) => (
-                  <tr key={worker.id} className="hover:bg-zinc-800/30 transition-colors">
+                  <tr key={worker.id} className="hover:bg-slate-800/30 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <Link to={`/worker/${worker.id}`} className="flex items-center text-green-500 hover:text-green-400 font-bold">
-                        <div className="w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center mr-3 text-zinc-400 border border-zinc-700">
+                        <div className="w-8 h-8 bg-slate-800 rounded-full flex items-center justify-center mr-3 text-slate-400 border border-slate-700">
                           <User className="w-4 h-4" />
                         </div>
                         {worker.name}
@@ -106,14 +106,14 @@ const WorkerManagement = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-300 font-medium">
                       {worker.username}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
                       ••••••••
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button onClick={() => handleEdit(worker)} className="text-blue-500 hover:text-blue-400 p-2 hover:bg-zinc-800 rounded-lg transition-colors mr-2">
+                      <button onClick={() => handleEdit(worker)} className="text-blue-500 hover:text-blue-400 p-2 hover:bg-slate-800 rounded-lg transition-colors mr-2">
                         <Edit2 className="w-4 h-4" />
                       </button>
-                      <button onClick={() => handleDelete(worker.id)} className="text-red-500 hover:text-red-400 p-2 hover:bg-zinc-800 rounded-lg transition-colors">
+                      <button onClick={() => handleDelete(worker.id)} className="text-red-500 hover:text-red-400 p-2 hover:bg-slate-800 rounded-lg transition-colors">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </td>
@@ -127,18 +127,18 @@ const WorkerManagement = () => {
 
       {isModalOpen && (
         <div className="fixed inset-0 bg-zinc-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-10 w-full max-w-md shadow-2xl">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-10 w-full max-w-md shadow-2xl">
             <h2 className="text-2xl font-bold mb-6 text-white">{editingWorker ? 'Edit Worker' : 'Add New Worker'}</h2>
             <form onSubmit={handleSubmit}>
               <div className="space-y-5">
                 <div>
-                  <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Full Name</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Full Name</label>
                   <div className="relative">
-                    <User className="absolute left-4 top-3.5 h-5 w-5 text-zinc-500" />
+                    <User className="absolute left-4 top-3.5 h-5 w-5 text-slate-500" />
                     <input
                       type="text"
                       required
-                      className="pl-12 block w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-green-500 outline-none transition-all"
+                      className="pl-12 block w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-green-500 outline-none transition-all"
                       placeholder="e.g. John Doe"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -146,13 +146,13 @@ const WorkerManagement = () => {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Username</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Username</label>
                   <div className="relative">
-                    <Mail className="absolute left-4 top-3.5 h-5 w-5 text-zinc-500" />
+                    <Mail className="absolute left-4 top-3.5 h-5 w-5 text-slate-500" />
                     <input
                       type="text"
                       required
-                      className="pl-12 block w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-green-500 outline-none transition-all"
+                      className="pl-12 block w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-green-500 outline-none transition-all"
                       placeholder="e.g. john_doe"
                       value={formData.username}
                       onChange={(e) => setFormData({ ...formData, username: e.target.value })}
@@ -160,13 +160,13 @@ const WorkerManagement = () => {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Password</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Password</label>
                   <div className="relative">
-                    <Lock className="absolute left-4 top-3.5 h-5 w-5 text-zinc-500" />
+                    <Lock className="absolute left-4 top-3.5 h-5 w-5 text-slate-500" />
                     <input
                       type="password"
                       required
-                      className="pl-12 block w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-green-500 outline-none transition-all"
+                      className="pl-12 block w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-green-500 outline-none transition-all"
                       placeholder="••••••••"
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
@@ -178,7 +178,7 @@ const WorkerManagement = () => {
                 <button
                   type="button"
                   onClick={() => { setIsModalOpen(false); setEditingWorker(null); }}
-                  className="flex-1 px-6 py-3 bg-zinc-800 text-zinc-400 font-bold rounded-xl hover:bg-zinc-700 transition-all"
+                  className="flex-1 px-6 py-3 bg-slate-800 text-slate-400 font-bold rounded-xl hover:bg-zinc-700 transition-all"
                 >
                   Cancel
                 </button>

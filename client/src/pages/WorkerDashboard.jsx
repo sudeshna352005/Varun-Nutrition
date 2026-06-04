@@ -74,7 +74,7 @@ if (photo) {
     <div>
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-white">Welcome, {user.name}</h1>
-        <p className="text-zinc-500">Here are your assigned routes and shops for today.</p>
+        <p className="text-slate-500">Here are your assigned routes and shops for today.</p>
       </div>
 
       {!isWorking && (
@@ -101,13 +101,13 @@ if (photo) {
                 {routeShops.map(shop => (
                   <div 
                     key={shop.id} 
-                    className={`bg-zinc-900 p-6 rounded-2xl shadow-lg border border-zinc-800 flex justify-between items-center transition-all ${
-                      hasVisitedToday(shop.name) ? 'opacity-40' : 'hover:border-zinc-700'
+                    className={`bg-slate-900 p-6 rounded-2xl shadow-lg border border-slate-800 flex justify-between items-center transition-all ${
+                      hasVisitedToday(shop.name) ? 'opacity-40' : 'hover:border-slate-700'
                     }`}
                   >
                     <div>
                       <h3 className="text-lg font-bold text-white mb-1">{shop.name}</h3>
-                      <p className="text-sm text-zinc-500 mb-3">{shop.address}</p>
+                      <p className="text-sm text-slate-500 mb-3">{shop.address}</p>
                       {shop.mapsLink && (
                         <a href={shop.mapsLink} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:text-blue-400 flex items-center transition-colors">
                           <ExternalLink className="w-3 h-3 mr-1" /> View Map
@@ -127,7 +127,7 @@ if (photo) {
                           className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${
                             isWorking 
                             ? 'bg-green-600 text-zinc-900 hover:bg-green-500 shadow-lg shadow-green-600/20'
-                            : 'bg-zinc-800 text-zinc-600 cursor-not-allowed border border-zinc-700'
+                            : 'bg-slate-800 text-zinc-600 cursor-not-allowed border border-slate-700'
                           }`}
                         >
                           Mark Visit
@@ -144,31 +144,31 @@ if (photo) {
 
       {selectedShop && (
         <div className="fixed inset-0 bg-zinc-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 w-full max-w-md shadow-2xl">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 w-full max-w-md shadow-2xl">
             <h2 className="text-2xl font-bold mb-2 text-white">Visit: {selectedShop.name}</h2>
-            <p className="text-zinc-500 text-sm mb-6 uppercase tracking-wider font-bold">Log visit details</p>
+            <p className="text-slate-500 text-sm mb-6 uppercase tracking-wider font-bold">Log visit details</p>
             
             <textarea
               placeholder="e.g., Stock checked, order placed for 50 units."
-              className="w-full bg-zinc-800 border border-zinc-700 rounded-xl p-4 h-32 mb-6 focus:ring-2 focus:ring-green-500 outline-none text-white placeholder-zinc-600 transition-all"
+              className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 h-32 mb-6 focus:ring-2 focus:ring-green-500 outline-none text-white placeholder-zinc-600 transition-all"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
             />
             
             <div className="mb-8">
-              <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Attached Photo</label>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Attached Photo</label>
               <input
                 type="file"
                 accept="image/*"
                 onChange={(e) => setPhoto(e.target.files[0])}
-                className="w-full text-sm text-zinc-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-zinc-800 file:text-zinc-300 hover:file:bg-zinc-700 transition-all cursor-pointer"
+                className="w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-slate-800 file:text-zinc-300 hover:file:bg-zinc-700 transition-all cursor-pointer"
               />
             </div>
 
             <div className="flex gap-4">
               <button
                 onClick={() => setSelectedShop(null)}
-                className="flex-1 px-6 py-3 bg-zinc-800 text-zinc-400 font-bold rounded-xl hover:bg-zinc-700 transition-all"
+                className="flex-1 px-6 py-3 bg-slate-800 text-slate-400 font-bold rounded-xl hover:bg-zinc-700 transition-all"
               >
                 Cancel
               </button>
