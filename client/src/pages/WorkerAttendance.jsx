@@ -45,9 +45,9 @@ const WorkerAttendance = ({ user }) => {
 
   return (
     <div className="max-w-md mx-auto pt-10">
-      <h1 className="text-3xl font-bold mb-10 text-center text-white">Attendance</h1>
+      <h1 className="text-4xl font-extrabold mb-10 text-center text-white tracking-tight">Attendance</h1>
       
-      <div className="bg-zinc-900 border border-zinc-800 p-10 rounded-3xl shadow-2xl text-center">
+      <div className="bg-slate-900 border border-slate-800 p-10 rounded-3xl shadow-2xl text-center">
         {session ? (
           <div>
             <div className="w-24 h-24 bg-green-500/10 border border-green-500/20 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner shadow-green-500/20">
@@ -56,24 +56,24 @@ const WorkerAttendance = ({ user }) => {
               </div>
             </div>
             <h2 className="text-2xl font-bold text-white mb-2">Work in Progress</h2>
-            <p className="text-zinc-500 text-sm mb-10 uppercase tracking-widest font-bold">Started at {new Date(session.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+            <p className="text-slate-500 text-sm mb-10 uppercase tracking-widest font-bold">Started at {new Date(session.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
             <button
               onClick={handleEndWork}
-              className="w-full bg-zinc-800 border border-red-500/50 text-red-500 py-4 rounded-2xl font-bold flex items-center justify-center hover:bg-red-500 hover:text-zinc-900 transition-all shadow-lg"
+              className="w-full bg-slate-800 border border-red-500/50 text-red-500 py-4 rounded-2xl font-bold flex items-center justify-center hover:bg-red-500 hover:text-zinc-900 transition-all shadow-lg"
             >
               <Square className="w-5 h-5 mr-3" fill="currentColor" /> Mark End Work
             </button>
           </div>
         ) : (
           <div>
-            <div className="w-24 h-24 bg-zinc-800 border border-zinc-700 rounded-full flex items-center justify-center mx-auto mb-8 text-green-500">
+            <div className="w-24 h-24 bg-slate-800 border border-slate-700 rounded-full flex items-center justify-center mx-auto mb-8 text-green-500">
               <Camera className="w-10 h-10" />
             </div>
             <h2 className="text-2xl font-bold text-white mb-2">Start Your Shift</h2>
-            <p className="text-zinc-500 text-sm mb-10 uppercase tracking-widest font-bold">Identity verification required</p>
+            <p className="text-slate-500 text-sm mb-10 uppercase tracking-widest font-bold">Identity verification required</p>
             
             <div className="mb-10">
-              <label className="block w-full bg-zinc-800/50 border-2 border-dashed border-zinc-700 rounded-2xl p-6 cursor-pointer hover:border-green-500/50 hover:bg-zinc-800 transition-all group">
+              <label className="block w-full bg-slate-800/50 border-2 border-dashed border-slate-700 rounded-2xl p-6 cursor-pointer hover:border-green-500/50 hover:bg-slate-800 transition-all group">
                 <input
                   type="file"
                   accept="image/*"
@@ -83,7 +83,7 @@ const WorkerAttendance = ({ user }) => {
                 />
                 <div className="flex flex-col items-center">
                   <Camera className="w-8 h-8 text-zinc-600 mb-2 group-hover:text-green-500 transition-colors" />
-                  <span className="text-sm font-medium text-zinc-400 group-hover:text-zinc-200 transition-colors">
+                  <span className="text-sm font-medium text-slate-400 group-hover:text-zinc-200 transition-colors">
                     {photo ? photo.name : 'Take a selfie to begin'}
                   </span>
                 </div>

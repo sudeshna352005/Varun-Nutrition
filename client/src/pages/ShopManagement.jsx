@@ -59,7 +59,7 @@ const ShopManagement = () => {
   return (
     <div>
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-white">Shop Management</h1>
+        <h1 className="text-4xl font-extrabold text-white tracking-tight">Shop Management</h1>
         <button
           onClick={() => setIsModalOpen(true)}
           className="bg-green-600 text-zinc-900 px-6 py-2 rounded-xl font-bold flex items-center hover:bg-green-500 transition-all shadow-lg shadow-green-600/20"
@@ -69,28 +69,28 @@ const ShopManagement = () => {
       </div>
 
       {shops.length === 0 ? (
-        <div className="bg-zinc-900 p-20 text-center rounded-2xl border-2 border-dashed border-zinc-800">
+        <div className="bg-slate-900 p-20 text-center rounded-2xl border-2 border-dashed border-slate-800">
           <Store className="w-16 h-16 mx-auto text-zinc-700 mb-6" />
-          <p className="text-xl text-zinc-500 font-medium">No shops added yet.</p>
+          <p className="text-xl text-slate-500 font-medium">No shops added yet.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {shops.map((shop) => (
-            <div key={shop.id} className="bg-zinc-900 p-8 rounded-2xl border border-zinc-800 relative group hover:border-zinc-700 transition-all shadow-xl">
+            <div key={shop.id} className="bg-slate-900 p-8 rounded-2xl border border-slate-800 relative group hover:border-slate-700 transition-all shadow-xl">
               <div className="absolute top-6 right-6 space-x-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onClick={() => handleEdit(shop)} className="text-blue-500 hover:text-blue-400 p-2 bg-zinc-800 rounded-lg">
+                <button onClick={() => handleEdit(shop)} className="text-blue-500 hover:text-blue-400 p-2 bg-slate-800 rounded-lg">
                   <Edit2 className="w-4 h-4" />
                 </button>
-                <button onClick={() => handleDelete(shop.id)} className="text-red-500 hover:text-red-400 p-2 bg-zinc-800 rounded-lg">
+                <button onClick={() => handleDelete(shop.id)} className="text-red-500 hover:text-red-400 p-2 bg-slate-800 rounded-lg">
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
               <h3 className="text-xl font-bold text-white mb-4 pr-16">{shop.name}</h3>
-              <div className="space-y-3 text-zinc-400">
+              <div className="space-y-3 text-zinc-300">
                 <p className="flex items-start text-sm"><MapPin className="w-4 h-4 mr-3 text-green-500 flex-shrink-0 mt-1" /> {shop.address}</p>
                 <p className="flex items-center text-sm"><Phone className="w-4 h-4 mr-3 text-blue-500 flex-shrink-0" /> {shop.phone}</p>
                 <div className="pt-2">
-                  <span className="inline-block px-3 py-1 bg-zinc-800 text-zinc-300 border border-zinc-700 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                  <span className="inline-block px-3 py-1 bg-slate-800 text-zinc-200 border border-slate-700 rounded-full text-[10px] font-bold uppercase tracking-wider">
                     {shop.routeGroup}
                   </span>
                 </div>
@@ -112,56 +112,56 @@ const ShopManagement = () => {
 
       {isModalOpen && (
         <div className="fixed inset-0 bg-zinc-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-10 w-full max-w-md shadow-2xl">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-10 w-full max-w-md shadow-2xl">
             <h2 className="text-2xl font-bold mb-6 text-white">{editingShop ? 'Edit Shop' : 'Add New Shop'}</h2>
             <form onSubmit={handleSubmit}>
               <div className="space-y-5">
                 <div>
-                  <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Shop Name</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Shop Name</label>
                   <input
                     type="text"
                     required
-                    className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-green-500 outline-none transition-all"
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-green-500 outline-none transition-all"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Address</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Address</label>
                   <textarea
                     required
-                    className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-green-500 outline-none transition-all h-24"
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-green-500 outline-none transition-all h-24"
                     value={formData.address}
                     onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Phone</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Phone</label>
                   <input
                     type="text"
                     required
-                    className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-green-500 outline-none transition-all"
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-green-500 outline-none transition-all"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Route Group</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Route Group</label>
                   <select
                     required
-                    className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-green-500 outline-none transition-all appearance-none"
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-green-500 outline-none transition-all appearance-none"
                     value={formData.routeGroup}
                     onChange={(e) => setFormData({ ...formData, routeGroup: e.target.value })}
                   >
-                    <option value="" className="bg-zinc-900">Select a route</option>
-                    {routes.map(r => <option key={r.id} value={r.name} className="bg-zinc-900">{r.name}</option>)}
+                    <option value="" className="bg-slate-900">Select a route</option>
+                    {routes.map(r => <option key={r.id} value={r.name} className="bg-slate-900">{r.name}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Google Maps Link</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Google Maps Link</label>
                   <input
                     type="url"
-                    className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-green-500 outline-none transition-all"
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-green-500 outline-none transition-all"
                     value={formData.mapsLink}
                     onChange={(e) => setFormData({ ...formData, mapsLink: e.target.value })}
                   />
@@ -171,7 +171,7 @@ const ShopManagement = () => {
                 <button
                   type="button"
                   onClick={() => { setIsModalOpen(false); setEditingShop(null); }}
-                  className="flex-1 px-6 py-3 bg-zinc-800 text-zinc-400 font-bold rounded-xl hover:bg-zinc-700 transition-all"
+                  className="flex-1 px-6 py-3 bg-slate-800 text-slate-400 font-bold rounded-xl hover:bg-zinc-700 transition-all"
                 >
                   Cancel
                 </button>

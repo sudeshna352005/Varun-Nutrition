@@ -6,6 +6,8 @@ const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const fs = require('fs');
 const path = require('path');
 const mongoose = require('mongoose');
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 require('dotenv').config();
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -23,12 +25,21 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI;
 
-mongoose.connect(MONGO_URI)
+if (!MONGO_URI) {
+  console.error('FATAL ERROR: MONGO_URI is not defined in environment variables.');
+}
+
+mongoose.connect(MONGO_URI || 'mongodb://localhost:27017/varun-nutrition', {
+  serverSelectionTimeoutMS: 5000,
+  socketTimeoutMS: 45000,
+})
   .then(async () => {
-    console.log('Connected to MongoDB Atlas');
+    console.log('Successfully connected to MongoDB.');
     await seedData();
   })
-  .catch(err => console.error('MongoDB connection error:', err));
+  .catch(err => {
+    console.error('CRITICAL: MongoDB connection failed:', err.message);
+  });
 
 async function seedData() {
   const shopCount = await Shop.countDocuments();
@@ -58,14 +69,24 @@ async function seedData() {
   if (workerCount === 0) {
     await Worker.create({ name: 'Sales Worker', username: 'worker', password: 'worker123' });
     console.log('Initial worker seeded');
+  } else {
+    // Ensure the default worker exists or update it to be lowercase
+    const worker = await Worker.findOne({ username: 'worker' });
+    if (!worker) {
+      await Worker.create({ name: 'Sales Worker', username: 'worker', password: 'worker123' });
+    }
   }
 }
 
 app.use(cors());
 app.use(express.json());
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-
+// Cloudinary configuration
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
 
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
@@ -77,123 +98,205 @@ const storage = new CloudinaryStorage({
 
 const upload = multer({ storage });
 
+// Health check
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+    timestamp: new Date()
+  });
+});
+
 // Routes
 app.get('/api/shops', async (req, res) => {
-  const shops = await Shop.find();
-  res.json(shops);
+  try {
+    const shops = await Shop.find();
+    res.json(shops);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 });
 app.post('/api/shops', async (req, res) => {
-  const shop = new Shop(req.body);
-  await shop.save();
-  res.status(201).json(shop);
+  try {
+    const shop = new Shop(req.body);
+    await shop.save();
+    res.status(201).json(shop);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
 });
 app.put('/api/shops/:id', async (req, res) => {
-  const shop = await Shop.findByIdAndUpdate(req.params.id, req.body, { new: true });
-  if (shop) {
-    res.json(shop);
-  } else {
-    res.status(404).json({ message: 'Shop not found' });
+  try {
+    const shop = await Shop.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (shop) {
+      res.json(shop);
+    } else {
+      res.status(404).json({ message: 'Shop not found' });
+    }
+  } catch (err) {
+    res.status(400).json({ message: err.message });
   }
 });
 app.delete('/api/shops/:id', async (req, res) => {
-  await Shop.findByIdAndDelete(req.params.id);
-  res.status(204).send();
+  try {
+    await Shop.findByIdAndDelete(req.params.id);
+    res.status(204).send();
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 });
 
 app.get('/api/routes', async (req, res) => {
-  const routeGroups = await Route.find();
-  res.json(routeGroups);
+  try {
+    const routeGroups = await Route.find();
+    res.json(routeGroups);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 });
 app.post('/api/routes', async (req, res) => {
-  const route = new Route(req.body);
-  await route.save();
-  res.status(201).json(route);
+  try {
+    const route = new Route(req.body);
+    await route.save();
+    res.status(201).json(route);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
 });
 
 // Workers API
 app.get('/api/workers', async (req, res) => {
-  const workersList = await Worker.find();
-  res.json(workersList);
+  try {
+    const workersList = await Worker.find();
+    res.json(workersList);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 });
 app.post('/api/workers', async (req, res) => {
-  const worker = new Worker(req.body);
-  await worker.save();
-  res.status(201).json(worker);
+  try {
+    const workerData = { ...req.body };
+    if (workerData.username) {
+      workerData.username = workerData.username.toLowerCase().trim();
+    }
+    const worker = new Worker(workerData);
+    await worker.save();
+    res.status(201).json(worker);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
 });
 app.put('/api/workers/:id', async (req, res) => {
-  const worker = await Worker.findByIdAndUpdate(req.params.id, req.body, { new: true });
-  if (worker) {
-    res.json(worker);
-  } else {
-    res.status(404).json({ message: 'Worker not found' });
+  try {
+    const worker = await Worker.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (worker) {
+      res.json(worker);
+    } else {
+      res.status(404).json({ message: 'Worker not found' });
+    }
+  } catch (err) {
+    res.status(400).json({ message: err.message });
   }
 });
 app.delete('/api/workers/:id', async (req, res) => {
-  await Worker.findByIdAndDelete(req.params.id);
-  res.status(204).send();
+  try {
+    await Worker.findByIdAndDelete(req.params.id);
+    res.status(204).send();
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 });
 
 app.post('/api/login', async (req, res) => {
-  const { username, password } = req.body;
+  try {
+    const { username, password } = req.body;
 
-  if (username === 'owner' && password === 'owner123') {
-    return res.json({ role: 'owner', name: 'Varun Owner' });
+    if (username === 'owner' && password === 'owner123') {
+      return res.json({ role: 'owner', name: 'Varun Owner' });
+    }
+
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({ message: 'Database connection is not ready. Please try again in a moment.' });
+    }
+
+    const worker = await Worker.findOne({
+      username: username.toLowerCase().trim(),
+      password: password
+    });
+
+    if (worker) {
+      return res.json({ role: 'worker', name: worker.name, id: worker.id });
+    }
+
+    res.status(401).json({ message: 'Invalid username or password' });
+  } catch (err) {
+    res.status(500).json({ message: 'An internal error occurred during login' });
   }
-
-  const worker = await Worker.findOne({ username, password });
-  if (worker) {
-    return res.json({ role: 'worker', name: worker.name, id: worker._id });
-  }
-
-  res.status(401).json({ message: 'Invalid credentials' });
 });
 
 app.post('/api/attendance/start', upload.single('photo'), async (req, res) => {
-  const entry = new Attendance({
-    workerName: req.body.workerName,
-    photo: req.file ? req.file.path : null,
-    status: 'working'
-  });
-  await entry.save();
-  res.status(201).json(entry);
+  try {
+    const entry = new Attendance({
+      workerName: req.body.workerName,
+      photo: req.file ? req.file.path : null,
+      status: 'working'
+    });
+    await entry.save();
+    res.status(201).json(entry);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
 });
 
 app.post('/api/attendance/end', async (req, res) => {
-  const entry = await Attendance.findOne({ workerName: req.body.workerName, status: 'working' });
-  if (entry) {
-    entry.endTime = new Date();
-    entry.status = 'completed';
-    await entry.save();
-    res.json(entry);
-  } else {
-    res.status(404).json({ message: 'Active session not found' });
+  try {
+    const entry = await Attendance.findOne({ workerName: req.body.workerName, status: 'working' });
+    if (entry) {
+      entry.endTime = new Date();
+      entry.status = 'completed';
+      await entry.save();
+      res.json(entry);
+    } else {
+      res.status(404).json({ message: 'Active session not found' });
+    }
+  } catch (err) {
+    res.status(400).json({ message: err.message });
   }
 });
 
 app.get('/api/attendance', async (req, res) => {
-  const attendance = await Attendance.find();
-  res.json(attendance);
+  try {
+    const attendance = await Attendance.find();
+    res.json(attendance);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 });
 
 app.post('/api/visits', upload.single('photo'), async (req, res) => {
-
-  const visit = new Visit({
-    shopName: req.body.shopName,
-    workerName: req.body.workerName,
-    notes: req.body.notes,
-photo: req.file ? req.file.path : null
-  });
-
-  await visit.save();
-
-  res.status(201).json(visit);
+  try {
+    const visit = new Visit({
+      shopName: req.body.shopName,
+      workerName: req.body.workerName,
+      notes: req.body.notes,
+      photo: req.file ? req.file.path : null
+    });
+    await visit.save();
+    res.status(201).json(visit);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
 });
 
 app.get('/api/visits', async (req, res) => {
-  const visits = await Visit.find();
-  res.json(visits);
+  try {
+    const visits = await Visit.find();
+    res.json(visits);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server is running on port ${PORT}`);
 });
