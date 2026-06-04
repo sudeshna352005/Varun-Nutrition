@@ -29,7 +29,7 @@ const AttendanceView = () => {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-8 text-white">Worker Attendance</h1>
+      <h1 className="text-4xl font-extrabold mb-8 text-white tracking-tight">Worker Attendance</h1>
       <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-zinc-800">

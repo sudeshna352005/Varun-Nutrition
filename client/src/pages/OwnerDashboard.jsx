@@ -66,7 +66,7 @@ const OwnerDashboard = () => {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-8 text-white">Owner Dashboard</h1>
+      <h1 className="text-4xl font-extrabold mb-8 text-white tracking-tight">Owner Dashboard</h1>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {cards.map((card) => (
           <div key={card.name} className="bg-slate-900 border border-slate-800 rounded-2xl shadow-lg overflow-hidden">

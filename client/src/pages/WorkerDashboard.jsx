@@ -73,7 +73,7 @@ if (photo) {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white">Welcome, {user.name}</h1>
+        <h1 className="text-4xl font-extrabold text-white tracking-tight">Welcome, {user.name}</h1>
         <p className="text-slate-500">Here are your assigned routes and shops for today.</p>
       </div>
 

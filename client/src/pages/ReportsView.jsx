@@ -133,7 +133,7 @@ const ReportsView = () => {
     <div className="space-y-8">
       {/* Header & Main Actions */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 no-print">
-        <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+        <h1 className="text-4xl font-extrabold text-white tracking-tight flex items-center gap-3">
           <ClipboardList className="text-green-500" /> Visit Reports
         </h1>
         <div className="flex flex-wrap items-center gap-3">

@@ -32,7 +32,7 @@ const RouteManagement = () => {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-8 text-white">Route Management</h1>
+      <h1 className="text-4xl font-extrabold mb-8 text-white tracking-tight">Route Management</h1>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
         <div className="md:col-span-1 space-y-8">

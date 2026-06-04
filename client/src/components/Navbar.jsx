@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X, LogOut, LayoutDashboard, Store, MapPin, ClipboardList, UserCheck, Users } from 'lucide-react';
+import Brand from './Brand';
 
 const Navbar = ({ user, onLogout }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -28,7 +29,7 @@ const Navbar = ({ user, onLogout }) => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">
-            <span className="font-bold text-xl">Varun Nutritions</span>
+            <Brand size="sm" />
           </div>
           
           <div className="hidden md:block">

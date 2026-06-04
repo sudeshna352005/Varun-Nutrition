@@ -55,7 +55,7 @@ const WorkerProfile = () => {
             <User size={48} strokeWidth={2.5} />
           </div>
           <div className="text-center md:text-left flex-1">
-            <h1 className="text-3xl font-extrabold mb-1 tracking-tight">{worker.name}</h1>
+            <h1 className="text-5xl font-extrabold mb-2 tracking-tighter">{worker.name}</h1>
             <p className="text-slate-400 flex items-center justify-center md:justify-start gap-2 font-medium">
               <Mail size={16} className="text-green-500" /> {worker.username}
             </p>

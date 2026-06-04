@@ -66,8 +66,8 @@ const WorkerManagement = () => {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Worker Management</h1>
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-4xl font-extrabold text-white tracking-tight">Worker Management</h1>
         <button
           onClick={() => setIsModalOpen(true)}
           className="bg-green-600 text-white px-4 py-2 rounded-md flex items-center hover:bg-green-700 transition"

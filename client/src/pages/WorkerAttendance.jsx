@@ -45,7 +45,7 @@ const WorkerAttendance = ({ user }) => {
 
   return (
     <div className="max-w-md mx-auto pt-10">
-      <h1 className="text-3xl font-bold mb-10 text-center text-white">Attendance</h1>
+      <h1 className="text-4xl font-extrabold mb-10 text-center text-white tracking-tight">Attendance</h1>
       
       <div className="bg-slate-900 border border-slate-800 p-10 rounded-3xl shadow-2xl text-center">
         {session ? (
