@@ -69,6 +69,16 @@ async function seedData() {
       await Worker.create({ name: 'Sales Worker', username: 'worker', password: 'worker123' });
     }
   }
+
+  const visitCount = await Visit.countDocuments();
+  if (visitCount === 0) {
+    await Visit.insertMany([
+      { shopName: 'Cauvery Stores', workerName: 'Sales Worker', notes: 'Mock visit 1', timestamp: new Date() },
+      { shopName: 'Layout Provisions', workerName: 'Sales Worker', notes: 'Mock visit 2', timestamp: new Date() },
+      { shopName: 'Sagar Pharma', workerName: 'Sales Worker', notes: 'Mock visit 3', timestamp: new Date() },
+    ]);
+    console.log('Mock visits seeded');
+  }
 }
 
 app.use(cors());

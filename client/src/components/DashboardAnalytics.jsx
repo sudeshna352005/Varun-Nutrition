@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
@@ -7,6 +7,16 @@ import { TrendingUp, Users, MapPin, CheckCircle } from 'lucide-react';
 
 const DashboardAnalytics = ({ data }) => {
   const { workers, shops, visits, attendance } = data;
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Colors for charts
   const COLORS = ['#22c55e', '#3b82f6', '#a855f7', '#f97316', '#ef4444', '#06b6d4'];
@@ -161,27 +171,45 @@ const DashboardAnalytics = ({ data }) => {
         </div>
 
         {/* Route Coverage */}
-        <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl h-[400px]">
+        <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl min-h-[450px] lg:h-[400px] flex flex-col">
           <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-6">Route Coverage</h3>
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={routeCoverageData}
-                innerRadius={60}
-                outerRadius={100}
-                paddingAngle={5}
-                dataKey="value"
-              >
-                {routeCoverageData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip
-                contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px' }}
-              />
-              <Legend verticalAlign="bottom" height={36}/>
-            </PieChart>
-          </ResponsiveContainer>
+          <div className="flex-1 min-h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={routeCoverageData}
+                  innerRadius={isMobile ? 45 : 60}
+                  outerRadius={isMobile ? 75 : 100}
+                  paddingAngle={5}
+                  dataKey="value"
+                  cx="50%"
+                  cy={isMobile ? "35%" : "50%"}
+                >
+                  {routeCoverageData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px' }}
+                />
+                <Legend
+                  layout="vertical"
+                  align={isMobile ? 'center' : 'right'}
+                  verticalAlign={isMobile ? 'bottom' : 'middle'}
+                  iconSize={10}
+                  wrapperStyle={isMobile ? {
+                    paddingTop: '10px',
+                    width: '100%',
+                    left: 0,
+                    bottom: 0
+                  } : {
+                    paddingLeft: '20px'
+                  }}
+                  formatter={(value) => <span className="text-slate-400 text-[10px] lg:text-xs font-bold uppercase tracking-tight">{value}</span>}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
         </div>
 
         {/* Attendance Trend */}
