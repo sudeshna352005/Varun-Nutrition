@@ -8,4 +8,15 @@ const api = axios.create({
   baseURL: API_BASE_URL,
 });
 
+export const getImageUrl = (path) => {
+  if (!path) return null;
+  if (path.startsWith('http')) return path;
+
+  // Handle local paths, normalize slashes and ensure base URL is prepended
+  const normalizedPath = path.replace(/\\/g, '/');
+  const cleanPath = normalizedPath.startsWith('/') ? normalizedPath.slice(1) : normalizedPath;
+
+  return `${API_BASE_URL}/${cleanPath}`;
+};
+
 export default api;

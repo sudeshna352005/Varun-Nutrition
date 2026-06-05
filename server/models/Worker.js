@@ -4,7 +4,7 @@ const workerSchema = new mongoose.Schema({
   name: { type: String, required: true },
   username: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  assignedRoutes: { type: [String], default: [] }
+  assignedRoutes: { type: [String], default: [], index: true }
 }, {
   timestamps: true,
   toJSON: { virtuals: true },

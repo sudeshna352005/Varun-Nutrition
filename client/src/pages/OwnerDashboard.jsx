@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../api';
 import { Store, Users, MapPin, ClipboardCheck } from 'lucide-react';
 import DashboardAnalytics from '../components/DashboardAnalytics';
+import Skeleton from '../components/Skeleton';
 
 const OwnerDashboard = () => {
   const [stats, setStats] = useState({
@@ -29,22 +30,28 @@ const OwnerDashboard = () => {
           api.get('/api/workers')
         ]);
 
-        const active = attendanceRes.data.filter(a => a.status === 'working').length;
+        const visits = visitsRes.data || [];
+        const attendance = attendanceRes.data || [];
+        const workers = workersRes.data || [];
+        const shops = shopsRes.data || [];
+        const routes = routesRes.data || [];
+
+        const active = attendance.filter(a => a?.status === 'working').length;
         const today = new Date().toLocaleDateString();
-        const todayVisitsCount = visitsRes.data.filter(v => new Date(v.timestamp).toLocaleDateString() === today).length;
+        const todayVisitsCount = visits.filter(v => v?.timestamp && new Date(v.timestamp).toLocaleDateString() === today).length;
 
         setStats({
-          shops: shopsRes.data.length,
-          routes: routesRes.data.length,
+          shops: shops.length,
+          routes: routes.length,
           activeWorkers: active,
           todayVisits: todayVisitsCount
         });
 
         setRawData({
-          workers: workersRes.data,
-          shops: shopsRes.data,
-          visits: visitsRes.data,
-          attendance: attendanceRes.data
+          workers,
+          shops,
+          visits,
+          attendance
         });
       } catch (err) {
         console.error("Failed to fetch dashboard data", err);
@@ -62,7 +69,19 @@ const OwnerDashboard = () => {
     { name: 'Visits Today', value: stats.todayVisits, icon: ClipboardCheck, color: 'bg-orange-500/20 text-orange-500' },
   ];
 
-  if (loading) return <div className="text-center py-20 text-slate-500">Loading Dashboard...</div>;
+  if (loading) return (
+    <div className="space-y-10">
+      <Skeleton className="h-12 w-64 rounded-xl" />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {[1,2,3,4].map(i => <Skeleton key={i} className="h-32 rounded-2xl" />)}
+      </div>
+      <Skeleton className="h-[450px] w-full rounded-3xl" />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <Skeleton className="h-64 rounded-2xl" />
+        <Skeleton className="h-64 rounded-2xl" />
+      </div>
+    </div>
+  );
 
   return (
     <div>

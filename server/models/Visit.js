@@ -1,10 +1,10 @@
 const mongoose = require('mongoose');
 
 const visitSchema = new mongoose.Schema({
-  shopName: { type: String, required: true },
-  workerName: { type: String, required: true },
+  shopName: { type: String, required: true, index: true },
+  workerName: { type: String, required: true, index: true },
   notes: { type: String },
-  timestamp: { type: Date, required: true, default: Date.now },
+  timestamp: { type: Date, required: true, default: Date.now, index: true },
   photo: { type: String }
 }, {
   timestamps: true,

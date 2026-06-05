@@ -83,6 +83,7 @@ async function seedData() {
 
 app.use(cors());
 app.use(express.json());
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Cloudinary configuration
 cloudinary.config({
@@ -95,7 +96,12 @@ const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: 'varun-nutrition',
-    allowed_formats: ['jpg', 'jpeg', 'png', 'webp']
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+    transformation: [
+      { width: 1000, crop: "limit" }, // Resize to max 1000px width
+      { quality: "auto:good" },      // Auto-quality optimization
+      { fetch_format: "auto" }      // Auto-format (WebP when supported)
+    ]
   }
 });
 
@@ -365,8 +371,13 @@ app.post('/api/visits', upload.single('photo'), async (req, res) => {
 
 app.get('/api/visits', async (req, res) => {
   try {
-    const visits = await Visit.find();
-    res.json(visits);
+    const { workerName, shopName } = req.query;
+    const query = {};
+    if (workerName) query.workerName = workerName;
+    if (shopName) query.shopName = shopName;
+
+    const visitsList = await Visit.find(query).sort({ timestamp: -1 });
+    res.json(visitsList);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import api, { API_BASE_URL } from '../api';
+import api, { getImageUrl } from '../api';
 import { User, Calendar, MapPin, Camera, Clock, TrendingUp, Briefcase, ChevronRight, Mail } from 'lucide-react';
 
 const WorkerProfile = () => {
@@ -13,17 +13,18 @@ const WorkerProfile = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [workersRes, attendanceRes, visitsRes] = await Promise.all([
-          api.get('/api/workers'),
-          api.get('/api/attendance'),
-          api.get('/api/visits')
-        ]);
+        const workersRes = await api.get('/api/workers');
+        const workers = workersRes.data || [];
+        const currentWorker = workers.find(w => String(w.id || w._id) === String(id));
 
-        const currentWorker = workersRes.data.find(w => String(w.id) === String(id));
         if (currentWorker) {
           setWorker(currentWorker);
-          setAttendance(attendanceRes.data.filter(a => a.workerName === currentWorker.name));
-          setVisits(visitsRes.data.filter(v => v.workerName === currentWorker.name));
+          const [attendanceRes, visitsRes] = await Promise.all([
+            api.get('/api/attendance'),
+            api.get(`/api/visits?workerName=${currentWorker.name}`)
+          ]);
+          setAttendance((attendanceRes.data || []).filter(a => a?.workerName === currentWorker.name));
+          setVisits(visitsRes.data || []);
         }
       } catch (err) {
         console.error("Error fetching worker profile:", err);
@@ -171,8 +172,9 @@ const WorkerProfile = () => {
                         {item.photo && (
                           <div className="relative w-40 h-40 group-hover:scale-[1.02] transition-transform">
                             <img
-                              src={item.photo.startsWith('http') ? item.photo : `${API_BASE_URL}/${item.photo.replace(/\\/g, '/')}`}
+                              src={getImageUrl(item.photo)}
                               alt="Visit"
+                              loading="lazy"
                               className="w-full h-full object-cover rounded-xl shadow-lg border border-slate-700"
                             />
                             <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors rounded-xl" />

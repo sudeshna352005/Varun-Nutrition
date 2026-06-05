@@ -6,7 +6,7 @@ import {
 import { TrendingUp, Users, MapPin, CheckCircle } from 'lucide-react';
 
 const DashboardAnalytics = ({ data }) => {
-  const { workers, shops, visits, attendance } = data;
+  const { workers = [], shops = [], visits = [], attendance = [] } = data || {};
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -30,18 +30,18 @@ const DashboardAnalytics = ({ data }) => {
 
   const visitsByDayData = last7Days.map(date => ({
     name: new Date(date).toLocaleDateString([], { weekday: 'short' }),
-    visits: visits.filter(v => v.timestamp.startsWith(date)).length
+    visits: (visits || []).filter(v => v.timestamp?.startsWith(date)).length
   }));
 
   // 2. Worker Performance (Bar Chart)
-  const workerPerformanceData = workers.map(w => ({
+  const workerPerformanceData = (workers || []).map(w => ({
     name: w.name,
-    visits: visits.filter(v => v.workerName === w.name).length
-  })).sort((a, b) => b.visits - a.visits).slice(0, 5);
+    visits: (visits || []).filter(v => v.workerName === w.name).length
+  })).sort((a, b) => (b.visits || 0) - (a.visits || 0)).slice(0, 5);
 
   // 3. Route Coverage (Pie Chart)
-  const routeCounts = visits.reduce((acc, v) => {
-    const shop = shops.find(s => s.name === v.shopName);
+  const routeCounts = (visits || []).reduce((acc, v) => {
+    const shop = (shops || []).find(s => s.name === v.shopName);
     const route = shop ? shop.routeGroup : 'Unknown';
     acc[route] = (acc[route] || 0) + 1;
     return acc;
@@ -55,17 +55,17 @@ const DashboardAnalytics = ({ data }) => {
   // 4. Attendance Trend (Area Chart)
   const attendanceTrendData = last7Days.map(date => ({
     name: new Date(date).toLocaleDateString([], { weekday: 'short' }),
-    present: new Set(attendance.filter(a => a.startTime.startsWith(date)).map(a => a.workerName)).size
+    present: new Set((attendance || []).filter(a => a.startTime?.startsWith(date)).map(a => a.workerName)).size
   }));
 
   // Key Metrics
   const today = new Date().toISOString().split('T')[0];
   const thisMonth = new Date().toISOString().slice(0, 7);
 
-  const visitsToday = visits.filter(v => v.timestamp.startsWith(today)).length;
-  const visitsThisMonth = visits.filter(v => v.timestamp.startsWith(thisMonth)).length;
+  const visitsToday = (visits || []).filter(v => v.timestamp?.startsWith(today)).length;
+  const visitsThisMonth = (visits || []).filter(v => v.timestamp?.startsWith(thisMonth)).length;
 
-  const presentTodayCount = new Set(attendance.filter(a => a.startTime.startsWith(today)).map(a => a.workerName)).size;
+  const presentTodayCount = new Set((attendance || []).filter(a => a.startTime?.startsWith(today)).map(a => a.workerName)).size;
   const attendanceTodayPct = workers.length > 0 ? Math.round((presentTodayCount / workers.length) * 100) : 0;
 
   const avgVisitsPerWorker = workers.length > 0 ? (visits.length / workers.length).toFixed(1) : 0;
@@ -77,8 +77,10 @@ const DashboardAnalytics = ({ data }) => {
   const topRoute = routeCoverageData.sort((a, b) => b.value - a.value)[0]?.name || 'N/A';
 
   // Most Visited Shop
-  const shopCounts = visits.reduce((acc, v) => {
-    acc[v.shopName] = (acc[v.shopName] || 0) + 1;
+  const shopCounts = (visits || []).reduce((acc, v) => {
+    if (v?.shopName) {
+      acc[v.shopName] = (acc[v.shopName] || 0) + 1;
+    }
     return acc;
   }, {});
   const topShop = Object.keys(shopCounts).sort((a, b) => shopCounts[b] - shopCounts[a])[0] || 'N/A';

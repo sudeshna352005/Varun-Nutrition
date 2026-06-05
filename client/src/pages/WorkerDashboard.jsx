@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api';
 import { MapPin, CheckCircle, ChevronRight, MessageSquare, ExternalLink, Info, Search } from 'lucide-react';
+import Skeleton from '../components/Skeleton';
 
 const WorkerDashboard = ({ user }) => {
   const [shops, setShops] = useState([]);
   const [routes, setRoutes] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [isWorking, setIsWorking] = useState(false);
   const [selectedShop, setSelectedShop] = useState(null);
   const [notes, setNotes] = useState('');
@@ -20,18 +22,23 @@ const WorkerDashboard = ({ user }) => {
   }, []);
 
   const fetchData = async () => {
-    const workerId = user.id || user._id;
-    console.log("Fetching data for worker dashboard, user ID:", workerId, "AssignedRoutes from user object:", user.assignedRoutes);
-    const [shopsRes, routesRes, visitsRes] = await Promise.all([
-      api.get(`/api/shops?workerId=${workerId}`),
-      api.get(`/api/routes?workerId=${workerId}`),
-      api.get('/api/visits')
-    ]);
-    console.log("Dashboard fetch complete. Shops count:", shopsRes.data.length, "Routes count:", routesRes.data.length);
-    setShops(shopsRes.data);
-    setRoutes(routesRes.data);
-    setVisitHistory(visitsRes.data.filter(v => v.workerName === user.name));
-    console.log("Visit History:", visitsRes.data);
+    setLoading(true);
+    try {
+      const workerId = user.id || user._id;
+      const [shopsRes, routesRes, visitsRes] = await Promise.all([
+        api.get(`/api/shops?workerId=${workerId}`),
+        api.get(`/api/routes?workerId=${workerId}`),
+      api.get(`/api/visits?workerName=${user.name}`)
+      ]);
+    setShops(shopsRes.data || []);
+    setRoutes(routesRes.data || []);
+    const visits = visitsRes.data || [];
+      setVisitHistory(visits);
+    } catch (err) {
+      console.error("Failed to fetch dashboard data", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const checkWorkingStatus = async () => {
@@ -75,6 +82,28 @@ if (photo) {
     const today = new Date().toLocaleDateString();
     return visitHistory.some(v => v.shopName === shopName && new Date(v.timestamp).toLocaleDateString() === today);
   };
+
+  if (loading) return (
+    <div className="space-y-10">
+      <div className="flex flex-col md:flex-row justify-between gap-6">
+        <div className="space-y-3">
+          <Skeleton className="h-12 w-80 rounded-xl" />
+          <Skeleton className="h-5 w-64 rounded-md" />
+        </div>
+        <Skeleton className="h-12 w-full md:w-80 rounded-xl" />
+      </div>
+      <div className="space-y-12">
+        {[1,2].map(i => (
+          <div key={i} className="space-y-6">
+            <Skeleton className="h-8 w-48 rounded-lg" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {[1,2,3,4].map(j => <Skeleton key={j} className="h-32 rounded-2xl" />)}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 
   return (
     <div>

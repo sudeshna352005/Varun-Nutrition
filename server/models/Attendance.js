@@ -1,8 +1,8 @@
 const mongoose = require('mongoose');
 
 const attendanceSchema = new mongoose.Schema({
-  workerName: { type: String, required: true },
-  startTime: { type: Date, required: true, default: Date.now },
+  workerName: { type: String, required: true, index: true },
+  startTime: { type: Date, required: true, default: Date.now, index: true },
   endTime: { type: Date },
   photo: { type: String },
   status: { type: String, enum: ['working', 'completed'], default: 'working' }
