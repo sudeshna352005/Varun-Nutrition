@@ -52,15 +52,20 @@ const OrdersView = ({ user }) => {
 
   const handleUpdateOrder = async () => {
     try {
+      const orderId = editingOrder.id || editingOrder._id;
       const totalAmount = editingOrder.items.reduce((sum, i) => sum + i.total, 0);
       const totalQuantity = editingOrder.items.reduce((sum, i) => sum + i.quantity, 0);
 
-      const updatedOrder = { ...editingOrder, totalAmount, totalQuantity };
-      await api.put(`/api/orders/${updatedOrder.id || updatedOrder._id}`, updatedOrder);
+      const updatedOrderData = { ...editingOrder, totalAmount, totalQuantity };
+      delete updatedOrderData.id;
+      delete updatedOrderData._id;
+
+      await api.put(`/api/orders/${orderId}`, updatedOrderData);
       setEditingOrder(null);
       fetchData();
     } catch (err) {
       console.error("Failed to update order", err);
+      alert("Failed to update order: " + (err.response?.data?.message || err.message));
     }
   };
 

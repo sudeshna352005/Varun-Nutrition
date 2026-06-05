@@ -26,22 +26,29 @@ const ProductManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      if (currentProduct.id || currentProduct._id) {
-        await api.put(`/api/products/${currentProduct.id || currentProduct._id}`, currentProduct);
+      const productId = currentProduct.id || currentProduct._id;
+      const productData = { ...currentProduct };
+      delete productData.id;
+      delete productData._id;
+
+      if (productId) {
+        await api.put(`/api/products/${productId}`, productData);
       } else {
-        await api.post('/api/products', currentProduct);
+        await api.post('/api/products', productData);
       }
       setIsModalOpen(false);
       setCurrentProduct({ name: '', packSize: '', defaultPrice: '', isActive: true });
       fetchProducts();
     } catch (err) {
       console.error("Failed to save product", err);
+      alert("Failed to save product: " + (err.response?.data?.message || err.message));
     }
   };
 
   const toggleStatus = async (product) => {
     try {
-      await api.put(`/api/products/${product.id || product._id}`, { ...product, isActive: !product.isActive });
+      const productId = product.id || product._id;
+      await api.put(`/api/products/${productId}`, { isActive: !product.isActive });
       fetchProducts();
     } catch (err) {
       console.error("Failed to toggle status", err);

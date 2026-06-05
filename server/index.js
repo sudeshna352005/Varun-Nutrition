@@ -133,6 +133,20 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+app.get('/api/test-db', async (req, res) => {
+  try {
+    const products = await Product.find().limit(1);
+    const orders = await Order.find().limit(1);
+    res.json({
+      productsFound: products.length,
+      ordersFound: orders.length,
+      mongoState: mongoose.connection.readyState
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Routes
 app.get('/api/shops', async (req, res) => {
   try {
@@ -180,6 +194,14 @@ app.post('/api/shops', async (req, res) => {
     res.status(400).json({ message: err.message });
   }
 });
+app.delete('/api/products/:id', async (req, res) => {
+  try {
+    await Product.findByIdAndDelete(req.params.id);
+    res.status(204).send();
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 app.put('/api/shops/:id', async (req, res) => {
   try {
     const shop = await Shop.findByIdAndUpdate(req.params.id, req.body, { new: true });
@@ -190,6 +212,14 @@ app.put('/api/shops/:id', async (req, res) => {
     }
   } catch (err) {
     res.status(400).json({ message: err.message });
+  }
+});
+app.delete('/api/orders/:id', async (req, res) => {
+  try {
+    await Order.findByIdAndDelete(req.params.id);
+    res.status(204).send();
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 });
 app.delete('/api/shops/:id', async (req, res) => {
