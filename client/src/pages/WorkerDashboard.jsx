@@ -30,9 +30,9 @@ const WorkerDashboard = ({ user }) => {
         api.get(`/api/routes?workerId=${workerId}`),
         api.get(`/api/visits?workerName=${user.name}&limit=-1`)
       ]);
-      setShops(shopsRes.data);
-      setRoutes(routesRes.data);
-      const visits = visitsRes.data.visits || [];
+    setShops(shopsRes.data || []);
+    setRoutes(routesRes.data || []);
+    const visits = visitsRes.data?.visits || [];
       setVisitHistory(visits);
     } catch (err) {
       console.error("Failed to fetch dashboard data", err);

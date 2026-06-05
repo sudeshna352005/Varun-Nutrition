@@ -14,7 +14,8 @@ const WorkerProfile = () => {
     const fetchData = async () => {
       try {
         const workersRes = await api.get('/api/workers');
-        const currentWorker = workersRes.data.find(w => String(w.id) === String(id) || String(w._id) === String(id));
+        const workers = workersRes.data || [];
+        const currentWorker = workers.find(w => String(w.id || w._id) === String(id));
 
         if (currentWorker) {
           setWorker(currentWorker);
@@ -22,8 +23,8 @@ const WorkerProfile = () => {
             api.get('/api/attendance'),
             api.get(`/api/visits?workerName=${currentWorker.name}&limit=-1`)
           ]);
-          setAttendance(attendanceRes.data.filter(a => a.workerName === currentWorker.name));
-          setVisits(visitsRes.data.visits || []);
+          setAttendance((attendanceRes.data || []).filter(a => a?.workerName === currentWorker.name));
+          setVisits(visitsRes.data?.visits || []);
         }
       } catch (err) {
         console.error("Error fetching worker profile:", err);

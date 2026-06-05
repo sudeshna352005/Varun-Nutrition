@@ -38,9 +38,9 @@ const ReportsView = () => {
         api.get('/api/shops'),
         api.get('/api/routes')
       ]);
-      setWorkers(workersRes.data);
-      setShops(shopsRes.data);
-      setRoutes(routesRes.data);
+      setWorkers(workersRes.data || []);
+      setShops(shopsRes.data || []);
+      setRoutes(routesRes.data || []);
     } catch (err) {
       console.error("Failed to fetch static data", err);
     }
@@ -60,11 +60,12 @@ const ReportsView = () => {
       if (selectedShop) params.append('shopName', selectedShop);
 
       const res = await api.get(`/api/visits?${params.toString()}`);
+      const newVisits = res.data?.visits || [];
 
       if (reset) {
-        setVisits(res.data.visits);
+        setVisits(newVisits);
       } else {
-        setVisits(prev => [...prev, ...res.data.visits]);
+        setVisits(prev => [...(prev || []), ...newVisits]);
       }
 
       setTotalPages(res.data.totalPages);
@@ -82,13 +83,13 @@ const ReportsView = () => {
     fetchVisits(1, true);
   }, [selectedWorker, selectedShop]);
 
-  const filteredVisits = visits.filter(v => {
-    const visitDate = v.timestamp.split('T')[0];
-    const shop = shops.find(s => s.name === v.shopName);
+  const filteredVisits = (visits || []).filter(v => {
+    const visitDate = v.timestamp?.split('T')[0] || '';
+    const shop = (shops || []).find(s => s.name === v.shopName);
 
     const matchesSearch =
-      v.shopName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      v.workerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (v.shopName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (v.workerName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (v.notes && v.notes.toLowerCase().includes(searchTerm.toLowerCase()));
 
     const matchesDate =
@@ -102,10 +103,12 @@ const ReportsView = () => {
 
     return matchesSearch && matchesDate && matchesWorker && matchesShop && matchesRoute && matchesPhotos;
   }).sort((a, b) => {
-    if (sortBy === 'newest') return new Date(b.timestamp) - new Date(a.timestamp);
-    if (sortBy === 'oldest') return new Date(a.timestamp) - new Date(b.timestamp);
-    if (sortBy === 'shop-az') return a.shopName.localeCompare(b.shopName);
-    if (sortBy === 'worker-az') return a.workerName.localeCompare(b.workerName);
+    const timeA = new Date(a.timestamp || 0);
+    const timeB = new Date(b.timestamp || 0);
+    if (sortBy === 'newest') return timeB - timeA;
+    if (sortBy === 'oldest') return timeA - timeB;
+    if (sortBy === 'shop-az') return (a.shopName || '').localeCompare(b.shopName || '');
+    if (sortBy === 'worker-az') return (a.workerName || '').localeCompare(b.workerName || '');
     return 0;
   });
 

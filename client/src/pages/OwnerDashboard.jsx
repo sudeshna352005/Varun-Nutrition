@@ -30,23 +30,28 @@ const OwnerDashboard = () => {
           api.get('/api/workers')
         ]);
 
-        const visits = visitsRes.data.visits || [];
-        const active = attendanceRes.data.filter(a => a.status === 'working').length;
+        const visits = visitsRes.data?.visits || [];
+        const attendance = attendanceRes.data || [];
+        const workers = workersRes.data || [];
+        const shops = shopsRes.data || [];
+        const routes = routesRes.data || [];
+
+        const active = attendance.filter(a => a?.status === 'working').length;
         const today = new Date().toLocaleDateString();
-        const todayVisitsCount = visits.filter(v => new Date(v.timestamp).toLocaleDateString() === today).length;
+        const todayVisitsCount = visits.filter(v => v?.timestamp && new Date(v.timestamp).toLocaleDateString() === today).length;
 
         setStats({
-          shops: shopsRes.data.length,
-          routes: routesRes.data.length,
+          shops: shops.length,
+          routes: routes.length,
           activeWorkers: active,
           todayVisits: todayVisitsCount
         });
 
         setRawData({
-          workers: workersRes.data,
-          shops: shopsRes.data,
-          visits: visits,
-          attendance: attendanceRes.data
+          workers,
+          shops,
+          visits,
+          attendance
         });
       } catch (err) {
         console.error("Failed to fetch dashboard data", err);
