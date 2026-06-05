@@ -4,7 +4,7 @@ const shopSchema = new mongoose.Schema({
   name: { type: String, required: true },
   address: { type: String, required: true },
   phone: { type: String, required: true },
-  routeGroup: { type: String, required: true },
+  routeGroup: { type: String, required: true, index: true },
   mapsLink: { type: String }
 }, {
   timestamps: true,

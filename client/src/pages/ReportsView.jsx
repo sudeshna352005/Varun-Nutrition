@@ -3,6 +3,7 @@ import api, { API_BASE_URL } from '../api';
 import { Calendar, Store, MessageSquare, ClipboardList, Search, Filter, Download, Printer, User, MapPin, Camera, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import * as XLSX from 'xlsx';
+import Skeleton from '../components/Skeleton';
 
 const ReportsView = () => {
   const [visits, setVisits] = useState([]);
@@ -10,6 +11,9 @@ const ReportsView = () => {
   const [shops, setShops] = useState([]);
   const [routes, setRoutes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
 
   // Filter states
   const [searchTerm, setSearchTerm] = useState('');
@@ -23,27 +27,60 @@ const ReportsView = () => {
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
-    fetchData();
+    fetchStaticData();
+    fetchVisits(1, true);
   }, []);
 
-  const fetchData = async () => {
+  const fetchStaticData = async () => {
     try {
-      const [visitsRes, workersRes, shopsRes, routesRes] = await Promise.all([
-        api.get('/api/visits'),
+      const [workersRes, shopsRes, routesRes] = await Promise.all([
         api.get('/api/workers'),
         api.get('/api/shops'),
         api.get('/api/routes')
       ]);
-      setVisits(visitsRes.data);
       setWorkers(workersRes.data);
       setShops(shopsRes.data);
       setRoutes(routesRes.data);
     } catch (err) {
-      console.error("Failed to fetch reports data", err);
-    } finally {
-      setLoading(false);
+      console.error("Failed to fetch static data", err);
     }
   };
+
+  const fetchVisits = async (pageNum, reset = false) => {
+    try {
+      if (reset) setLoading(true);
+      else setIsFetchingMore(true);
+
+      const params = new URLSearchParams({
+        page: pageNum,
+        limit: 20
+      });
+
+      if (selectedWorker) params.append('workerName', selectedWorker);
+      if (selectedShop) params.append('shopName', selectedShop);
+
+      const res = await api.get(`/api/visits?${params.toString()}`);
+
+      if (reset) {
+        setVisits(res.data.visits);
+      } else {
+        setVisits(prev => [...prev, ...res.data.visits]);
+      }
+
+      setTotalPages(res.data.totalPages);
+      setPage(pageNum);
+    } catch (err) {
+      console.error("Failed to fetch visits", err);
+    } finally {
+      setLoading(false);
+      setIsFetchingMore(false);
+    }
+  };
+
+  // Re-fetch when specific server-side filters change
+  useEffect(() => {
+    fetchVisits(1, true);
+  }, [selectedWorker, selectedShop]);
 
   const filteredVisits = visits.filter(v => {
     const visitDate = v.timestamp.split('T')[0];
@@ -77,6 +114,12 @@ const ReportsView = () => {
     withPhotos: filteredVisits.filter(v => !!v.photo).length,
     uniqueShops: new Set(filteredVisits.map(v => v.shopName)).size,
     uniqueWorkers: new Set(filteredVisits.map(v => v.workerName)).size
+  };
+
+  const loadMore = () => {
+    if (page < totalPages) {
+      fetchVisits(page + 1);
+    }
   };
 
   const exportCSV = () => {
@@ -127,7 +170,23 @@ const ReportsView = () => {
     setShowOnlyPhotos(false);
   };
 
-  if (loading) return <div className="text-center py-20 text-slate-500">Loading Reports...</div>;
+  if (loading) return (
+    <div className="space-y-8 p-4">
+      <div className="flex justify-between items-center mb-10">
+        <Skeleton className="h-12 w-64 rounded-xl" />
+        <div className="flex gap-3">
+          <Skeleton className="h-10 w-32 rounded-xl" />
+          <Skeleton className="h-10 w-32 rounded-xl" />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[1,2,3,4].map(i => <Skeleton key={i} className="h-28 rounded-2xl" />)}
+      </div>
+      <div className="space-y-8 mt-10">
+        {[1,2,3].map(i => <Skeleton key={i} className="h-72 rounded-3xl" />)}
+      </div>
+    </div>
+  );
 
   return (
     <div className="space-y-8">
@@ -334,10 +393,11 @@ const ReportsView = () => {
                       <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
                         <Camera size={12} className="text-slate-400" /> Evidence Photo
                       </p>
-                      <div className="relative overflow-hidden rounded-xl">
+                      <div className="relative overflow-hidden rounded-xl bg-slate-800">
                         <img
                           src={visit.photo.startsWith('http') ? visit.photo : `${API_BASE_URL}/${visit.photo.replace(/\\/g, '/')}`}
                           alt="Visit Evidence"
+                          loading="lazy"
                           className="w-full md:w-64 h-64 md:h-48 object-cover rounded-xl border border-slate-700 shadow-lg group-hover:scale-105 transition-all duration-500 cursor-zoom-in"
                         />
                         <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-all pointer-events-none" />
@@ -348,6 +408,23 @@ const ReportsView = () => {
               </div>
             </div>
           ))
+        )}
+
+        {page < totalPages && (
+          <div className="flex justify-center py-10">
+            <button
+              onClick={loadMore}
+              disabled={isFetchingMore}
+              className="px-10 py-4 bg-green-600 text-zinc-900 font-extrabold rounded-2xl hover:bg-green-500 transition-all shadow-xl shadow-green-600/20 disabled:opacity-50 flex items-center gap-3"
+            >
+              {isFetchingMore ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-zinc-900/30 border-t-zinc-900 rounded-full animate-spin" />
+                  Loading More...
+                </>
+              ) : 'Load More Records'}
+            </button>
+          </div>
         )}
       </div>
     </div>

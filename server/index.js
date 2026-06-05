@@ -95,7 +95,12 @@ const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: 'varun-nutrition',
-    allowed_formats: ['jpg', 'jpeg', 'png', 'webp']
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+    transformation: [
+      { width: 1000, crop: "limit" }, // Resize to max 1000px width
+      { quality: "auto:good" },      // Auto-quality optimization
+      { fetch_format: "auto" }      // Auto-format (WebP when supported)
+    ]
   }
 });
 
@@ -365,8 +370,31 @@ app.post('/api/visits', upload.single('photo'), async (req, res) => {
 
 app.get('/api/visits', async (req, res) => {
   try {
-    const visits = await Visit.find();
-    res.json(visits);
+    const { page = 1, limit = 20, workerName, shopName } = req.query;
+    const query = {};
+    if (workerName) query.workerName = workerName;
+    if (shopName) query.shopName = shopName;
+
+    const skip = (page - 1) * limit;
+
+    let visitsQuery = Visit.find(query).sort({ timestamp: -1 });
+
+    // If limit is -1, return all records (useful for dashboard analytics)
+    if (parseInt(limit) !== -1) {
+      visitsQuery = visitsQuery.skip(skip).limit(parseInt(limit));
+    }
+
+    const [visits, total] = await Promise.all([
+      visitsQuery,
+      Visit.countDocuments(query)
+    ]);
+
+    res.json({
+      visits,
+      totalPages: limit === -1 ? 1 : Math.ceil(total / limit),
+      currentPage: parseInt(page),
+      total
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
