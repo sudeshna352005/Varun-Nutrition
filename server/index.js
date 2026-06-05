@@ -275,7 +275,7 @@ app.post('/api/login', async (req, res) => {
     }
 
     const worker = await Worker.findOne({
-      username: username.toLowerCase().trim(),
+      username: { $regex: new RegExp(`^${username.trim()}$`, 'i') },
       password: password
     });
 
@@ -289,6 +289,8 @@ app.post('/api/login', async (req, res) => {
         username: worker.username,
         assignedRoutes: worker.assignedRoutes || []
       });
+    } else {
+      console.log("Login failed for username:", username.trim(), "(case-insensitive search)");
     }
 
     res.status(401).json({ message: 'Invalid username or password' });
