@@ -13,6 +13,8 @@ const Route = require('./models/Route');
 const Worker = require('./models/Worker');
 const Attendance = require('./models/Attendance');
 const Visit = require('./models/Visit');
+const Product = require('./models/Product');
+const Order = require('./models/Order');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -78,6 +80,21 @@ async function seedData() {
       { shopName: 'Sagar Pharma', workerName: 'Sales Worker', notes: 'Mock visit 3', timestamp: new Date() },
     ]);
     console.log('Mock visits seeded');
+  }
+
+  const productCount = await Product.countDocuments();
+  if (productCount === 0) {
+    await Product.insertMany([
+      { name: 'Ragi Flour', packSize: '1 Kg', defaultPrice: 60 },
+      { name: 'Wheat Flour', packSize: '1 Kg', defaultPrice: 55 },
+      { name: 'Jowar Flour', packSize: '1 Kg', defaultPrice: 65 },
+      { name: 'Rice Flour', packSize: '1 Kg', defaultPrice: 50 },
+      { name: 'Ragi Malt', packSize: '250 g', defaultPrice: 80 },
+      { name: 'Ragi Malt', packSize: '500 g', defaultPrice: 150 },
+      { name: 'Millet Malt', packSize: '250 g', defaultPrice: 90 },
+      { name: 'Millet Malt', packSize: '500 g', defaultPrice: 170 },
+    ]);
+    console.log('Products seeded');
   }
 }
 
@@ -364,6 +381,67 @@ app.post('/api/visits', upload.single('photo'), async (req, res) => {
     });
     await visit.save();
     res.status(201).json(visit);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+// Products API
+app.get('/api/products', async (req, res) => {
+  try {
+    const products = await Product.find();
+    res.json(products);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+app.post('/api/products', async (req, res) => {
+  try {
+    const product = new Product(req.body);
+    await product.save();
+    res.status(201).json(product);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+app.put('/api/products/:id', async (req, res) => {
+  try {
+    const product = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.json(product);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+// Orders API
+app.get('/api/orders', async (req, res) => {
+  try {
+    const { workerId, shopName, workerName, routeName } = req.query;
+    const query = {};
+    if (workerId) query.workerId = workerId;
+    if (shopName) query.shopName = shopName;
+    if (workerName) query.workerName = workerName;
+    if (routeName) query.routeName = routeName;
+
+    const orders = await Order.find(query).sort({ timestamp: -1 });
+    res.json(orders);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+app.post('/api/orders', async (req, res) => {
+  try {
+    const order = new Order(req.body);
+    await order.save();
+    res.status(201).json(order);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+app.put('/api/orders/:id', async (req, res) => {
+  try {
+    const order = await Order.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.json(order);
   } catch (err) {
     res.status(400).json({ message: err.message });
   }

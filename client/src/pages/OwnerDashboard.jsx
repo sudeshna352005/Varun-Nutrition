@@ -114,6 +114,7 @@ const OwnerDashboard = () => {
             <a href="/shops" className="block w-full text-center py-4 bg-slate-800 text-green-500 rounded-xl font-bold hover:bg-slate-700 transition">Manage Shops</a>
             <a href="/routes" className="block w-full text-center py-4 bg-slate-800 text-blue-500 rounded-xl font-bold hover:bg-slate-700 transition">Configure Routes</a>
             <a href="/workers" className="block w-full text-center py-4 bg-slate-800 text-purple-500 rounded-xl font-bold hover:bg-slate-700 transition">Manage Workers</a>
+            <a href="/products" className="block w-full text-center py-4 bg-slate-800 text-orange-500 rounded-xl font-bold hover:bg-slate-700 transition">Manage Products</a>
           </div>
         </div>
         
