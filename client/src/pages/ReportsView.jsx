@@ -11,9 +11,6 @@ const ReportsView = () => {
   const [shops, setShops] = useState([]);
   const [routes, setRoutes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [isFetchingMore, setIsFetchingMore] = useState(false);
 
   // Filter states
   const [searchTerm, setSearchTerm] = useState('');
@@ -27,61 +24,28 @@ const ReportsView = () => {
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
-    fetchStaticData();
-    fetchVisits(1, true);
+    fetchData();
   }, []);
 
-  const fetchStaticData = async () => {
+  const fetchData = async () => {
     try {
-      const [workersRes, shopsRes, routesRes] = await Promise.all([
+      setLoading(true);
+      const [workersRes, shopsRes, routesRes, visitsRes] = await Promise.all([
         api.get('/api/workers'),
         api.get('/api/shops'),
-        api.get('/api/routes')
+        api.get('/api/routes'),
+        api.get('/api/visits')
       ]);
       setWorkers(workersRes.data || []);
       setShops(shopsRes.data || []);
       setRoutes(routesRes.data || []);
+      setVisits(visitsRes.data || []);
     } catch (err) {
-      console.error("Failed to fetch static data", err);
-    }
-  };
-
-  const fetchVisits = async (pageNum, reset = false) => {
-    try {
-      if (reset) setLoading(true);
-      else setIsFetchingMore(true);
-
-      const params = new URLSearchParams({
-        page: pageNum,
-        limit: 20
-      });
-
-      if (selectedWorker) params.append('workerName', selectedWorker);
-      if (selectedShop) params.append('shopName', selectedShop);
-
-      const res = await api.get(`/api/visits?${params.toString()}`);
-      const newVisits = res.data?.visits || [];
-
-      if (reset) {
-        setVisits(newVisits);
-      } else {
-        setVisits(prev => [...(prev || []), ...newVisits]);
-      }
-
-      setTotalPages(res.data.totalPages);
-      setPage(pageNum);
-    } catch (err) {
-      console.error("Failed to fetch visits", err);
+      console.error("Failed to fetch data", err);
     } finally {
       setLoading(false);
-      setIsFetchingMore(false);
     }
   };
-
-  // Re-fetch when specific server-side filters change
-  useEffect(() => {
-    fetchVisits(1, true);
-  }, [selectedWorker, selectedShop]);
 
   const filteredVisits = (visits || []).filter(v => {
     const visitDate = v.timestamp?.split('T')[0] || '';
@@ -117,12 +81,6 @@ const ReportsView = () => {
     withPhotos: filteredVisits.filter(v => !!v.photo).length,
     uniqueShops: new Set(filteredVisits.map(v => v.shopName)).size,
     uniqueWorkers: new Set(filteredVisits.map(v => v.workerName)).size
-  };
-
-  const loadMore = () => {
-    if (page < totalPages) {
-      fetchVisits(page + 1);
-    }
   };
 
   const exportCSV = () => {
@@ -413,22 +371,6 @@ const ReportsView = () => {
           ))
         )}
 
-        {page < totalPages && (
-          <div className="flex justify-center py-10">
-            <button
-              onClick={loadMore}
-              disabled={isFetchingMore}
-              className="px-10 py-4 bg-green-600 text-zinc-900 font-extrabold rounded-2xl hover:bg-green-500 transition-all shadow-xl shadow-green-600/20 disabled:opacity-50 flex items-center gap-3"
-            >
-              {isFetchingMore ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-zinc-900/30 border-t-zinc-900 rounded-full animate-spin" />
-                  Loading More...
-                </>
-              ) : 'Load More Records'}
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );

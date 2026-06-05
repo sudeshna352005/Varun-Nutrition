@@ -371,31 +371,13 @@ app.post('/api/visits', upload.single('photo'), async (req, res) => {
 
 app.get('/api/visits', async (req, res) => {
   try {
-    const { page = 1, limit = 20, workerName, shopName } = req.query;
+    const { workerName, shopName } = req.query;
     const query = {};
     if (workerName) query.workerName = workerName;
     if (shopName) query.shopName = shopName;
 
-    const skip = (page - 1) * limit;
-
-    let visitsQuery = Visit.find(query).sort({ timestamp: -1 });
-
-    // If limit is -1, return all records (useful for dashboard analytics)
-    if (parseInt(limit) !== -1) {
-      visitsQuery = visitsQuery.skip(skip).limit(parseInt(limit));
-    }
-
-    const [visits, total] = await Promise.all([
-      visitsQuery,
-      Visit.countDocuments(query)
-    ]);
-
-    res.json({
-      visits,
-      totalPages: limit === -1 ? 1 : Math.ceil(total / limit),
-      currentPage: parseInt(page),
-      total
-    });
+    const visitsList = await Visit.find(query).sort({ timestamp: -1 });
+    res.json(visitsList);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

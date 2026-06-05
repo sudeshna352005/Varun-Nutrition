@@ -26,11 +26,11 @@ const OwnerDashboard = () => {
           api.get('/api/shops'),
           api.get('/api/routes'),
           api.get('/api/attendance'),
-          api.get('/api/visits?limit=-1'), // Fetch all visits for accurate analytics
+          api.get('/api/visits'),
           api.get('/api/workers')
         ]);
 
-        const visits = visitsRes.data?.visits || [];
+        const visits = visitsRes.data || [];
         const attendance = attendanceRes.data || [];
         const workers = workersRes.data || [];
         const shops = shopsRes.data || [];

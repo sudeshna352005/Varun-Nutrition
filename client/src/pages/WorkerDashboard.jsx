@@ -28,11 +28,11 @@ const WorkerDashboard = ({ user }) => {
       const [shopsRes, routesRes, visitsRes] = await Promise.all([
         api.get(`/api/shops?workerId=${workerId}`),
         api.get(`/api/routes?workerId=${workerId}`),
-        api.get(`/api/visits?workerName=${user.name}&limit=-1`)
+      api.get(`/api/visits?workerName=${user.name}`)
       ]);
     setShops(shopsRes.data || []);
     setRoutes(routesRes.data || []);
-    const visits = visitsRes.data?.visits || [];
+    const visits = visitsRes.data || [];
       setVisitHistory(visits);
     } catch (err) {
       console.error("Failed to fetch dashboard data", err);

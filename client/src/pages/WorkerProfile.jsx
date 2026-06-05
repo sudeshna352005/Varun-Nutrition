@@ -21,10 +21,10 @@ const WorkerProfile = () => {
           setWorker(currentWorker);
           const [attendanceRes, visitsRes] = await Promise.all([
             api.get('/api/attendance'),
-            api.get(`/api/visits?workerName=${currentWorker.name}&limit=-1`)
+            api.get(`/api/visits?workerName=${currentWorker.name}`)
           ]);
           setAttendance((attendanceRes.data || []).filter(a => a?.workerName === currentWorker.name));
-          setVisits(visitsRes.data?.visits || []);
+          setVisits(visitsRes.data || []);
         }
       } catch (err) {
         console.error("Error fetching worker profile:", err);
