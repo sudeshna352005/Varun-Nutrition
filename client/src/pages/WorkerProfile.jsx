@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import api, { API_BASE_URL } from '../api';
+import api, { getImageUrl } from '../api';
 import { User, Calendar, MapPin, Camera, Clock, TrendingUp, Briefcase, ChevronRight, Mail } from 'lucide-react';
 
 const WorkerProfile = () => {
@@ -171,8 +171,9 @@ const WorkerProfile = () => {
                         {item.photo && (
                           <div className="relative w-40 h-40 group-hover:scale-[1.02] transition-transform">
                             <img
-                              src={item.photo.startsWith('http') ? item.photo : `${API_BASE_URL}/${item.photo.replace(/\\/g, '/')}`}
+                              src={getImageUrl(item.photo)}
                               alt="Visit"
+                              loading="lazy"
                               className="w-full h-full object-cover rounded-xl shadow-lg border border-slate-700"
                             />
                             <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors rounded-xl" />

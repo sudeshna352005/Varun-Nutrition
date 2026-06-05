@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api, { API_BASE_URL } from '../api';
+import api, { getImageUrl } from '../api';
 import { Calendar, Store, MessageSquare, ClipboardList, Search, Filter, Download, Printer, User, MapPin, Camera, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import * as XLSX from 'xlsx';
@@ -395,7 +395,7 @@ const ReportsView = () => {
                       </p>
                       <div className="relative overflow-hidden rounded-xl bg-slate-800">
                         <img
-                          src={visit.photo.startsWith('http') ? visit.photo : `${API_BASE_URL}/${visit.photo.replace(/\\/g, '/')}`}
+                          src={getImageUrl(visit.photo)}
                           alt="Visit Evidence"
                           loading="lazy"
                           className="w-full md:w-64 h-64 md:h-48 object-cover rounded-xl border border-slate-700 shadow-lg group-hover:scale-105 transition-all duration-500 cursor-zoom-in"
