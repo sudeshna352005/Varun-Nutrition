@@ -6,7 +6,7 @@ import {
 import { TrendingUp, Users, MapPin, CheckCircle } from 'lucide-react';
 
 const DashboardAnalytics = ({ data }) => {
-  const { workers = [], shops = [], visits = [], attendance = [] } = data || {};
+  const { workers = [], shops = [], visits = [], attendance = [], orders = [] } = data || {};
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -21,17 +21,17 @@ const DashboardAnalytics = ({ data }) => {
   // Colors for charts
   const COLORS = ['#22c55e', '#3b82f6', '#a855f7', '#f97316', '#ef4444', '#06b6d4'];
 
-  // 1. Visits per Day (Line Chart) - last 7 days
-  const last7Days = [...Array(7)].map((_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    return d.toISOString().split('T')[0];
-  }).reverse();
+  // 1. Visits per Day (Line Chart)
+  const getDailyData = () => {
+    const dailyMap = {};
+    (visits || []).forEach(v => {
+      const date = new Date(v.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' });
+      dailyMap[date] = (dailyMap[date] || 0) + 1;
+    });
+    return Object.keys(dailyMap).map(date => ({ name: date, visits: dailyMap[date] })).slice(-10);
+  };
 
-  const visitsByDayData = last7Days.map(date => ({
-    name: new Date(date).toLocaleDateString([], { weekday: 'short' }),
-    visits: (visits || []).filter(v => v.timestamp?.startsWith(date)).length
-  }));
+  const visitsByDayData = getDailyData();
 
   // 2. Worker Performance (Bar Chart)
   const workerPerformanceData = (workers || []).map(w => ({
@@ -53,10 +53,17 @@ const DashboardAnalytics = ({ data }) => {
   }));
 
   // 4. Attendance Trend (Area Chart)
-  const attendanceTrendData = last7Days.map(date => ({
-    name: new Date(date).toLocaleDateString([], { weekday: 'short' }),
-    present: new Set((attendance || []).filter(a => a.startTime?.startsWith(date)).map(a => a.workerName)).size
-  }));
+  const getAttendanceTrend = () => {
+    const trendMap = {};
+    (attendance || []).forEach(a => {
+      const date = new Date(a.startTime).toLocaleDateString([], { month: 'short', day: 'numeric' });
+      if (!trendMap[date]) trendMap[date] = new Set();
+      trendMap[date].add(a.workerName);
+    });
+    return Object.keys(trendMap).map(date => ({ name: date, present: trendMap[date].size })).slice(-10);
+  };
+
+  const attendanceTrendData = getAttendanceTrend();
 
   // Key Metrics
   const today = new Date().toISOString().split('T')[0];
@@ -119,7 +126,17 @@ const DashboardAnalytics = ({ data }) => {
               <span className="text-purple-500 font-bold">{topWorker}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-slate-400">Most Active Route</span>
+              <span className="text-slate-400">Top Sales</span>
+              <span className="text-emerald-500 font-bold">
+                {(() => {
+                  const workerSales = {};
+                  orders.forEach(o => workerSales[o.workerName] = (workerSales[o.workerName] || 0) + o.totalAmount);
+                  return Object.keys(workerSales).sort((a,b) => workerSales[b] - workerSales[a])[0] || 'N/A';
+                })()}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-slate-400">Active Route</span>
               <span className="text-orange-500 font-bold">{topRoute}</span>
             </div>
             <div className="flex justify-between items-center">

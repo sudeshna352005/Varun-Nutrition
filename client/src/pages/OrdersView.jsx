@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import api from '../api';
-import { ShoppingCart, Search, Filter, Calendar, Edit2, Check, X, Plus } from 'lucide-react';
+import { ShoppingCart, Search, Filter, Calendar, Edit2, Check, X, Plus, Package } from 'lucide-react';
+import DateFilter from '../components/DateFilter';
+import { isInRange, getRangeDates } from '../utils/dateUtils';
 
 const OrdersView = ({ user }) => {
   const [orders, setOrders] = useState([]);
@@ -9,9 +11,11 @@ const OrdersView = ({ user }) => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [dateRange, setDateRange] = useState(getRangeDates('last30'));
   const [selectedShop, setSelectedShop] = useState('');
   const [selectedRoute, setSelectedRoute] = useState('');
-  const [selectedDate, setSelectedDate] = useState('');
+  const [selectedProduct, setSelectedProduct] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('all');
   const [editingOrder, setEditingOrder] = useState(null);
 
   useEffect(() => {
@@ -41,14 +45,21 @@ const OrdersView = ({ user }) => {
     }
   };
 
-  const filteredOrders = orders.filter(order => {
-    const matchesSearch = order.shopName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          order.workerName.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesShop = !selectedShop || order.shopName === selectedShop;
-    const matchesRoute = !selectedRoute || order.routeName === selectedRoute;
-    const matchesDate = !selectedDate || new Date(order.timestamp).toLocaleDateString() === new Date(selectedDate).toLocaleDateString();
-    return matchesSearch && matchesShop && matchesRoute && matchesDate;
-  });
+  const [selectedWorker, setSelectedRouteFilter] = useState(''); // Reusing for worker filter
+
+  const filteredOrders = useMemo(() => {
+    return orders.filter(order => {
+      const matchesSearch = order.shopName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            order.workerName.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesShop = !selectedShop || order.shopName === selectedShop;
+      const matchesRoute = !selectedRoute || order.routeName === selectedRoute;
+      const matchesWorker = !selectedWorker || order.workerName === selectedWorker;
+      const matchesDate = isInRange(order.timestamp, dateRange);
+      const matchesProduct = !selectedProduct || order.items.some(item => item.productId === selectedProduct || item.name === selectedProduct);
+
+      return matchesSearch && matchesShop && matchesRoute && matchesWorker && matchesDate && matchesProduct;
+    });
+  }, [orders, searchTerm, selectedShop, selectedRoute, selectedWorker, dateRange, selectedProduct]);
 
   const handleUpdateOrder = async () => {
     try {
@@ -97,13 +108,15 @@ const OrdersView = ({ user }) => {
           <ShoppingCart className="text-green-500" /> {user.role === 'owner' ? 'All Orders' : 'My Orders'}
         </h1>
 
-        <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
-          <div className="relative flex-1 md:w-64">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4 w-full lg:w-auto">
+          <DateFilter onRangeChange={setDateRange} />
+
+          <div className="relative w-full lg:w-64">
             <Search className="absolute left-3 top-2.5 size-4 text-slate-500" />
             <input
               type="text"
               placeholder="Search Shop/Worker..."
-              className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-10 pr-4 py-2 text-sm text-white focus:ring-2 focus:ring-green-500 outline-none"
+              className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-10 pr-4 py-2 text-sm text-white focus:ring-2 focus:ring-green-500 outline-none shadow-lg"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -116,22 +129,37 @@ const OrdersView = ({ user }) => {
             <option value="">All Shops</option>
             {shops.map(s => <option key={s.id || s._id} value={s.name}>{s.name}</option>)}
           </select>
-          {user.role === 'owner' && (
+          <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
             <select
-              className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white outline-none focus:ring-2 focus:ring-green-500"
-              value={selectedRoute}
-              onChange={(e) => setSelectedRoute(e.target.value)}
+              className="flex-1 lg:flex-none bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white outline-none focus:ring-2 focus:ring-green-500"
+              value={selectedProduct}
+              onChange={(e) => setSelectedProduct(e.target.value)}
             >
-              <option value="">All Routes</option>
-              {routes.map(r => <option key={r.id || r._id} value={r.name}>{r.name}</option>)}
+              <option value="">All Products</option>
+              {products.map(p => <option key={p.id || p._id} value={p.id || p._id}>{p.name}</option>)}
             </select>
-          )}
-          <input
-            type="date"
-            className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white outline-none focus:ring-2 focus:ring-green-500"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-          />
+
+            {user.role === 'owner' && (
+              <>
+                <select
+                  className="flex-1 lg:flex-none bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white outline-none focus:ring-2 focus:ring-green-500"
+                  value={selectedRoute}
+                  onChange={(e) => setSelectedRoute(e.target.value)}
+                >
+                  <option value="">All Routes</option>
+                  {routes.map(r => <option key={r.id || r._id} value={r.name}>{r.name}</option>)}
+                </select>
+                <select
+                  className="flex-1 lg:flex-none bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white outline-none focus:ring-2 focus:ring-green-500"
+                  value={selectedWorker}
+                  onChange={(e) => setSelectedRouteFilter(e.target.value)}
+                >
+                  <option value="">All Workers</option>
+                  {[...new Set(orders.map(o => o.workerName))].map(w => <option key={w} value={w}>{w}</option>)}
+                </select>
+              </>
+            )}
+          </div>
         </div>
       </div>
 

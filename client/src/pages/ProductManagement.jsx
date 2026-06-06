@@ -1,23 +1,33 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import api from '../api';
-import { Package, Plus, Edit2, CheckCircle, XCircle, Save, X } from 'lucide-react';
+import { Package, Plus, Edit2, CheckCircle, XCircle, Save, X, TrendingUp, TrendingDown, Search, Filter } from 'lucide-react';
+import DateFilter from '../components/DateFilter';
+import { isInRange, getRangeDates } from '../utils/dateUtils';
 
 const ProductManagement = () => {
   const [products, setProducts] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [dateRange, setDateRange] = useState(getRangeDates('last30'));
+  const [perfFilter, setPerfFilter] = useState('all'); // 'all', 'top', 'bottom', 'no-orders'
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentProduct, setCurrentProduct] = useState({ name: '', packSize: '', defaultPrice: '', isActive: true });
 
   useEffect(() => {
-    fetchProducts();
+    fetchData();
   }, []);
 
-  const fetchProducts = async () => {
+  const fetchData = async () => {
     try {
-      const res = await api.get('/api/products');
-      setProducts(res.data);
+      const [pRes, oRes] = await Promise.all([
+        api.get('/api/products'),
+        api.get('/api/orders')
+      ]);
+      setProducts(pRes.data || []);
+      setOrders(oRes.data || []);
     } catch (err) {
-      console.error("Failed to fetch products", err);
+      console.error("Failed to fetch products data", err);
     } finally {
       setLoading(false);
     }
@@ -38,7 +48,7 @@ const ProductManagement = () => {
       }
       setIsModalOpen(false);
       setCurrentProduct({ name: '', packSize: '', defaultPrice: '', isActive: true });
-      fetchProducts();
+      fetchData();
     } catch (err) {
       console.error("Failed to save product", err);
       alert("Failed to save product: " + (err.response?.data?.message || err.message));
@@ -49,17 +59,46 @@ const ProductManagement = () => {
     try {
       const productId = product.id || product._id;
       await api.put(`/api/products/${productId}`, { isActive: !product.isActive });
-      fetchProducts();
+      fetchData();
     } catch (err) {
       console.error("Failed to toggle status", err);
     }
   };
 
+  const productStats = useMemo(() => {
+    const stats = {};
+    products.forEach(p => stats[p.id || p._id] = { count: 0, total: 0 });
+
+    orders.filter(o => isInRange(o.timestamp, dateRange)).forEach(order => {
+      order.items.forEach(item => {
+        if (stats[item.productId]) {
+          stats[item.productId].count += item.quantity;
+          stats[item.productId].total += item.total;
+        }
+      });
+    });
+    return stats;
+  }, [products, orders, dateRange]);
+
+  const filteredProducts = useMemo(() => {
+    let list = products.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    if (perfFilter === 'no-orders') {
+      list = list.filter(p => (productStats[p.id || p._id]?.count || 0) === 0);
+    } else if (perfFilter === 'top') {
+      list = [...list].sort((a, b) => (productStats[b.id || b._id]?.count || 0) - (productStats[a.id || a._id]?.count || 0)).slice(0, 5);
+    } else if (perfFilter === 'bottom') {
+      list = [...list].sort((a, b) => (productStats[a.id || a._id]?.count || 0) - (productStats[b.id || b._id]?.count || 0)).slice(0, 5);
+    }
+
+    return list;
+  }, [products, searchTerm, perfFilter, productStats]);
+
   if (loading) return <div className="text-center py-20 text-slate-500">Loading Products...</div>;
 
   return (
     <div className="space-y-8">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <h1 className="text-4xl font-extrabold text-white tracking-tight flex items-center gap-3">
           <Package className="text-green-500" /> Product Management
         </h1>
@@ -74,24 +113,56 @@ const ProductManagement = () => {
         </button>
       </div>
 
+      <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-center">
+        <DateFilter onRangeChange={setDateRange} />
+        <div className="relative w-full lg:w-64">
+          <Search className="absolute left-3 top-3 size-4 text-slate-500" />
+          <input
+            type="text"
+            placeholder="Search Product..."
+            className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-green-500 outline-none shadow-lg"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <div className="flex bg-slate-900 border border-slate-800 rounded-xl p-1 w-full lg:w-auto">
+          {['all', 'top', 'bottom', 'no-orders'].map(f => (
+            <button
+              key={f}
+              onClick={() => setPerfFilter(f)}
+              className={`flex-1 px-4 py-2 text-[9px] uppercase font-bold rounded-lg transition-all ${perfFilter === f ? 'bg-green-600 text-slate-900' : 'text-slate-500 hover:text-white'}`}
+            >
+              {f.replace('-', ' ')}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-800">
             <thead className="bg-slate-800/50">
               <tr>
                 <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Product Name</th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Pack Size</th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Default Price</th>
+                <th className="px-6 py-4 text-center text-xs font-bold text-slate-500 uppercase tracking-widest">Qty Sold</th>
+                <th className="px-6 py-4 text-right text-xs font-bold text-slate-500 uppercase tracking-widest">Sales Val</th>
                 <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Status</th>
                 <th className="px-6 py-4 text-right text-xs font-bold text-slate-500 uppercase tracking-widest">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
-              {products.map((product) => (
+              {filteredProducts.map((product) => (
                 <tr key={product.id || product._id} className="hover:bg-slate-800/30 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-white">{product.name}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400">{product.packSize}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-green-500 font-mono">₹{product.defaultPrice}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-bold text-white">{product.name}</div>
+                    <div className="text-[10px] text-slate-500 uppercase font-bold">{product.packSize} • ₹{product.defaultPrice}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-center">
+                     <span className="text-sm font-bold text-slate-200">{productStats[product.id || product._id]?.count || 0}</span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right">
+                     <span className="text-sm font-bold text-green-500">₹{(productStats[product.id || product._id]?.total || 0).toLocaleString()}</span>
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-3 py-1 inline-flex text-[10px] leading-5 font-bold rounded-full uppercase tracking-widest border ${
                       product.isActive
