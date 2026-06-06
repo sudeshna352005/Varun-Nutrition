@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api';
-import { Plus, Edit2, Trash2, MapPin, Phone, ExternalLink } from 'lucide-react';
+import { Plus, Edit2, Trash2, MapPin, Phone, ExternalLink, Search, Filter, CheckCircle, XCircle } from 'lucide-react';
 
 const ShopManagement = () => {
   const [shops, setShops] = useState([]);
   const [routes, setRoutes] = useState([]);
+  const [visits, setVisits] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedRoute, setSelectedRoute] = useState('');
+  const [visitFilter, setVisitFilter] = useState('all'); // 'all', 'visited', 'not-visited'
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingShop, setEditingShop] = useState(null);
   const [formData, setFormData] = useState({
@@ -18,16 +22,22 @@ const ShopManagement = () => {
   useEffect(() => {
     fetchShops();
     fetchRoutes();
+    fetchVisits();
   }, []);
 
   const fetchShops = async () => {
     const res = await api.get('/api/shops');
-    setShops(res.data);
+    setShops(res.data || []);
   };
 
   const fetchRoutes = async () => {
     const res = await api.get('/api/routes');
-    setRoutes(res.data);
+    setRoutes(res.data || []);
+  };
+
+  const fetchVisits = async () => {
+    const res = await api.get('/api/visits');
+    setVisits(res.data || []);
   };
 
   const handleSubmit = async (e) => {
@@ -56,27 +66,90 @@ const ShopManagement = () => {
     }
   };
 
+  const isVisitedToday = (shopName) => {
+    const today = new Date().toLocaleDateString();
+    return visits.some(v => v.shopName === shopName && new Date(v.timestamp).toLocaleDateString() === today);
+  };
+
+  const filteredShops = shops.filter(shop => {
+    const matchesSearch = shop.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          shop.address.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesRoute = !selectedRoute || shop.routeGroup === selectedRoute;
+    const visited = isVisitedToday(shop.name);
+    const matchesVisit = visitFilter === 'all' ||
+                         (visitFilter === 'visited' && visited) ||
+                         (visitFilter === 'not-visited' && !visited);
+
+    return matchesSearch && matchesRoute && matchesVisit;
+  });
+
   return (
-    <div>
-      <div className="flex justify-between items-center mb-8">
+    <div className="space-y-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <h1 className="text-4xl font-extrabold text-white tracking-tight">Shop Management</h1>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="bg-green-600 text-zinc-900 px-6 py-2 rounded-xl font-bold flex items-center hover:bg-green-500 transition-all shadow-lg shadow-green-600/20"
+          className="w-full md:w-auto bg-green-600 text-zinc-900 px-6 py-3 rounded-xl font-bold flex items-center justify-center hover:bg-green-500 transition-all shadow-lg shadow-green-600/20"
         >
           <Plus className="w-5 h-5 mr-2" /> Add Shop
         </button>
       </div>
 
-      {shops.length === 0 ? (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-3 size-4 text-slate-500" />
+          <input
+            type="text"
+            placeholder="Search Shop Name/Address..."
+            className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-green-500 outline-none"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <div className="relative">
+          <Filter className="absolute left-3 top-3 size-4 text-slate-500" />
+          <select
+            className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-green-500 outline-none appearance-none"
+            value={selectedRoute}
+            onChange={(e) => setSelectedRoute(e.target.value)}
+          >
+            <option value="">All Routes</option>
+            {routes.map(r => <option key={r.id || r._id} value={r.name}>{r.name}</option>)}
+          </select>
+        </div>
+        <div className="flex bg-slate-900 border border-slate-800 rounded-xl p-1">
+          {['all', 'visited', 'not-visited'].map(f => (
+            <button
+              key={f}
+              onClick={() => setVisitFilter(f)}
+              className={`flex-1 py-1.5 text-[10px] uppercase font-bold rounded-lg transition-all ${visitFilter === f ? 'bg-green-600 text-slate-900' : 'text-slate-500 hover:text-white'}`}
+            >
+              {f.replace('-', ' ')}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {filteredShops.length === 0 ? (
         <div className="bg-slate-900 p-20 text-center rounded-2xl border-2 border-dashed border-slate-800">
           <Store className="w-16 h-16 mx-auto text-zinc-700 mb-6" />
           <p className="text-xl text-slate-500 font-medium">No shops added yet.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {shops.map((shop) => (
+          {filteredShops.map((shop) => (
             <div key={shop.id} className="bg-slate-900 p-8 rounded-2xl border border-slate-800 relative group hover:border-slate-700 transition-all shadow-xl">
+              <div className="absolute top-4 left-4">
+                {isVisitedToday(shop.name) ? (
+                  <span className="flex items-center gap-1.5 px-3 py-1 bg-green-500/10 text-green-500 border border-green-500/20 rounded-full text-[10px] font-bold uppercase tracking-widest">
+                    <CheckCircle size={10} /> Visited Today
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1.5 px-3 py-1 bg-slate-800 text-slate-500 border border-slate-700 rounded-full text-[10px] font-bold uppercase tracking-widest">
+                    <XCircle size={10} /> Not Visited
+                  </span>
+                )}
+              </div>
               <div className="absolute top-6 right-6 space-x-3 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button onClick={() => handleEdit(shop)} className="text-blue-500 hover:text-blue-400 p-2 bg-slate-800 rounded-lg">
                   <Edit2 className="w-4 h-4" />

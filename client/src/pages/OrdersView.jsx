@@ -41,13 +41,21 @@ const OrdersView = ({ user }) => {
     }
   };
 
+  const [selectedWorker, setSelectedRouteFilter] = useState(''); // Reusing for worker filter
+
   const filteredOrders = orders.filter(order => {
     const matchesSearch = order.shopName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           order.workerName.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesShop = !selectedShop || order.shopName === selectedShop;
     const matchesRoute = !selectedRoute || order.routeName === selectedRoute;
-    const matchesDate = !selectedDate || new Date(order.timestamp).toLocaleDateString() === new Date(selectedDate).toLocaleDateString();
-    return matchesSearch && matchesShop && matchesRoute && matchesDate;
+    const matchesWorker = !selectedWorker || order.workerName === selectedWorker;
+
+    let matchesDate = true;
+    if (selectedDate) {
+      matchesDate = new Date(order.timestamp).toLocaleDateString() === new Date(selectedDate).toLocaleDateString();
+    }
+
+    return matchesSearch && matchesShop && matchesRoute && matchesWorker && matchesDate;
   });
 
   const handleUpdateOrder = async () => {
@@ -117,14 +125,24 @@ const OrdersView = ({ user }) => {
             {shops.map(s => <option key={s.id || s._id} value={s.name}>{s.name}</option>)}
           </select>
           {user.role === 'owner' && (
-            <select
-              className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white outline-none focus:ring-2 focus:ring-green-500"
-              value={selectedRoute}
-              onChange={(e) => setSelectedRoute(e.target.value)}
-            >
-              <option value="">All Routes</option>
-              {routes.map(r => <option key={r.id || r._id} value={r.name}>{r.name}</option>)}
-            </select>
+            <>
+              <select
+                className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white outline-none focus:ring-2 focus:ring-green-500"
+                value={selectedRoute}
+                onChange={(e) => setSelectedRoute(e.target.value)}
+              >
+                <option value="">All Routes</option>
+                {routes.map(r => <option key={r.id || r._id} value={r.name}>{r.name}</option>)}
+              </select>
+              <select
+                className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white outline-none focus:ring-2 focus:ring-green-500"
+                value={selectedWorker}
+                onChange={(e) => setSelectedRouteFilter(e.target.value)}
+              >
+                <option value="">All Workers</option>
+                {[...new Set(orders.map(o => o.workerName))].map(w => <option key={w} value={w}>{w}</option>)}
+              </select>
+            </>
           )}
           <input
             type="date"
