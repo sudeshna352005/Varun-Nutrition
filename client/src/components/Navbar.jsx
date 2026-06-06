@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Menu, X, LogOut, LayoutDashboard, Store, MapPin, ClipboardList, UserCheck, Users } from 'lucide-react';
+import { Menu, X, LogOut, LayoutDashboard, Store, MapPin, ClipboardList, UserCheck, Users, Package, ShoppingCart } from 'lucide-react';
 import Brand from './Brand';
 
 const Navbar = ({ user, onLogout }) => {
@@ -17,10 +17,13 @@ const Navbar = ({ user, onLogout }) => {
     { name: 'Shops', path: '/shops', icon: Store },
     { name: 'Routes', path: '/routes', icon: MapPin },
     { name: 'Workers', path: '/workers', icon: Users },
+    { name: 'Products', path: '/products', icon: Package },
+    { name: 'Orders', path: '/orders', icon: ShoppingCart },
     { name: 'Attendance', path: '/attendance', icon: UserCheck },
     { name: 'Reports', path: '/reports', icon: ClipboardList },
   ] : [
     { name: 'My Routes', path: '/', icon: MapPin },
+    { name: 'Orders', path: '/worker-orders', icon: ShoppingCart },
     { name: 'Attendance', path: '/worker-attendance', icon: UserCheck },
   ];
 

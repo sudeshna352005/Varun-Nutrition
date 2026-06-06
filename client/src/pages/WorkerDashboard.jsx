@@ -11,6 +11,9 @@ const WorkerDashboard = ({ user }) => {
   const [selectedShop, setSelectedShop] = useState(null);
   const [notes, setNotes] = useState('');
   const [photo, setPhoto] = useState(null);
+  const [createOrder, setCreateOrder] = useState(false);
+  const [products, setProducts] = useState([]);
+  const [orderItems, setOrderItems] = useState([]);
   const [visitHistory, setVisitHistory] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -25,13 +28,15 @@ const WorkerDashboard = ({ user }) => {
     setLoading(true);
     try {
       const workerId = user.id || user._id;
-      const [shopsRes, routesRes, visitsRes] = await Promise.all([
+      const [shopsRes, routesRes, visitsRes, productsRes] = await Promise.all([
         api.get(`/api/shops?workerId=${workerId}`),
         api.get(`/api/routes?workerId=${workerId}`),
-      api.get(`/api/visits?workerName=${user.name}`)
+        api.get(`/api/visits?workerName=${user.name}`),
+        api.get('/api/products')
       ]);
     setShops(shopsRes.data || []);
     setRoutes(routesRes.data || []);
+      setProducts(productsRes.data?.filter(p => p.isActive) || []);
     const visits = visitsRes.data || [];
       setVisitHistory(visits);
     } catch (err) {
@@ -52,30 +57,77 @@ const WorkerDashboard = ({ user }) => {
       alert('You must mark start work in Attendance before visiting shops.');
       return;
     }
-    const formData = new FormData();
 
-formData.append('shopName', selectedShop.name);
-formData.append('workerName', user.name);
-formData.append('notes', notes);
+    try {
+      const formData = new FormData();
+      formData.append('shopName', selectedShop.name);
+      formData.append('workerName', user.name);
+      formData.append('notes', notes);
 
-if (photo) {
-  formData.append('photo', photo);
-}
-
-    await api.post(
-      '/api/visits',
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
+      if (photo) {
+        formData.append('photo', photo);
       }
-    );
-    console.log("Visit saved");
-    setSelectedShop(null);
-    setNotes('');
-    setPhoto(null);
-    await fetchData();
+
+      // Save visit
+      await api.post('/api/visits', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      // Save order if requested
+      if (createOrder && orderItems.length > 0) {
+        const totalAmount = orderItems.reduce((sum, item) => sum + item.total, 0);
+        const totalQuantity = orderItems.reduce((sum, item) => sum + item.quantity, 0);
+
+        await api.post('/api/orders', {
+          workerName: user.name,
+          workerId: user.id || user._id,
+          shopName: selectedShop.name,
+          routeName: selectedShop.routeGroup,
+          items: orderItems,
+          totalQuantity,
+          totalAmount,
+          notes
+        });
+      }
+
+      console.log("Visit/Order saved");
+      setSelectedShop(null);
+      setNotes('');
+      setPhoto(null);
+      setCreateOrder(false);
+      setOrderItems([]);
+      await fetchData();
+    } catch (err) {
+      console.error("Failed to save visit", err);
+      alert("Error saving visit. Please try again.");
+    }
+  };
+
+  const addOrderItem = () => {
+    setOrderItems([...orderItems, { productId: '', name: '', packSize: '', quantity: 1, price: 0, total: 0 }]);
+  };
+
+  const removeOrderItem = (index) => {
+    setOrderItems(orderItems.filter((_, i) => i !== index));
+  };
+
+  const updateOrderItem = (index, field, value) => {
+    const newItems = [...orderItems];
+    const item = { ...newItems[index] };
+
+    if (field === 'productId') {
+      const product = products.find(p => p.id === value || p._id === value);
+      item.productId = value;
+      item.name = product.name;
+      item.packSize = product.packSize;
+      item.price = product.defaultPrice;
+    } else {
+      item[field] = value;
+    }
+
+    item.total = item.quantity * item.price;
+    newItems[index] = item;
+    setOrderItems(newItems);
   };
 
   const hasVisitedToday = (shopName) => {
@@ -217,7 +269,7 @@ if (photo) {
               onChange={(e) => setNotes(e.target.value)}
             />
             
-            <div className="mb-8">
+            <div className="mb-6">
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Attached Photo</label>
               <input
                 type="file"
@@ -225,6 +277,86 @@ if (photo) {
                 onChange={(e) => setPhoto(e.target.files[0])}
                 className="w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-slate-800 file:text-zinc-300 hover:file:bg-zinc-700 transition-all cursor-pointer"
               />
+            </div>
+
+            <div className="mb-8 p-4 bg-slate-800/50 rounded-xl border border-slate-700">
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  className="size-5 rounded border-slate-600 bg-slate-800 text-green-500 focus:ring-green-500/20"
+                  checked={createOrder}
+                  onChange={(e) => setCreateOrder(e.target.checked)}
+                />
+                <span className="text-sm font-bold text-slate-300 group-hover:text-white transition-colors">Create Order</span>
+              </label>
+
+              {createOrder && (
+                <div className="mt-6 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <div className="flex justify-between items-center">
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Order Items</p>
+                    <button
+                      onClick={addOrderItem}
+                      type="button"
+                      className="text-xs font-bold text-green-500 hover:text-green-400 flex items-center gap-1"
+                    >
+                      <Plus size={14} /> Add Product
+                    </button>
+                  </div>
+
+                  {orderItems.map((item, idx) => (
+                    <div key={idx} className="p-3 bg-slate-900 rounded-lg border border-slate-700 space-y-3">
+                      <div className="flex justify-between items-start gap-2">
+                        <select
+                          className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white outline-none focus:ring-1 focus:ring-green-500"
+                          value={item.productId}
+                          onChange={(e) => updateOrderItem(idx, 'productId', e.target.value)}
+                        >
+                          <option value="">Select Product</option>
+                          {products.map(p => (
+                            <option key={p.id || p._id} value={p.id || p._id}>{p.name} ({p.packSize})</option>
+                          ))}
+                        </select>
+                        <button onClick={() => removeOrderItem(idx)} className="text-red-500 p-1 hover:bg-red-500/10 rounded">
+                          <X size={14} />
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-3">
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Qty</label>
+                          <input
+                            type="number"
+                            min="1"
+                            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white"
+                            value={item.quantity}
+                            onChange={(e) => updateOrderItem(idx, 'quantity', parseInt(e.target.value) || 0)}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Price</label>
+                          <input
+                            type="number"
+                            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white"
+                            value={item.price}
+                            onChange={(e) => updateOrderItem(idx, 'price', parseFloat(e.target.value) || 0)}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Total</label>
+                          <div className="w-full py-1 text-xs font-bold text-green-500">₹{item.total.toFixed(2)}</div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {orderItems.length > 0 && (
+                    <div className="pt-4 border-t border-slate-700 flex justify-between items-center">
+                      <p className="text-xs font-bold text-slate-400">Total Amount</p>
+                      <p className="text-lg font-black text-green-500">₹{orderItems.reduce((sum, i) => sum + i.total, 0).toFixed(2)}</p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="flex gap-4">
