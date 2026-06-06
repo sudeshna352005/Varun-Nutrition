@@ -6,7 +6,7 @@ import {
 import { TrendingUp, Users, MapPin, CheckCircle } from 'lucide-react';
 
 const DashboardAnalytics = ({ data }) => {
-  const { workers = [], shops = [], visits = [], attendance = [] } = data || {};
+  const { workers = [], shops = [], visits = [], attendance = [], orders = [] } = data || {};
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -126,7 +126,17 @@ const DashboardAnalytics = ({ data }) => {
               <span className="text-purple-500 font-bold">{topWorker}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-slate-400">Most Active Route</span>
+              <span className="text-slate-400">Top Sales</span>
+              <span className="text-emerald-500 font-bold">
+                {(() => {
+                  const workerSales = {};
+                  orders.forEach(o => workerSales[o.workerName] = (workerSales[o.workerName] || 0) + o.totalAmount);
+                  return Object.keys(workerSales).sort((a,b) => workerSales[b] - workerSales[a])[0] || 'N/A';
+                })()}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-slate-400">Active Route</span>
               <span className="text-orange-500 font-bold">{topRoute}</span>
             </div>
             <div className="flex justify-between items-center">

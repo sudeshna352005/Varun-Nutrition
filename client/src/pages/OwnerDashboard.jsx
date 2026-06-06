@@ -1,19 +1,23 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import api, { getImageUrl } from '../api';
-import { Store, Users, MapPin, ClipboardCheck, ShoppingBag, IndianRupee, Clock, ArrowRight, Briefcase, Camera } from 'lucide-react';
+import { Store, Users, MapPin, ClipboardCheck, ShoppingBag, IndianRupee, Clock, ArrowRight, Briefcase, Camera, Search, Filter, Download, AlertCircle } from 'lucide-react';
 import DashboardAnalytics from '../components/DashboardAnalytics';
 import DateFilter from '../components/DateFilter';
 import Skeleton from '../components/Skeleton';
 import { isInRange, getRangeDates } from '../utils/dateUtils';
+import * as XLSX from 'xlsx';
 
 const OwnerDashboard = () => {
   const [dateRange, setDateRange] = useState(getRangeDates('today'));
+  const [selectedWorker, setSelectedWorker] = useState('');
+  const [selectedRoute, setSelectedRoute] = useState('');
   const [rawData, setRawData] = useState({
     workers: [],
     shops: [],
     visits: [],
     attendance: [],
-    orders: []
+    orders: [],
+    routes: []
   });
   const [loading, setLoading] = useState(true);
 
@@ -34,7 +38,8 @@ const OwnerDashboard = () => {
           shops: shopsRes.data || [],
           visits: visitsRes.data || [],
           attendance: attendanceRes.data || [],
-          orders: ordersRes.data || []
+          orders: ordersRes.data || [],
+          routes: routesRes.data || []
         });
       } catch (err) {
         console.error("Failed to fetch dashboard data", err);
@@ -46,13 +51,23 @@ const OwnerDashboard = () => {
   }, []);
 
   const filteredData = useMemo(() => {
-    return {
-      ...rawData,
-      visits: rawData.visits.filter(v => isInRange(v.timestamp, dateRange)),
-      attendance: rawData.attendance.filter(a => isInRange(a.startTime, dateRange)),
-      orders: rawData.orders.filter(o => isInRange(o.timestamp, dateRange))
-    };
-  }, [rawData, dateRange]);
+    let visits = rawData.visits.filter(v => isInRange(v.timestamp, dateRange));
+    let attendance = rawData.attendance.filter(a => isInRange(a.startTime, dateRange));
+    let orders = rawData.orders.filter(o => isInRange(o.timestamp, dateRange));
+
+    if (selectedWorker) {
+      visits = visits.filter(v => v.workerName === selectedWorker);
+      attendance = attendance.filter(a => a.workerName === selectedWorker);
+      orders = orders.filter(o => o.workerName === selectedWorker);
+    }
+
+    if (selectedRoute) {
+      visits = visits.filter(v => v.routeName === selectedRoute);
+      orders = orders.filter(o => o.routeName === selectedRoute);
+    }
+
+    return { ...rawData, visits, attendance, orders };
+  }, [rawData, dateRange, selectedWorker, selectedRoute]);
 
   const stats = useMemo(() => {
     const ordersList = filteredData.orders;
@@ -65,10 +80,33 @@ const OwnerDashboard = () => {
       activeWorkers: activeAtSomePoint,
       visits: filteredData.visits.length,
       orders: ordersList.length,
+      delivered: ordersList.filter(o => o.status === 'delivered').length,
       sales: totalSales,
-      pending: ordersList.length // Placeholder
+      pending: ordersList.filter(o => o.status === 'pending').length
     };
   }, [filteredData, rawData.shops.length, rawData.workers.length]);
+
+  const shopsNotVisited = useMemo(() => {
+    const lastVisits = {};
+    rawData.visits.forEach(v => {
+      const existing = lastVisits[v.shopName];
+      if (!existing || new Date(v.timestamp) > new Date(existing)) {
+        lastVisits[v.shopName] = v.timestamp;
+      }
+    });
+
+    return rawData.shops
+      .map(shop => ({
+        ...shop,
+        lastVisit: lastVisits[shop.name] || null,
+        daysSince: lastVisits[shop.name]
+          ? Math.floor((new Date() - new Date(lastVisits[shop.name])) / (1000 * 60 * 60 * 24))
+          : 999
+      }))
+      .filter(s => s.daysSince > 7) // More than 7 days since last visit
+      .sort((a, b) => b.daysSince - a.daysSince)
+      .slice(0, 5);
+  }, [rawData.shops, rawData.visits]);
 
   const activityTimeline = useMemo(() => {
     const timeline = [
@@ -80,13 +118,39 @@ const OwnerDashboard = () => {
   }, [filteredData]);
 
   const cards = [
-    { name: 'Total Shops', value: stats.shops, icon: Store, color: 'bg-green-500/20 text-green-500' },
-    { name: 'Total Workers', value: stats.workers, icon: Users, color: 'bg-blue-500/20 text-blue-500' },
     { name: 'Filtered Visits', value: stats.visits, icon: ClipboardCheck, color: 'bg-orange-500/20 text-orange-500' },
-    { name: "Filtered Orders", value: stats.orders, icon: ShoppingBag, color: 'bg-purple-500/20 text-purple-500' },
-    { name: "Period Sales", value: `₹${stats.sales.toLocaleString()}`, icon: IndianRupee, color: 'bg-emerald-500/20 text-emerald-500' },
-    { name: 'Active (Period)', value: stats.activeWorkers, icon: Briefcase, color: 'bg-yellow-500/20 text-yellow-500' },
+    { name: "Orders Received", value: stats.orders, icon: ShoppingBag, color: 'bg-purple-500/20 text-purple-500' },
+    { name: "Orders Delivered", value: stats.delivered, icon: CheckCircle, color: 'bg-green-500/20 text-green-500' },
+    { name: "Total Sales", value: `₹${stats.sales.toLocaleString()}`, icon: IndianRupee, color: 'bg-emerald-500/20 text-emerald-500' },
+    { name: 'Pending Orders', value: stats.pending, icon: Clock, color: 'bg-yellow-500/20 text-yellow-500' },
+    { name: 'Active Workers', value: stats.activeWorkers, icon: Users, color: 'bg-blue-500/20 text-blue-500' },
   ];
+
+  const exportDashboard = () => {
+    const data = [
+      ['Dashboard Statistics'],
+      ['Metric', 'Value'],
+      ['Total Visits', stats.visits],
+      ['Orders Received', stats.orders],
+      ['Total Sales', stats.sales],
+      ['Active Workers', stats.activeWorkers],
+      [],
+      ['Recent Activity'],
+      ['Timestamp', 'Type', 'Worker', 'Target/Shop', 'Amount'],
+      ...activityTimeline.map(item => [
+        new Date(item.timestamp).toLocaleString(),
+        item.type.toUpperCase(),
+        item.workerName,
+        item.shopName || '-',
+        item.totalAmount || '-'
+      ])
+    ];
+
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Dashboard Analytics");
+    XLSX.writeFile(wb, `dashboard_export_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
 
   if (loading) return (
     <div className="space-y-10">
@@ -104,12 +168,44 @@ const OwnerDashboard = () => {
 
   return (
     <div className="pb-10">
-      <div className="flex flex-col xl:flex-row xl:items-center justify-between mb-10 gap-6">
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between mb-8 gap-6">
         <div>
           <h1 className="text-4xl font-extrabold text-white tracking-tight">Owner Dashboard</h1>
           <p className="text-slate-500 mt-1 font-medium">Comprehensive business analytics and activity tracking.</p>
         </div>
-        <DateFilter onRangeChange={setDateRange} />
+        <div className="flex flex-wrap items-center gap-4">
+          <button onClick={exportDashboard} className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-slate-300 rounded-xl hover:bg-slate-700 transition-all font-bold border border-slate-700">
+            <Download size={18} /> Export Data
+          </button>
+          <DateFilter onRangeChange={setDateRange} />
+        </div>
+      </div>
+
+      <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl mb-10 shadow-xl no-print">
+        <div className="flex flex-col md:flex-row gap-6">
+           <div className="flex-1 space-y-2">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Filter by Worker</label>
+              <select
+                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-green-500 outline-none appearance-none cursor-pointer"
+                value={selectedWorker}
+                onChange={(e) => setSelectedWorker(e.target.value)}
+              >
+                <option value="">All Workers</option>
+                {rawData.workers.map(w => <option key={w.id || w._id} value={w.name}>{w.name}</option>)}
+              </select>
+           </div>
+           <div className="flex-1 space-y-2">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Filter by Route</label>
+              <select
+                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-green-500 outline-none appearance-none cursor-pointer"
+                value={selectedRoute}
+                onChange={(e) => setSelectedRoute(e.target.value)}
+              >
+                <option value="">All Routes</option>
+                {rawData.routes.map(r => <option key={r.id || r._id} value={r.name}>{r.name}</option>)}
+              </select>
+           </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -216,12 +312,24 @@ const OwnerDashboard = () => {
         <div className="space-y-8 lg:col-span-1">
         
         <div className="bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-lg">
-          <h2 className="text-xl font-bold mb-6 text-white">System Status</h2>
-          <div className="flex items-center gap-3 p-4 bg-green-500/10 border border-green-500/20 rounded-xl">
-            <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
-            <p className="text-green-500 font-medium text-sm">All systems operational.</p>
+          <h2 className="text-xl font-bold mb-6 text-white flex items-center gap-2">
+            <AlertCircle className="text-yellow-500" /> Shops Needing Visit
+          </h2>
+          <div className="space-y-4">
+            {shopsNotVisited.map((shop) => (
+              <div key={shop.id || shop._id} className="p-4 bg-slate-800/40 rounded-xl border border-slate-800 flex justify-between items-center">
+                <div>
+                  <p className="font-bold text-white text-sm">{shop.name}</p>
+                  <p className="text-[10px] text-slate-500 uppercase font-bold">Last: {shop.lastVisit ? new Date(shop.lastVisit).toLocaleDateString() : 'Never'}</p>
+                </div>
+                <div className="text-right">
+                  <p className={`text-lg font-black ${shop.daysSince > 14 ? 'text-red-500' : 'text-yellow-500'}`}>{shop.daysSince === 999 ? '∞' : shop.daysSince}</p>
+                  <p className="text-[10px] text-slate-600 font-bold uppercase">Days</p>
+                </div>
+              </div>
+            ))}
+            {shopsNotVisited.length === 0 && <p className="text-slate-500 italic text-center py-4 text-sm">All shops recently visited.</p>}
           </div>
-          <p className="mt-4 text-slate-400 text-sm">Database connection active. All data is securely persisted.</p>
         </div>
       </div>
     </div>
