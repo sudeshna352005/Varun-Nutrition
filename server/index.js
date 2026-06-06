@@ -126,9 +126,12 @@ const upload = multer({ storage });
 
 // Health check
 app.get('/api/health', (req, res) => {
+  const models = mongoose.modelNames();
   res.json({
     status: 'ok',
     database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+    mongoState: mongoose.connection.readyState,
+    modelsLoaded: models,
     timestamp: new Date()
   });
 });
@@ -437,9 +440,21 @@ app.post('/api/products', async (req, res) => {
 app.put('/api/products/:id', async (req, res) => {
   try {
     const product = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    res.json(product);
+    if (product) {
+      res.json(product);
+    } else {
+      res.status(404).json({ message: 'Product not found' });
+    }
   } catch (err) {
     res.status(400).json({ message: err.message });
+  }
+});
+app.delete('/api/products/:id', async (req, res) => {
+  try {
+    await Product.findByIdAndDelete(req.params.id);
+    res.status(204).send();
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 });
 
@@ -471,9 +486,21 @@ app.post('/api/orders', async (req, res) => {
 app.put('/api/orders/:id', async (req, res) => {
   try {
     const order = await Order.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    res.json(order);
+    if (order) {
+      res.json(order);
+    } else {
+      res.status(404).json({ message: 'Order not found' });
+    }
   } catch (err) {
     res.status(400).json({ message: err.message });
+  }
+});
+app.delete('/api/orders/:id', async (req, res) => {
+  try {
+    await Order.findByIdAndDelete(req.params.id);
+    res.status(204).send();
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 });
 
