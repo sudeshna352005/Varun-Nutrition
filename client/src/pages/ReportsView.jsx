@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import api, { getImageUrl } from '../api';
 import { Calendar, Store, MessageSquare, ClipboardList, Search, Filter, Download, Printer, User, MapPin, Camera, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import Skeleton from '../components/Skeleton';
+import DateFilter from '../components/DateFilter';
+import { isInRange, getRangeDates } from '../utils/dateUtils';
 
 const ReportsView = () => {
   const [visits, setVisits] = useState([]);
@@ -14,11 +16,11 @@ const ReportsView = () => {
 
   // Filter states
   const [searchTerm, setSearchTerm] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [dateRange, setDateRange] = useState(getRangeDates('last30'));
   const [selectedWorker, setSelectedWorker] = useState('');
   const [selectedShop, setSelectedShop] = useState('');
   const [selectedRoute, setSelectedRoute] = useState('');
+  const [visitType, setVisitType] = useState('all'); // 'all', 'with-notes', 'without-notes'
   const [showOnlyPhotos, setShowOnlyPhotos] = useState(false);
   const [sortBy, setSortBy] = useState('newest');
   const [showFilters, setShowFilters] = useState(false);
@@ -47,34 +49,35 @@ const ReportsView = () => {
     }
   };
 
-  const filteredVisits = (visits || []).filter(v => {
-    const visitDate = v.timestamp?.split('T')[0] || '';
-    const shop = (shops || []).find(s => s.name === v.shopName);
+  const filteredVisits = useMemo(() => {
+    return (visits || []).filter(v => {
+      const shop = (shops || []).find(s => s.name === v.shopName);
 
-    const matchesSearch =
-      (v.shopName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (v.workerName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (v.notes && v.notes.toLowerCase().includes(searchTerm.toLowerCase()));
+      const matchesSearch =
+        (v.shopName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (v.workerName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (v.notes && v.notes.toLowerCase().includes(searchTerm.toLowerCase()));
 
-    const matchesDate =
-      (!startDate || visitDate >= startDate) &&
-      (!endDate || visitDate <= endDate);
+      const matchesDate = isInRange(v.timestamp, dateRange);
+      const matchesWorker = !selectedWorker || v.workerName === selectedWorker;
+      const matchesShop = !selectedShop || v.shopName === selectedShop;
+      const matchesRoute = !selectedRoute || (shop && shop.routeGroup === selectedRoute);
+      const matchesPhotos = !showOnlyPhotos || !!v.photo;
+      const matchesType = visitType === 'all' ||
+                         (visitType === 'with-notes' && v.notes?.trim()) ||
+                         (visitType === 'without-notes' && !v.notes?.trim());
 
-    const matchesWorker = !selectedWorker || v.workerName === selectedWorker;
-    const matchesShop = !selectedShop || v.shopName === selectedShop;
-    const matchesRoute = !selectedRoute || (shop && shop.routeGroup === selectedRoute);
-    const matchesPhotos = !showOnlyPhotos || !!v.photo;
-
-    return matchesSearch && matchesDate && matchesWorker && matchesShop && matchesRoute && matchesPhotos;
-  }).sort((a, b) => {
-    const timeA = new Date(a.timestamp || 0);
-    const timeB = new Date(b.timestamp || 0);
-    if (sortBy === 'newest') return timeB - timeA;
-    if (sortBy === 'oldest') return timeA - timeB;
-    if (sortBy === 'shop-az') return (a.shopName || '').localeCompare(b.shopName || '');
-    if (sortBy === 'worker-az') return (a.workerName || '').localeCompare(b.workerName || '');
-    return 0;
-  });
+      return matchesSearch && matchesDate && matchesWorker && matchesShop && matchesRoute && matchesPhotos && matchesType;
+    }).sort((a, b) => {
+      const timeA = new Date(a.timestamp || 0);
+      const timeB = new Date(b.timestamp || 0);
+      if (sortBy === 'newest') return timeB - timeA;
+      if (sortBy === 'oldest') return timeA - timeB;
+      if (sortBy === 'shop-az') return (a.shopName || '').localeCompare(b.shopName || '');
+      if (sortBy === 'worker-az') return (a.workerName || '').localeCompare(b.workerName || '');
+      return 0;
+    });
+  }, [visits, shops, searchTerm, dateRange, selectedWorker, selectedShop, selectedRoute, showOnlyPhotos, visitType, sortBy]);
 
   const stats = {
     total: filteredVisits.length,
@@ -123,11 +126,11 @@ const ReportsView = () => {
 
   const clearFilters = () => {
     setSearchTerm('');
-    setStartDate('');
-    setEndDate('');
+    setDateRange(getRangeDates('last30'));
     setSelectedWorker('');
     setSelectedShop('');
     setSelectedRoute('');
+    setVisitType('all');
     setShowOnlyPhotos(false);
   };
 
@@ -179,41 +182,27 @@ const ReportsView = () => {
       {/* Advanced Filters Panel */}
       {showFilters && (
         <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-2xl space-y-6 no-print animate-in fade-in slide-in-from-top-4 duration-300">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* Search */}
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Search Keywords</label>
-              <div className="relative">
-                <Search className="absolute left-3 top-2.5 size-4 text-slate-500" />
-                <input
-                  type="text"
-                  placeholder="Shop, Worker, Notes..."
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-10 pr-4 py-2 text-sm text-white focus:ring-2 focus:ring-green-500 outline-none transition-all placeholder-slate-600"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
+          <div className="flex flex-col lg:flex-row gap-6">
+            <div className="flex-1 space-y-4">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1 block">Quick Date Select</label>
+              <DateFilter onRangeChange={setDateRange} />
             </div>
 
-            {/* Date Range */}
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Date Range</label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="date"
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:ring-2 focus:ring-green-500 outline-none"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                />
-                <span className="text-slate-600">-</span>
-                <input
-                  type="date"
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:ring-2 focus:ring-green-500 outline-none"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 flex-[2]">
+              {/* Search */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Search Keywords</label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-2.5 size-4 text-slate-500" />
+                  <input
+                    type="text"
+                    placeholder="Shop, Worker, Notes..."
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-10 pr-4 py-2 text-sm text-white focus:ring-2 focus:ring-green-500 outline-none transition-all placeholder-slate-600"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
               </div>
-            </div>
 
             {/* Worker Filter */}
             <div className="space-y-2">
@@ -243,7 +232,7 @@ const ReportsView = () => {
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-slate-800">
-            <div className="flex items-center gap-6">
+            <div className="flex flex-wrap items-center gap-6">
               <label className="flex items-center gap-2 cursor-pointer group">
                 <input
                   type="checkbox"
@@ -251,8 +240,20 @@ const ReportsView = () => {
                   checked={showOnlyPhotos}
                   onChange={(e) => setShowOnlyPhotos(e.target.checked)}
                 />
-                <span className="text-sm text-slate-300 group-hover:text-white transition-colors">Only reports with photos</span>
+                <span className="text-sm text-slate-300 group-hover:text-white transition-colors">Photos Only</span>
               </label>
+
+              <div className="flex bg-slate-800 p-1 rounded-lg">
+                {['all', 'with-notes', 'without-notes'].map(t => (
+                  <button
+                    key={t}
+                    onClick={() => setVisitType(t)}
+                    className={`px-3 py-1 text-[10px] uppercase font-bold rounded-md transition-all ${visitType === t ? 'bg-green-600 text-zinc-900' : 'text-slate-400 hover:text-white'}`}
+                  >
+                    {t.replace('-', ' ')}
+                  </button>
+                ))}
+              </div>
               <div className="flex items-center gap-3">
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Sort By:</span>
                 <div className="flex bg-slate-800 rounded-lg p-1">

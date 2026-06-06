@@ -1,14 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import api from '../api';
-import { Plus, Edit2, Trash2, MapPin, Phone, ExternalLink, Search, Filter, CheckCircle, XCircle } from 'lucide-react';
+import { Plus, Edit2, Trash2, MapPin, Phone, ExternalLink, Search, Filter, CheckCircle, XCircle, ShoppingBag } from 'lucide-react';
+import DateFilter from '../components/DateFilter';
+import { isInRange, getRangeDates } from '../utils/dateUtils';
 
 const ShopManagement = () => {
   const [shops, setShops] = useState([]);
   const [routes, setRoutes] = useState([]);
   const [visits, setVisits] = useState([]);
+  const [orders, setOrders] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRoute, setSelectedRoute] = useState('');
-  const [visitFilter, setVisitFilter] = useState('all'); // 'all', 'visited', 'not-visited'
+  const [visitFilter, setVisitFilter] = useState('all'); // 'all', 'visited', 'not-visited', 'ordered-week', 'no-orders-month'
+  const [dateRange, setDateRange] = useState(getRangeDates('today'));
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingShop, setEditingShop] = useState(null);
   const [formData, setFormData] = useState({
@@ -20,24 +24,24 @@ const ShopManagement = () => {
   });
 
   useEffect(() => {
-    fetchShops();
-    fetchRoutes();
-    fetchVisits();
+    fetchData();
   }, []);
 
-  const fetchShops = async () => {
-    const res = await api.get('/api/shops');
-    setShops(res.data || []);
-  };
-
-  const fetchRoutes = async () => {
-    const res = await api.get('/api/routes');
-    setRoutes(res.data || []);
-  };
-
-  const fetchVisits = async () => {
-    const res = await api.get('/api/visits');
-    setVisits(res.data || []);
+  const fetchData = async () => {
+    try {
+      const [sRes, rRes, vRes, oRes] = await Promise.all([
+        api.get('/api/shops'),
+        api.get('/api/routes'),
+        api.get('/api/visits'),
+        api.get('/api/orders')
+      ]);
+      setShops(sRes.data || []);
+      setRoutes(rRes.data || []);
+      setVisits(vRes.data || []);
+      setOrders(oRes.data || []);
+    } catch (err) {
+      console.error("Failed to fetch shops data", err);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -50,7 +54,7 @@ const ShopManagement = () => {
     setIsModalOpen(false);
     setEditingShop(null);
     setFormData({ name: '', address: '', phone: '', routeGroup: '', mapsLink: '' });
-    fetchShops();
+    fetchData();
   };
 
   const handleEdit = (shop) => {
@@ -62,7 +66,7 @@ const ShopManagement = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this shop?')) {
       await api.delete(`/api/shops/${id}`);
-      fetchShops();
+      fetchData();
     }
   };
 
@@ -71,17 +75,29 @@ const ShopManagement = () => {
     return visits.some(v => v.shopName === shopName && new Date(v.timestamp).toLocaleDateString() === today);
   };
 
-  const filteredShops = shops.filter(shop => {
-    const matchesSearch = shop.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          shop.address.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRoute = !selectedRoute || shop.routeGroup === selectedRoute;
-    const visited = isVisitedToday(shop.name);
-    const matchesVisit = visitFilter === 'all' ||
-                         (visitFilter === 'visited' && visited) ||
-                         (visitFilter === 'not-visited' && !visited);
+  const filteredShops = useMemo(() => {
+    const now = new Date();
+    const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    return matchesSearch && matchesRoute && matchesVisit;
-  });
+    return shops.filter(shop => {
+      const matchesSearch = shop.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            shop.address.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesRoute = !selectedRoute || shop.routeGroup === selectedRoute;
+
+      const visited = isVisitedToday(shop.name);
+      const orderedThisWeek = orders.some(o => o.shopName === shop.name && new Date(o.timestamp) >= startOfWeek);
+      const noOrdersMonth = !orders.some(o => o.shopName === shop.name && new Date(o.timestamp) >= startOfMonth);
+
+      let matchesVisit = true;
+      if (visitFilter === 'visited') matchesVisit = visited;
+      if (visitFilter === 'not-visited') matchesVisit = !visited;
+      if (visitFilter === 'ordered-week') matchesVisit = orderedThisWeek;
+      if (visitFilter === 'no-orders-month') matchesVisit = noOrdersMonth;
+
+      return matchesSearch && matchesRoute && matchesVisit;
+    });
+  }, [shops, searchTerm, selectedRoute, visitFilter, visits, orders]);
 
   return (
     <div className="space-y-8">
@@ -117,14 +133,14 @@ const ShopManagement = () => {
             {routes.map(r => <option key={r.id || r._id} value={r.name}>{r.name}</option>)}
           </select>
         </div>
-        <div className="flex bg-slate-900 border border-slate-800 rounded-xl p-1">
-          {['all', 'visited', 'not-visited'].map(f => (
+        <div className="flex flex-wrap bg-slate-900 border border-slate-800 rounded-xl p-1 lg:col-span-2">
+          {['all', 'visited', 'not-visited', 'ordered-week', 'no-orders-month'].map(f => (
             <button
               key={f}
               onClick={() => setVisitFilter(f)}
-              className={`flex-1 py-1.5 text-[10px] uppercase font-bold rounded-lg transition-all ${visitFilter === f ? 'bg-green-600 text-slate-900' : 'text-slate-500 hover:text-white'}`}
+              className={`flex-1 min-w-[80px] py-1.5 text-[9px] uppercase font-bold rounded-lg transition-all ${visitFilter === f ? 'bg-green-600 text-slate-900' : 'text-slate-500 hover:text-white'}`}
             >
-              {f.replace('-', ' ')}
+              {f.replace(/-/g, ' ')}
             </button>
           ))}
         </div>

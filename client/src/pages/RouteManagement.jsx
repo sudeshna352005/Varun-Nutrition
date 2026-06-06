@@ -35,7 +35,7 @@ const RouteManagement = () => {
     if (!newRoute) return;
     await api.post('/api/routes', { name: newRoute });
     setNewRoute('');
-    fetchRoutes();
+    fetchData();
   };
 
   const getRouteCoverage = (routeName) => {

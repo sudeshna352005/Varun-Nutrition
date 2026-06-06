@@ -7,6 +7,7 @@ const WorkerManagement = () => {
   const [workers, setWorkers] = useState([]);
   const [routes, setRoutes] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all'); // 'all', 'route-assigned', 'no-route'
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingWorker, setEditingWorker] = useState(null);
   const [formData, setFormData] = useState({
@@ -106,10 +107,17 @@ const WorkerManagement = () => {
     }
   };
 
-  const filteredWorkers = workers.filter(w =>
-    w.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    w.username.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredWorkers = workers.filter(w => {
+    const matchesSearch = w.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          w.username.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const hasRoutes = w.assignedRoutes && w.assignedRoutes.length > 0;
+    let matchesStatus = true;
+    if (statusFilter === 'route-assigned') matchesStatus = hasRoutes;
+    if (statusFilter === 'no-route') matchesStatus = !hasRoutes;
+
+    return matchesSearch && matchesStatus;
+  });
 
   return (
     <div className="space-y-8">
@@ -126,6 +134,17 @@ const WorkerManagement = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
+          </div>
+          <div className="flex bg-slate-900 border border-slate-800 rounded-xl p-1 w-full md:w-auto">
+            {['all', 'route-assigned', 'no-route'].map(f => (
+              <button
+                key={f}
+                onClick={() => setStatusFilter(f)}
+                className={`flex-1 px-3 py-1.5 text-[9px] uppercase font-bold rounded-lg transition-all ${statusFilter === f ? 'bg-green-600 text-slate-900' : 'text-slate-500 hover:text-white'}`}
+              >
+                {f.replace('-', ' ')}
+              </button>
+            ))}
           </div>
           <button
             onClick={() => setIsModalOpen(true)}
