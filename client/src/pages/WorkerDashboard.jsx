@@ -24,6 +24,17 @@ const WorkerDashboard = ({ user }) => {
     checkWorkingStatus();
   }, []);
 
+  useEffect(() => {
+    if (selectedShop) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [selectedShop]);
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -258,120 +269,129 @@ const WorkerDashboard = ({ user }) => {
 
       {selectedShop && (
         <div className="fixed inset-0 bg-zinc-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 w-full max-w-md shadow-2xl">
-            <h2 className="text-2xl font-bold mb-2 text-white">Visit: {selectedShop.name}</h2>
-            <p className="text-slate-500 text-sm mb-6 uppercase tracking-wider font-bold">Log visit details</p>
-            
-            <textarea
-              placeholder="e.g., Stock checked, order placed for 50 units."
-              className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 h-32 mb-6 focus:ring-2 focus:ring-green-500 outline-none text-white placeholder-zinc-600 transition-all"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-            />
-            
-            <div className="mb-6">
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Attached Photo</label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => setPhoto(e.target.files[0])}
-                className="w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-slate-800 file:text-zinc-300 hover:file:bg-zinc-700 transition-all cursor-pointer"
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl max-h-[90vh] flex flex-col overflow-hidden">
+            {/* Modal Header */}
+            <div className="p-6 border-b border-slate-800/50">
+              <h2 className="text-2xl font-bold mb-1 text-white">Visit: {selectedShop.name}</h2>
+              <p className="text-slate-500 text-xs uppercase tracking-wider font-bold">Log visit details</p>
+            </div>
+
+            {/* Modal Body - Scrollable */}
+            <div className="p-6 overflow-y-auto flex-1 space-y-6 custom-scrollbar">
+              <textarea
+                placeholder="e.g., Stock checked, order placed for 50 units."
+                className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 h-32 focus:ring-2 focus:ring-green-500 outline-none text-white placeholder-zinc-600 transition-all"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
               />
-            </div>
 
-            <div className="mb-8 p-4 bg-slate-800/50 rounded-xl border border-slate-700">
-              <label className="flex items-center gap-3 cursor-pointer group">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Attached Photo</label>
                 <input
-                  type="checkbox"
-                  className="size-5 rounded border-slate-600 bg-slate-800 text-green-500 focus:ring-green-500/20"
-                  checked={createOrder}
-                  onChange={(e) => setCreateOrder(e.target.checked)}
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setPhoto(e.target.files[0])}
+                  className="w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-slate-800 file:text-zinc-300 hover:file:bg-zinc-700 transition-all cursor-pointer"
                 />
-                <span className="text-sm font-bold text-slate-300 group-hover:text-white transition-colors">Create Order</span>
-              </label>
+              </div>
 
-              {createOrder && (
-                <div className="mt-6 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
-                  <div className="flex justify-between items-center">
-                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Order Items</p>
-                    <button
-                      onClick={addOrderItem}
-                      type="button"
-                      className="text-xs font-bold text-green-500 hover:text-green-400 flex items-center gap-1"
-                    >
-                      <Plus size={14} /> Add Product
-                    </button>
+              <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700">
+                <label className="flex items-center gap-3 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    className="size-5 rounded border-slate-600 bg-slate-800 text-green-500 focus:ring-green-500/20"
+                    checked={createOrder}
+                    onChange={(e) => setCreateOrder(e.target.checked)}
+                  />
+                  <span className="text-sm font-bold text-slate-300 group-hover:text-white transition-colors">Create Order</span>
+                </label>
+
+                {createOrder && (
+                  <div className="mt-6 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div className="flex justify-between items-center">
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Order Items</p>
+                      <button
+                        onClick={addOrderItem}
+                        type="button"
+                        className="text-xs font-bold text-green-500 hover:text-green-400 flex items-center gap-1"
+                      >
+                        <Plus size={14} /> Add Product
+                      </button>
+                    </div>
+
+                    {orderItems.map((item, idx) => (
+                      <div key={idx} className="p-3 bg-slate-900 rounded-lg border border-slate-700 space-y-3">
+                        <div className="flex justify-between items-start gap-2">
+                          <select
+                            className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white outline-none focus:ring-1 focus:ring-green-500"
+                            value={item.productId}
+                            onChange={(e) => updateOrderItem(idx, 'productId', e.target.value)}
+                          >
+                            <option value="">Select Product</option>
+                            {products.map(p => (
+                              <option key={p.id || p._id} value={p.id || p._id}>{p.name} ({p.packSize})</option>
+                            ))}
+                          </select>
+                          <button onClick={() => removeOrderItem(idx)} className="text-red-500 p-1 hover:bg-red-500/10 rounded">
+                            <X size={14} />
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-3">
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Qty</label>
+                            <input
+                              type="number"
+                              min="1"
+                              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white"
+                              value={item.quantity}
+                              onChange={(e) => updateOrderItem(idx, 'quantity', parseInt(e.target.value) || 0)}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Price</label>
+                            <input
+                              type="number"
+                              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white"
+                              value={item.price}
+                              onChange={(e) => updateOrderItem(idx, 'price', parseFloat(e.target.value) || 0)}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Total</label>
+                            <div className="w-full py-1 text-xs font-bold text-green-500">₹{item.total.toFixed(2)}</div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+
+                    {orderItems.length > 0 && (
+                      <div className="pt-4 border-t border-slate-700 flex justify-between items-center">
+                        <p className="text-xs font-bold text-slate-400">Total Amount</p>
+                        <p className="text-lg font-black text-green-500">₹{orderItems.reduce((sum, i) => sum + i.total, 0).toFixed(2)}</p>
+                      </div>
+                    )}
                   </div>
-
-                  {orderItems.map((item, idx) => (
-                    <div key={idx} className="p-3 bg-slate-900 rounded-lg border border-slate-700 space-y-3">
-                      <div className="flex justify-between items-start gap-2">
-                        <select
-                          className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white outline-none focus:ring-1 focus:ring-green-500"
-                          value={item.productId}
-                          onChange={(e) => updateOrderItem(idx, 'productId', e.target.value)}
-                        >
-                          <option value="">Select Product</option>
-                          {products.map(p => (
-                            <option key={p.id || p._id} value={p.id || p._id}>{p.name} ({p.packSize})</option>
-                          ))}
-                        </select>
-                        <button onClick={() => removeOrderItem(idx)} className="text-red-500 p-1 hover:bg-red-500/10 rounded">
-                          <X size={14} />
-                        </button>
-                      </div>
-
-                      <div className="grid grid-cols-3 gap-3">
-                        <div>
-                          <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Qty</label>
-                          <input
-                            type="number"
-                            min="1"
-                            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white"
-                            value={item.quantity}
-                            onChange={(e) => updateOrderItem(idx, 'quantity', parseInt(e.target.value) || 0)}
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Price</label>
-                          <input
-                            type="number"
-                            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white"
-                            value={item.price}
-                            onChange={(e) => updateOrderItem(idx, 'price', parseFloat(e.target.value) || 0)}
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Total</label>
-                          <div className="w-full py-1 text-xs font-bold text-green-500">₹{item.total.toFixed(2)}</div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-
-                  {orderItems.length > 0 && (
-                    <div className="pt-4 border-t border-slate-700 flex justify-between items-center">
-                      <p className="text-xs font-bold text-slate-400">Total Amount</p>
-                      <p className="text-lg font-black text-green-500">₹{orderItems.reduce((sum, i) => sum + i.total, 0).toFixed(2)}</p>
-                    </div>
-                  )}
-                </div>
-              )}
+                )}
+              </div>
             </div>
 
-            <div className="flex gap-4">
-              <button
-                onClick={() => setSelectedShop(null)}
-                className="flex-1 px-6 py-3 bg-slate-800 text-slate-400 font-bold rounded-xl hover:bg-zinc-700 transition-all"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleVisit}
-                className="flex-[2] px-6 py-3 bg-green-600 text-zinc-900 font-bold rounded-xl hover:bg-green-500 transition-all shadow-lg shadow-green-600/20 flex items-center justify-center"
-              >
-                <CheckCircle className="w-5 h-5 mr-2" /> Finish Visit
-              </button>
+            {/* Modal Footer - Fixed */}
+            <div className="p-6 border-t border-slate-800/50">
+              <div className="flex gap-4">
+                <button
+                  onClick={() => setSelectedShop(null)}
+                  className="flex-1 px-6 py-3 bg-slate-800 text-slate-400 font-bold rounded-xl hover:bg-zinc-700 transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleVisit}
+                  className="flex-[2] px-6 py-3 bg-green-600 text-zinc-900 font-bold rounded-xl hover:bg-green-500 transition-all shadow-lg shadow-green-600/20 flex items-center justify-center"
+                >
+                  <CheckCircle className="w-5 h-5 mr-2" /> Finish Visit
+                </button>
+              </div>
             </div>
           </div>
         </div>
