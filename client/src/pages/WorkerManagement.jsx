@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api';
-import { Plus, Edit2, Trash2, User, Lock, Mail, MapPin } from 'lucide-react';
+import { Plus, Edit2, Trash2, User, Lock, Mail, MapPin, Eye, EyeOff } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const WorkerManagement = () => {
@@ -14,6 +14,7 @@ const WorkerManagement = () => {
     password: '',
     assignedRoutes: []
   });
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     fetchWorkers();
@@ -54,6 +55,7 @@ const WorkerManagement = () => {
       setIsModalOpen(false);
       setEditingWorker(null);
       setFormData({ name: '', username: '', password: '', assignedRoutes: [] });
+      setShowPassword(false);
       fetchWorkers();
     } catch (err) {
       console.error("Failed to save worker", err);
@@ -66,7 +68,7 @@ const WorkerManagement = () => {
     setFormData({
       name: worker.name,
       username: worker.username,
-      password: worker.password,
+      password: '', // Clear password field when editing to avoid sending back the hash
       assignedRoutes: Array.isArray(worker.assignedRoutes) ? [...worker.assignedRoutes] : []
     });
     setIsModalOpen(true);
@@ -191,17 +193,26 @@ const WorkerManagement = () => {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Password</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                    {editingWorker ? 'Password (Leave blank to keep current)' : 'Password'}
+                  </label>
                   <div className="relative">
                     <Lock className="absolute left-4 top-3.5 h-5 w-5 text-slate-500" />
                     <input
-                      type="password"
-                      required
-                      className="pl-12 block w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-green-500 outline-none transition-all"
+                      type={showPassword ? "text" : "password"}
+                      required={!editingWorker}
+                      className="pl-12 pr-12 block w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-green-500 outline-none transition-all"
                       placeholder="••••••••"
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-3.5 text-slate-500 hover:text-slate-300 transition-colors"
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
                   </div>
                 </div>
 

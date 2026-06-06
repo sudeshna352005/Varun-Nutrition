@@ -320,14 +320,27 @@ app.post('/api/workers', async (req, res) => {
 });
 app.put('/api/workers/:id', async (req, res) => {
   try {
-    console.log("PUT /api/workers/:id - body:", req.body);
-    const worker = await Worker.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    if (worker) {
-      console.log("Worker updated successfully:", worker.name, "assignedRoutes:", worker.assignedRoutes);
-      res.json(worker);
-    } else {
-      res.status(404).json({ message: 'Worker not found' });
+    console.log("PUT /api/workers/:id - body received:", { ...req.body, password: req.body.password ? '***' : 'none' });
+    const { name, username, password, assignedRoutes } = req.body;
+
+    const worker = await Worker.findById(req.params.id);
+    if (!worker) {
+      return res.status(404).json({ message: 'Worker not found' });
     }
+
+    if (name) worker.name = name;
+    if (username) worker.username = username.toLowerCase().trim();
+    if (assignedRoutes) worker.assignedRoutes = assignedRoutes;
+
+    // Only update password if it's provided and it's NOT a hash (to be safe)
+    if (password && !password.startsWith('$2a$') && !password.startsWith('$2b$')) {
+      console.log("Updating password for worker:", worker.username);
+      worker.password = password;
+    }
+
+    await worker.save();
+    console.log("Worker updated successfully:", worker.name);
+    res.json(worker);
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
@@ -344,6 +357,7 @@ app.delete('/api/workers/:id', async (req, res) => {
 app.post('/api/login', async (req, res) => {
   try {
     const { username, password } = req.body;
+    console.log(`Login attempt: ${username}`);
 
     if (username === 'owner' && password === 'owner123') {
       return res.json({ role: 'owner', name: 'Varun Owner' });
@@ -357,7 +371,15 @@ app.post('/api/login', async (req, res) => {
       username: { $regex: new RegExp(`^${username.trim()}$`, 'i') }
     });
 
-    if (worker && await worker.comparePassword(password)) {
+    if (!worker) {
+      console.log(`Login failed: Worker ${username} not found`);
+      return res.status(401).json({ message: 'Invalid username or password' });
+    }
+
+    const isMatch = await worker.comparePassword(password);
+    console.log(`Password match for ${username}: ${isMatch}`);
+
+    if (isMatch) {
       console.log("Login successful for worker:", worker.username, "ID:", worker._id);
       return res.json({
         role: 'worker',

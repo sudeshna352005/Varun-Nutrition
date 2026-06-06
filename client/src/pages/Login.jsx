@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import api from '../api';
 import Brand from '../components/Brand';
+import { Eye, EyeOff } from 'lucide-react';
 
 const Login = ({ onLogin }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
@@ -45,14 +47,23 @@ const Login = ({ onLogin }) => {
           </div>
           <div className="mb-8">
             <label className="block text-slate-400 text-sm font-medium mb-2 uppercase tracking-wider">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 text-white transition-all"
-              placeholder="Enter password"
-              required
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 text-white transition-all pr-12"
+                placeholder="Enter password"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-3.5 text-slate-500 hover:text-slate-300 transition-colors"
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
           </div>
           <button
             type="submit"
