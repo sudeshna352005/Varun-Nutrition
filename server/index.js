@@ -341,11 +341,10 @@ app.post('/api/login', async (req, res) => {
     }
 
     const worker = await Worker.findOne({
-      username: { $regex: new RegExp(`^${username.trim()}$`, 'i') },
-      password: password
+      username: { $regex: new RegExp(`^${username.trim()}$`, 'i') }
     });
 
-    if (worker) {
+    if (worker && await worker.comparePassword(password)) {
       console.log("Login successful for worker:", worker.username, "ID:", worker._id);
       return res.json({
         role: 'worker',
