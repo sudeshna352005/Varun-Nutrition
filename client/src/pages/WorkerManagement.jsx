@@ -15,6 +15,14 @@ const WorkerManagement = () => {
     assignedRoutes: []
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [visiblePasswords, setVisiblePasswords] = useState({});
+
+  const togglePasswordVisibility = (workerId) => {
+    setVisiblePasswords(prev => ({
+      ...prev,
+      [workerId]: !prev[workerId]
+    }));
+  };
 
   useEffect(() => {
     fetchWorkers();
@@ -116,7 +124,7 @@ const WorkerManagement = () => {
               <tr>
                 <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-widest">Name</th>
                 <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-widest">Username</th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-widest">Password</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-widest">Password Info</th>
                 <th className="px-6 py-4 text-right text-xs font-bold text-slate-400 uppercase tracking-widest">Actions</th>
               </tr>
             </thead>
@@ -140,7 +148,18 @@ const WorkerManagement = () => {
                       {worker.username}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
-                      ••••••••
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-[10px] truncate max-w-[100px]">
+                          {visiblePasswords[worker.id || worker._id] ? worker.password : '••••••••'}
+                        </span>
+                        <button
+                          onClick={() => togglePasswordVisibility(worker.id || worker._id)}
+                          className="p-1 hover:bg-slate-800 rounded text-slate-600 hover:text-green-500 transition-colors"
+                          title="View Hashed/Stored Password"
+                        >
+                          {visiblePasswords[worker.id || worker._id] ? <EyeOff size={14} /> : <Eye size={14} />}
+                        </button>
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button onClick={() => handleEdit(worker)} className="text-blue-500 hover:text-blue-400 p-2 hover:bg-slate-800 rounded-lg transition-colors mr-2">

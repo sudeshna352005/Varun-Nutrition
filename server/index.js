@@ -61,27 +61,21 @@ async function seedData() {
     console.log('Routes seeded');
   }
 
-  const workerCount = await Worker.countDocuments();
-  if (workerCount === 0) {
+  // Ensure the default worker exists
+  const defaultWorker = await Worker.findOne({ username: 'worker' });
+  if (!defaultWorker) {
     await Worker.create({ name: 'Sales Worker', username: 'worker', password: 'worker123' });
-    console.log('Initial worker seeded');
-  } else {
-    // 1. Ensure the default worker exists
-    let worker = await Worker.findOne({ username: 'worker' });
-    if (!worker) {
-      await Worker.create({ name: 'Sales Worker', username: 'worker', password: 'worker123' });
-    }
+    console.log('Default worker seeded');
+  }
 
-    // 2. Fix legacy plain-text passwords
-    const allWorkers = await Worker.find();
-    for (const w of allWorkers) {
-      if (!w.password.startsWith('$2a$') && !w.password.startsWith('$2b$')) {
-        console.log(`Hashing plain-text password for worker: ${w.username}`);
-        const salt = await bcrypt.genSalt(10);
-        w.password = await bcrypt.hash(w.password, salt);
-        // Using updateOne to bypass the pre-save hook since we already hashed it
-        await Worker.updateOne({ _id: w._id }, { password: w.password });
-      }
+  // Fix legacy plain-text passwords for ALL workers
+  const allWorkers = await Worker.find();
+  for (const w of allWorkers) {
+    if (!w.password.startsWith('$2a$') && !w.password.startsWith('$2b$')) {
+      console.log(`Hashing plain-text password for worker: ${w.username}`);
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(w.password, salt);
+      await Worker.updateOne({ _id: w._id }, { password: hashedPassword });
     }
   }
 
