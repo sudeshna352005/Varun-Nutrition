@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api';
-import { MapPin, CheckCircle, ChevronRight, MessageSquare, ExternalLink, Info, Search } from 'lucide-react';
+import { MapPin, CheckCircle, ChevronRight, MessageSquare, ExternalLink, Info, Search, Plus, X } from 'lucide-react';
 import Skeleton from '../components/Skeleton';
 
 const WorkerDashboard = ({ user }) => {
