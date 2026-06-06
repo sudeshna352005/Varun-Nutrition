@@ -14,7 +14,9 @@ const ShopManagement = () => {
   const [visitFilter, setVisitFilter] = useState('all'); // 'all', 'visited', 'not-visited', 'ordered-week', 'no-orders-month'
   const [dateRange, setDateRange] = useState(getRangeDates('today'));
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [editingShop, setEditingShop] = useState(null);
+  const [selectedShopDetails, setSelectedShopDetails] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
     address: '',
@@ -152,50 +154,137 @@ const ShopManagement = () => {
           <p className="text-xl text-slate-500 font-medium">No shops added yet.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
           {filteredShops.map((shop) => (
-            <div key={shop.id} className="bg-slate-900 p-8 rounded-2xl border border-slate-800 relative group hover:border-slate-700 transition-all shadow-xl">
-              <div className="absolute top-4 left-4">
-                {isVisitedToday(shop.name) ? (
-                  <span className="flex items-center gap-1.5 px-3 py-1 bg-green-500/10 text-green-500 border border-green-500/20 rounded-full text-[10px] font-bold uppercase tracking-widest">
-                    <CheckCircle size={10} /> Visited Today
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-1.5 px-3 py-1 bg-slate-800 text-slate-500 border border-slate-700 rounded-full text-[10px] font-bold uppercase tracking-widest">
-                    <XCircle size={10} /> Not Visited
-                  </span>
-                )}
-              </div>
-              <div className="absolute top-6 right-6 space-x-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onClick={() => handleEdit(shop)} className="text-blue-500 hover:text-blue-400 p-2 bg-slate-800 rounded-lg">
-                  <Edit2 className="w-4 h-4" />
-                </button>
-                <button onClick={() => handleDelete(shop.id)} className="text-red-500 hover:text-red-400 p-2 bg-slate-800 rounded-lg">
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-              <h3 className="text-xl font-bold text-white mb-4 pr-16">{shop.name}</h3>
-              <div className="space-y-3 text-zinc-300">
-                <p className="flex items-start text-sm"><MapPin className="w-4 h-4 mr-3 text-green-500 flex-shrink-0 mt-1" /> {shop.address}</p>
-                <p className="flex items-center text-sm"><Phone className="w-4 h-4 mr-3 text-blue-500 flex-shrink-0" /> {shop.phone}</p>
-                <div className="pt-2">
-                  <span className="inline-block px-3 py-1 bg-slate-800 text-zinc-200 border border-slate-700 rounded-full text-[10px] font-bold uppercase tracking-wider">
+            <div key={shop.id || shop._id} className="bg-slate-900 rounded-2xl border border-slate-800 flex flex-col group hover:border-slate-700 transition-all shadow-xl overflow-hidden min-h-[320px]">
+              <div className="p-6 flex-1 flex flex-col relative">
+                <div className="flex justify-between items-start mb-6">
+                  {isVisitedToday(shop.name) ? (
+                    <span className="flex items-center gap-1.5 px-3 py-1 bg-green-500/10 text-green-500 border border-green-500/20 rounded-full text-[10px] font-bold uppercase tracking-widest">
+                      <CheckCircle size={10} /> Visited Today
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1.5 px-3 py-1 bg-slate-800 text-slate-500 border border-slate-700 rounded-full text-[10px] font-bold uppercase tracking-widest">
+                      <XCircle size={10} /> Not Visited
+                    </span>
+                  )}
+                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={(e) => { e.stopPropagation(); handleEdit(shop); }} className="text-blue-500 hover:text-blue-400 p-2 bg-slate-800 rounded-lg transition-colors shadow-inner">
+                      <Edit2 size={14} />
+                    </button>
+                    <button onClick={(e) => { e.stopPropagation(); handleDelete(shop.id || shop._id); }} className="text-red-500 hover:text-red-400 p-2 bg-slate-800 rounded-lg transition-colors shadow-inner">
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+
+                <h3 className="text-xl font-extrabold text-white mb-2 leading-tight">{shop.name}</h3>
+
+                <div className="space-y-4 flex-1">
+                  <div className="flex items-start text-sm text-zinc-400">
+                    <MapPin className="size-4 mr-3 text-green-500 shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <p className="line-clamp-2 leading-relaxed italic pr-2">{shop.address}</p>
+                      <button
+                        onClick={() => { setSelectedShopDetails(shop); setIsDetailsOpen(true); }}
+                        className="text-[10px] font-bold text-green-500 hover:text-green-400 uppercase tracking-widest mt-1 underline transition-colors"
+                      >
+                        View Details
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center text-sm text-zinc-400">
+                    <Phone className="size-4 mr-3 text-blue-500 shrink-0" />
+                    <span className="font-mono">{shop.phone || 'N/A'}</span>
+                  </div>
+                </div>
+
+                <div className="mt-6 pt-4 border-t border-slate-800 flex items-center justify-between">
+                  <span className="inline-flex items-center px-3 py-1 bg-slate-800 text-zinc-300 border border-slate-700 rounded-lg text-[10px] font-black uppercase tracking-tighter w-24 justify-center">
                     {shop.routeGroup}
                   </span>
+                  {shop.mapsLink ? (
+                    <a
+                      href={shop.mapsLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center text-blue-500 hover:text-blue-400 text-xs font-bold transition-all"
+                    >
+                      <ExternalLink className="size-3 mr-1.5" /> MAPS
+                    </a>
+                  ) : <span className="text-slate-700 text-[10px] font-bold uppercase tracking-widest italic">No Link</span>}
                 </div>
-                {shop.mapsLink && (
-                  <a
-                    href={shop.mapsLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center text-blue-500 hover:text-blue-400 text-sm font-medium mt-4 transition-colors"
-                  >
-                    <ExternalLink className="w-4 h-4 mr-2" /> Google Maps
-                  </a>
-                )}
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {isDetailsOpen && selectedShopDetails && (
+        <div className="fixed inset-0 bg-zinc-950/90 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-in fade-in duration-300">
+           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 max-w-lg w-full shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-1.5 bg-green-500" />
+              <button
+                onClick={() => setIsDetailsOpen(false)}
+                className="absolute top-6 right-6 text-slate-500 hover:text-white transition-colors"
+              >
+                <XCircle size={24} />
+              </button>
+
+              <h2 className="text-3xl font-black text-white mb-6 pr-10">{selectedShopDetails.name}</h2>
+
+              <div className="space-y-8">
+                <div className="flex gap-4">
+                   <div className="p-3 bg-green-500/10 rounded-2xl border border-green-500/20 self-start">
+                      <MapPin className="text-green-500" size={24} />
+                   </div>
+                   <div>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Full Address</p>
+                      <p className="text-white leading-relaxed font-medium">{selectedShopDetails.address}</p>
+                   </div>
+                </div>
+
+                <div className="flex gap-4">
+                   <div className="p-3 bg-blue-500/10 rounded-2xl border border-blue-500/20 self-start">
+                      <Phone className="text-blue-500" size={24} />
+                   </div>
+                   <div>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Contact Number</p>
+                      <p className="text-white font-mono text-xl">{selectedShopDetails.phone}</p>
+                   </div>
+                </div>
+
+                <div className="flex gap-4">
+                   <div className="p-3 bg-purple-500/10 rounded-2xl border border-purple-500/20 self-start">
+                      <MapPin className="text-purple-500" size={24} />
+                   </div>
+                   <div>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Assigned Route</p>
+                      <p className="text-white font-black text-xl uppercase tracking-tight">{selectedShopDetails.routeGroup}</p>
+                   </div>
+                </div>
+
+                <div className="pt-6 border-t border-slate-800 flex gap-4">
+                  <button
+                    onClick={() => { setIsDetailsOpen(false); handleEdit(selectedShopDetails); }}
+                    className="flex-1 bg-slate-800 text-white font-bold py-3 rounded-2xl hover:bg-slate-700 transition-all border border-slate-700 flex items-center justify-center gap-2"
+                  >
+                    <Edit2 size={16} /> Edit Shop
+                  </button>
+                  {selectedShopDetails.mapsLink && (
+                    <a
+                      href={selectedShopDetails.mapsLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 bg-green-600 text-zinc-900 font-extrabold py-3 rounded-2xl hover:bg-green-500 transition-all shadow-lg shadow-green-600/20 flex items-center justify-center gap-2"
+                    >
+                      <ExternalLink size={16} /> Open Maps
+                    </a>
+                  )}
+                </div>
+              </div>
+           </div>
         </div>
       )}
 
