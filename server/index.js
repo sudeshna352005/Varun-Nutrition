@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const bcrypt = require('bcryptjs');
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
@@ -65,10 +66,22 @@ async function seedData() {
     await Worker.create({ name: 'Sales Worker', username: 'worker', password: 'worker123' });
     console.log('Initial worker seeded');
   } else {
-    // Ensure the default worker exists or update it to be lowercase
-    const worker = await Worker.findOne({ username: 'worker' });
+    // 1. Ensure the default worker exists
+    let worker = await Worker.findOne({ username: 'worker' });
     if (!worker) {
       await Worker.create({ name: 'Sales Worker', username: 'worker', password: 'worker123' });
+    }
+
+    // 2. Fix legacy plain-text passwords
+    const allWorkers = await Worker.find();
+    for (const w of allWorkers) {
+      if (!w.password.startsWith('$2a$') && !w.password.startsWith('$2b$')) {
+        console.log(`Hashing plain-text password for worker: ${w.username}`);
+        const salt = await bcrypt.genSalt(10);
+        w.password = await bcrypt.hash(w.password, salt);
+        // Using updateOne to bypass the pre-save hook since we already hashed it
+        await Worker.updateOne({ _id: w._id }, { password: w.password });
+      }
     }
   }
 
