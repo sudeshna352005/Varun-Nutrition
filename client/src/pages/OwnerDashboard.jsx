@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import api, { getImageUrl } from '../api';
-import { Store, Users, MapPin, ClipboardCheck, ShoppingBag, IndianRupee, Clock, ArrowRight, Briefcase, Camera, Search, Filter, Download, AlertCircle } from 'lucide-react';
+import { Store, Users, MapPin, ClipboardCheck, ShoppingBag, IndianRupee, Clock, ArrowRight, Briefcase, Camera, Search, Filter, Download, AlertCircle, CheckCircle } from 'lucide-react';
 import DashboardAnalytics from '../components/DashboardAnalytics';
 import DateFilter from '../components/DateFilter';
 import Skeleton from '../components/Skeleton';
