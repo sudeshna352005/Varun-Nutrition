@@ -229,6 +229,7 @@ const ReportsView = () => {
                 {routes.map(r => <option key={r.id} value={r.name}>{r.name}</option>)}
               </select>
             </div>
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-slate-800">
