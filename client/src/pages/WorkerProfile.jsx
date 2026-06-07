@@ -23,8 +23,9 @@ const WorkerProfile = () => {
             api.get('/api/attendance'),
             api.get(`/api/visits?workerName=${currentWorker.name}`)
           ]);
-          setAttendance((attendanceRes.data || []).filter(a => a?.workerName === currentWorker.name));
-          setVisits(visitsRes.data || []);
+          const att = Array.isArray(attendanceRes.data) ? attendanceRes.data : [];
+          setAttendance(att.filter(a => a?.workerName === currentWorker.name));
+          setVisits(Array.isArray(visitsRes.data) ? visitsRes.data : []);
         }
       } catch (err) {
         console.error("Error fetching worker profile:", err);
@@ -111,7 +112,7 @@ const WorkerProfile = () => {
               <Calendar className="text-green-500" /> Recent Attendance
             </h2>
             <div className="space-y-3">
-              {attendance.slice(0, 5).map(a => (
+              {(Array.isArray(attendance) ? attendance : []).slice(0, 5).map(a => (
                 <div key={a.id} className="flex items-center gap-3 text-sm p-2 hover:bg-slate-800/40 rounded-lg transition-colors border border-transparent hover:border-slate-800">
                   <div className={`w-2.5 h-2.5 rounded-full shadow-sm ${a.status === 'completed' ? 'bg-green-500' : 'bg-yellow-500 animate-pulse'}`} />
                   <span className="font-bold text-slate-200">{new Date(a.startTime).toLocaleDateString()}</span>
@@ -133,7 +134,7 @@ const WorkerProfile = () => {
             </h2>
 
             <div className="relative border-l-2 border-slate-800 ml-4 space-y-8">
-              {activityTimeline.map((item, index) => (
+              {(Array.isArray(activityTimeline) ? activityTimeline : []).map((item, index) => (
                 <div key={item.id} className="relative pl-8">
                   {/* Timeline Dot */}
                   <div className={`absolute -left-[9px] top-1 w-4 h-4 rounded-full border-2 border-slate-900 shadow-md ${

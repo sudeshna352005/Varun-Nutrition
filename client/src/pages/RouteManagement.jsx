@@ -21,10 +21,10 @@ const RouteManagement = () => {
         api.get('/api/workers'),
         api.get('/api/visits')
       ]);
-      setRoutes(rRes.data || []);
-      setShops(sRes.data || []);
-      setWorkers(wRes.data || []);
-      setVisits(vRes.data || []);
+      setRoutes(Array.isArray(rRes.data) ? rRes.data : []);
+      setShops(Array.isArray(sRes.data) ? sRes.data : []);
+      setWorkers(Array.isArray(wRes.data) ? wRes.data : []);
+      setVisits(Array.isArray(vRes.data) ? vRes.data : []);
     } catch (err) {
       console.error("Failed to fetch route data", err);
     }
@@ -83,7 +83,7 @@ const RouteManagement = () => {
           <div className="bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-lg">
             <h2 className="text-lg font-bold mb-6 text-green-500 uppercase tracking-wider text-sm">Route List</h2>
             <ul className="space-y-3">
-              {routes.map(route => {
+              {(Array.isArray(routes) ? routes : []).map(route => {
                 const assigned = getAssignedWorkers(route.name);
                 const coverage = getRouteCoverage(route.name);
                 return (
@@ -130,7 +130,7 @@ const RouteManagement = () => {
           <div className="bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-lg">
             <h2 className="text-xl font-bold mb-8 text-white">Shops by Route</h2>
             <div className="space-y-10">
-              {routes.map(route => (
+              {(Array.isArray(routes) ? routes : []).map(route => (
                 <div key={route.id}>
                   <h3 className="font-bold text-blue-500 border-b border-slate-800 pb-2 mb-4 flex items-center uppercase tracking-widest text-xs">
                     <List className="w-4 h-4 mr-2" /> {route.name}

@@ -38,10 +38,10 @@ const ReportsView = () => {
         api.get('/api/routes'),
         api.get('/api/visits')
       ]);
-      setWorkers(workersRes.data || []);
-      setShops(shopsRes.data || []);
-      setRoutes(routesRes.data || []);
-      setVisits(visitsRes.data || []);
+      setWorkers(Array.isArray(workersRes.data) ? workersRes.data : []);
+      setShops(Array.isArray(shopsRes.data) ? shopsRes.data : []);
+      setRoutes(Array.isArray(routesRes.data) ? routesRes.data : []);
+      setVisits(Array.isArray(visitsRes.data) ? visitsRes.data : []);
     } catch (err) {
       console.error("Failed to fetch data", err);
     } finally {
@@ -216,7 +216,7 @@ const ReportsView = () => {
                 onChange={(e) => setSelectedWorker(e.target.value)}
               >
                 <option value="">All Workers</option>
-                {workers.map(w => <option key={w.id} value={w.name}>{w.name}</option>)}
+                {(Array.isArray(workers) ? workers : []).map(w => <option key={w.id} value={w.name}>{w.name}</option>)}
               </select>
             </div>
 
@@ -229,7 +229,7 @@ const ReportsView = () => {
                 onChange={(e) => setSelectedRoute(e.target.value)}
               >
                 <option value="">All Routes</option>
-                {routes.map(r => <option key={r.id} value={r.name}>{r.name}</option>)}
+                {(Array.isArray(routes) ? routes : []).map(r => <option key={r.id} value={r.name}>{r.name}</option>)}
               </select>
             </div>
             </div>
@@ -305,13 +305,13 @@ const ReportsView = () => {
 
       {/* Reports List */}
       <div className="space-y-6 print:space-y-8 pb-10">
-        {filteredVisits.length === 0 ? (
+        {(Array.isArray(filteredVisits) ? filteredVisits : []).length === 0 ? (
           <div className="bg-slate-900 p-20 text-center rounded-2xl border border-slate-800 shadow-xl">
             <ClipboardList className="w-16 h-16 mx-auto text-slate-800 mb-6" />
             <p className="text-slate-500 font-medium italic">No reports match your current search or filters.</p>
           </div>
         ) : (
-          filteredVisits.map((visit) => (
+          (Array.isArray(filteredVisits) ? filteredVisits : []).map((visit) => (
             <div key={visit.id} className="bg-slate-900 p-8 rounded-2xl shadow-xl border border-slate-800 hover:border-slate-700 transition-all break-inside-avoid group">
               <div className="flex flex-col md:flex-row justify-between items-start mb-6 gap-4">
                 <div>

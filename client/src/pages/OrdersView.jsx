@@ -34,10 +34,10 @@ const OrdersView = ({ user }) => {
         api.get('/api/products')
       ]);
 
-      setOrders(ordersRes.data || []);
-      setShops(shopsRes.data || []);
-      setRoutes(routesRes.data || []);
-      setProducts(productsRes.data || []);
+      setOrders(Array.isArray(ordersRes.data) ? ordersRes.data : []);
+      setShops(Array.isArray(shopsRes.data) ? shopsRes.data : []);
+      setRoutes(Array.isArray(routesRes.data) ? routesRes.data : []);
+      setProducts(Array.isArray(productsRes.data) ? productsRes.data : []);
     } catch (err) {
       console.error("Failed to fetch orders data", err);
     } finally {
@@ -128,7 +128,7 @@ const OrdersView = ({ user }) => {
             onChange={(e) => setSelectedShop(e.target.value)}
           >
             <option value="">All Shops</option>
-            {shops.map(s => <option key={s.id || s._id} value={s.name}>{s.name}</option>)}
+            {(Array.isArray(shops) ? shops : []).map(s => <option key={s.id || s._id} value={s.name}>{s.name}</option>)}
           </select>
           <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
             <select
@@ -137,7 +137,7 @@ const OrdersView = ({ user }) => {
               onChange={(e) => setSelectedProduct(e.target.value)}
             >
               <option value="">All Products</option>
-              {products.map(p => <option key={p.id || p._id} value={p.id || p._id}>{p.name}</option>)}
+              {(Array.isArray(products) ? products : []).map(p => <option key={p.id || p._id} value={p.id || p._id}>{p.name}</option>)}
             </select>
 
             {user.role === 'owner' && (
@@ -148,7 +148,7 @@ const OrdersView = ({ user }) => {
                   onChange={(e) => setSelectedRoute(e.target.value)}
                 >
                   <option value="">All Routes</option>
-                  {routes.map(r => <option key={r.id || r._id} value={r.name}>{r.name}</option>)}
+                  {(Array.isArray(routes) ? routes : []).map(r => <option key={r.id || r._id} value={r.name}>{r.name}</option>)}
                 </select>
                 <select
                   className="flex-1 lg:flex-none bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white outline-none focus:ring-2 focus:ring-green-500"
@@ -165,7 +165,7 @@ const OrdersView = ({ user }) => {
       </div>
 
       <div className="grid grid-cols-1 gap-6">
-        {filteredOrders.map((order) => (
+        {(Array.isArray(filteredOrders) ? filteredOrders : []).map((order) => (
           <div key={order.id || order._id} className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl hover:border-slate-700 transition-all">
             <div className="flex flex-col md:flex-row justify-between mb-6 gap-4">
               <div>
@@ -195,7 +195,7 @@ const OrdersView = ({ user }) => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800">
-                  {order.items.map((item, idx) => (
+                  {(Array.isArray(order.items) ? order.items : []).map((item, idx) => (
                     <tr key={idx}>
                       <td className="px-4 py-3 text-sm text-white">
                         {item.name} <span className="text-slate-500 text-xs">({item.packSize})</span>
@@ -250,7 +250,7 @@ const OrdersView = ({ user }) => {
                 </button>
               </div>
 
-              {editingOrder.items.map((item, idx) => (
+              {(Array.isArray(editingOrder.items) ? editingOrder.items : []).map((item, idx) => (
                 <div key={idx} className="grid grid-cols-1 md:grid-cols-4 gap-3 p-4 bg-slate-800/50 rounded-xl border border-slate-700 relative">
                   <div className="md:col-span-2">
                     <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Product</label>
@@ -260,7 +260,7 @@ const OrdersView = ({ user }) => {
                       onChange={(e) => updateEditingItem(idx, 'productId', e.target.value)}
                     >
                       <option value="">Select Product</option>
-                      {products.map(p => <option key={p.id || p._id} value={p.id || p._id}>{p.name} ({p.packSize})</option>)}
+                      {(Array.isArray(products) ? products : []).map(p => <option key={p.id || p._id} value={p.id || p._id}>{p.name} ({p.packSize})</option>)}
                     </select>
                   </div>
                   <div>

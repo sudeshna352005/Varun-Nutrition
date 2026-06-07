@@ -24,8 +24,8 @@ const ProductManagement = () => {
         api.get('/api/products'),
         api.get('/api/orders')
       ]);
-      setProducts(pRes.data || []);
-      setOrders(oRes.data || []);
+      setProducts(Array.isArray(pRes.data) ? pRes.data : []);
+      setOrders(Array.isArray(oRes.data) ? oRes.data : []);
     } catch (err) {
       console.error("Failed to fetch products data", err);
     } finally {
@@ -157,7 +157,7 @@ const ProductManagement = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
-              {filteredProducts.map((product) => (
+              {(Array.isArray(filteredProducts) ? filteredProducts : []).map((product) => (
                 <tr key={product.id || product._id} className="hover:bg-slate-800/30 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-bold text-white">{product.name}</div>
