@@ -318,7 +318,9 @@ const WorkerManagement = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Assign Routes</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                    {formData.role === 'Delivery Staff' ? 'Assign Delivery Areas' : 'Assign Routes'}
+                  </label>
                   <div className="grid grid-cols-2 gap-3 mt-2 max-h-40 overflow-y-auto p-2 bg-slate-800 rounded-xl border border-slate-700">
                     {routes.map(route => (
                       <label key={route.id} className="flex items-center gap-3 cursor-pointer group">
