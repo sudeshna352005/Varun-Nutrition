@@ -306,20 +306,20 @@ const ReportsView = () => {
       {/* Reports List */}
       <div className="space-y-6 print:space-y-8 pb-10">
         {(Array.isArray(filteredVisits) ? filteredVisits : []).length === 0 ? (
-          <div className="bg-slate-900 p-20 text-center rounded-2xl border border-slate-800 shadow-xl">
-            <ClipboardList className="w-16 h-16 mx-auto text-slate-800 mb-6" />
-            <p className="text-slate-500 font-medium italic">No reports match your current search or filters.</p>
+          <div className="bg-slate-900 p-10 md:p-20 text-center rounded-2xl border border-slate-800 shadow-xl">
+            <ClipboardList className="w-12 h-12 md:w-16 md:h-16 mx-auto text-slate-800 mb-6" />
+            <p className="text-slate-500 font-medium italic text-sm md:text-base">No reports match your current search or filters.</p>
           </div>
         ) : (
           (Array.isArray(filteredVisits) ? filteredVisits : []).map((visit) => (
-            <div key={visit.id} className="bg-slate-900 p-8 rounded-2xl shadow-xl border border-slate-800 hover:border-slate-700 transition-all break-inside-avoid group">
+            <div key={visit.id} className="bg-slate-900 p-5 md:p-8 rounded-2xl shadow-xl border border-slate-800 hover:border-slate-700 transition-all break-inside-avoid group">
               <div className="flex flex-col md:flex-row justify-between items-start mb-6 gap-4">
                 <div>
-                  <h3 className="text-xl font-bold flex items-center text-white mb-2">
-                    <Store className="w-5 h-5 mr-3 text-green-500" /> {visit.shopName}
+                  <h3 className="text-lg md:text-xl font-bold flex items-center text-white mb-2">
+                    <Store className="w-5 h-5 mr-3 text-green-500 shrink-0" /> {visit.shopName}
                   </h3>
-                  <div className="flex flex-wrap items-center gap-4">
-                    <span className="flex items-center gap-2 text-sm font-bold text-blue-400 uppercase tracking-widest">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                    <span className="flex items-center gap-2 text-xs font-bold text-blue-400 uppercase tracking-widest">
                       <User size={14} className="text-blue-500" />
                       {workers.find(w => w.name === visit.workerName) ? (
                         <Link to={`/worker/${workers.find(w => w.name === visit.workerName).id}`} className="hover:text-green-500 transition-colors">
@@ -328,43 +328,43 @@ const ReportsView = () => {
                       ) : visit.workerName}
                     </span>
                     <span className="hidden md:inline text-slate-700">•</span>
-                    <span className="flex items-center gap-2 text-sm text-slate-400 font-medium">
+                    <span className="flex items-center gap-2 text-xs text-slate-400 font-medium">
                       <Calendar size={14} className="text-slate-500" /> {new Date(visit.timestamp).toLocaleDateString()}
                     </span>
-                    <span className="flex items-center gap-2 text-sm text-slate-500 font-medium">
-                      <Calendar size={14} className="opacity-0" /> {new Date(visit.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    <span className="flex items-center gap-2 text-xs text-slate-500 font-medium">
+                      <Clock size={14} className="text-slate-600" /> {new Date(visit.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
                 </div>
                 {shops.find(s => s.name === visit.shopName) && (
-                  <div className="px-3 py-1 bg-slate-800 border border-slate-700 rounded-full text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 group-hover:border-slate-600 transition-all">
+                  <div className="px-3 py-1 bg-slate-800 border border-slate-700 rounded-full text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 group-hover:border-slate-600 transition-all">
                     <MapPin size={10} className="text-green-500" /> {shops.find(s => s.name === visit.shopName).routeGroup}
                   </div>
                 )}
               </div>
 
-              <div className="bg-slate-800/20 p-6 rounded-xl border border-slate-800 group-hover:bg-slate-800/30 transition-all">
-                <div className="flex flex-col lg:flex-row gap-8">
-                  <div className="flex-1">
-                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+              <div className="bg-slate-800/20 p-4 md:p-6 rounded-xl border border-slate-800 group-hover:bg-slate-800/30 transition-all">
+                <div className="flex flex-col lg:flex-row gap-6 md:gap-8">
+                  <div className="flex-1 order-2 lg:order-1">
+                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
                       <MessageSquare size={12} className="text-slate-400" /> Notes & Remarks
                     </p>
-                    <p className="text-slate-200 leading-relaxed text-sm lg:text-base selection:bg-green-500/30">
+                    <p className="text-slate-200 leading-relaxed text-sm selection:bg-green-500/30">
                       {visit.notes || <span className="italic text-slate-600">No notes provided for this visit.</span>}
                     </p>
                   </div>
 
                   {visit.photo && (
-                    <div className="flex-shrink-0">
-                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                    <div className="flex-shrink-0 order-1 lg:order-2 mb-4 lg:mb-0">
+                      <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
                         <Camera size={12} className="text-slate-400" /> Evidence Photo
                       </p>
-                      <div className="relative overflow-hidden rounded-xl bg-slate-800">
+                      <div className="relative overflow-hidden rounded-xl bg-slate-800 max-w-xs md:max-w-none">
                         <img
                           src={getImageUrl(visit.photo)}
                           alt="Visit Evidence"
                           loading="lazy"
-                          className="w-full md:w-64 h-64 md:h-48 object-cover rounded-xl border border-slate-700 shadow-lg group-hover:scale-105 transition-all duration-500 cursor-zoom-in"
+                          className="w-full md:w-64 h-48 md:h-48 object-cover rounded-xl border border-slate-700 shadow-lg group-hover:scale-105 transition-all duration-500 cursor-zoom-in"
                         />
                         <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-all pointer-events-none" />
                       </div>
