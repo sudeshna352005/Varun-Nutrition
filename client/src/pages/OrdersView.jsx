@@ -48,9 +48,10 @@ const OrdersView = ({ user }) => {
   const [selectedWorker, setSelectedRouteFilter] = useState(''); // Reusing for worker filter
 
   const filteredOrders = useMemo(() => {
-    return orders.filter(order => {
-      const matchesSearch = order.shopName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            order.workerName.toLowerCase().includes(searchTerm.toLowerCase());
+    const ordersArr = Array.isArray(orders) ? orders : [];
+    return ordersArr.filter(order => {
+      const matchesSearch = (order.shopName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            (order.workerName || '').toLowerCase().includes(searchTerm.toLowerCase());
       const matchesShop = !selectedShop || order.shopName === selectedShop;
       const matchesRoute = !selectedRoute || order.routeName === selectedRoute;
       const matchesWorker = !selectedWorker || order.workerName === selectedWorker;

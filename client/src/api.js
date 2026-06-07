@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-export const API_BASE_URL = window.location.origin;
+// Use relative URL so it works with Vite proxy in dev and unified port in prod
+export const API_BASE_URL = '';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -13,7 +14,7 @@ export const getImageUrl = (path) => {
   const normalizedPath = path.replace(/\\/g, '/');
   const cleanPath = normalizedPath.startsWith('/') ? normalizedPath.slice(1) : normalizedPath;
 
-  return `${API_BASE_URL}/${cleanPath}`;
+  return `/${cleanPath}`;
 };
 
 export default api;

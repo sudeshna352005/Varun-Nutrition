@@ -35,7 +35,7 @@ const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI;
 
 mongoose.connect(MONGO_URI || 'mongodb://localhost:27017/varun-nutrition', {
-  serverSelectionTimeoutMS: 2000,
+  serverSelectionTimeoutMS: 5000,
 })
   .then(async () => {
     console.log('Successfully connected to MongoDB.');
@@ -48,36 +48,51 @@ mongoose.connect(MONGO_URI || 'mongodb://localhost:27017/varun-nutrition', {
   });
 
 async function seedData() {
-  const shopCount = await Shop.countDocuments();
-  if (shopCount === 0) {
-    await Shop.insertMany([
-      { name: 'Cauvery Stores', address: 'Malleswaram 8th Cross', phone: '080-1234567', routeGroup: 'Malleswaram', mapsLink: 'https://goo.gl/maps/example1' },
-      { name: 'Layout Provisions', address: 'Mahalakshmi Layout, Opp Metro', phone: '080-7654321', routeGroup: 'Mahalakshmi Layout', mapsLink: 'https://goo.gl/maps/example2' },
-      { name: 'Sagar Pharma', address: 'Gayathri Nagar Main Road', phone: '080-9998887', routeGroup: 'Gayathri Nagar', mapsLink: 'https://goo.gl/maps/example3' },
-    ]);
-  }
+  try {
+    const shopCount = await Shop.countDocuments();
+    if (shopCount === 0) {
+      await Shop.insertMany([
+        { name: 'Cauvery Stores', address: 'Malleswaram 8th Cross', phone: '080-1234567', routeGroup: 'Malleswaram', mapsLink: 'https://goo.gl/maps/example1' },
+        { name: 'Layout Provisions', address: 'Mahalakshmi Layout, Opp Metro', phone: '080-7654321', routeGroup: 'Mahalakshmi Layout', mapsLink: 'https://goo.gl/maps/example2' },
+        { name: 'Sagar Pharma', address: 'Gayathri Nagar Main Road', phone: '080-9998887', routeGroup: 'Gayathri Nagar', mapsLink: 'https://goo.gl/maps/example3' },
+      ]);
+    }
 
-  const routeCount = await Route.countDocuments();
-  if (routeCount === 0) {
-    await Route.insertMany([
-      { name: 'Malleswaram' }, { name: 'Mahalakshmi Layout' }, { name: 'Gayathri Nagar' },
-      { name: 'Sheshadripuram' }, { name: 'Rajajinagar' }, { name: 'Others' },
-    ]);
-  }
+    const routeCount = await Route.countDocuments();
+    if (routeCount === 0) {
+      await Route.insertMany([
+        { name: 'Malleswaram' }, { name: 'Mahalakshmi Layout' }, { name: 'Gayathri Nagar' },
+        { name: 'Sheshadripuram' }, { name: 'Rajajinagar' }, { name: 'Others' },
+      ]);
+    }
 
-  const defaultWorker = await Worker.findOne({ username: 'worker' });
-  if (!defaultWorker) {
-    await Worker.create({ name: 'Sales Worker', username: 'worker', password: 'worker123', role: 'Sales Worker' });
-  }
+    const defaultWorker = await Worker.findOne({ username: 'worker' });
+    if (!defaultWorker) {
+      await Worker.create({ name: 'Sales Worker', username: 'worker', password: 'worker123', role: 'Sales Worker' });
+    }
 
-  const productCount = await Product.countDocuments();
-  if (productCount === 0) {
-    await Product.insertMany([
-      { name: 'Ragi Flour', packSize: '1 Kg', defaultPrice: 60 },
-      { name: 'Wheat Flour', packSize: '1 Kg', defaultPrice: 55 },
-      { name: 'Jowar Flour', packSize: '1 Kg', defaultPrice: 65 },
-      { name: 'Rice Flour', packSize: '1 Kg', defaultPrice: 50 },
-    ]);
+    // Legacy password migration: ensure all existing workers have hashed passwords
+    const allWorkers = await Worker.find();
+    for (const w of allWorkers) {
+      if (w.password && !w.password.startsWith('$2a$') && !w.password.startsWith('$2b$')) {
+        console.log(`Hashing legacy password for user: ${w.username}`);
+        const salt = await bcrypt.genSalt(10);
+        w.password = await bcrypt.hash(w.password, salt);
+        await w.save();
+      }
+    }
+
+    const productCount = await Product.countDocuments();
+    if (productCount === 0) {
+      await Product.insertMany([
+        { name: 'Ragi Flour', packSize: '1 Kg', defaultPrice: 60 },
+        { name: 'Wheat Flour', packSize: '1 Kg', defaultPrice: 55 },
+        { name: 'Jowar Flour', packSize: '1 Kg', defaultPrice: 65 },
+        { name: 'Rice Flour', packSize: '1 Kg', defaultPrice: 50 },
+      ]);
+    }
+  } catch (err) {
+    console.error("Seeding error:", err);
   }
 }
 
@@ -115,7 +130,8 @@ const storage = new CloudinaryStorage({
 });
 const upload = multer({ storage });
 
-// Health check
+// --- API ROUTES ---
+
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
@@ -124,7 +140,32 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// API Routes
+app.post('/api/login', async (req, res) => {
+  const { username, password } = req.body;
+  console.log(`Login attempt: ${username}`);
+
+  if (username === 'owner' && password === 'owner123') return res.json({ role: 'owner', name: 'Varun Owner' });
+
+  if (useMock) {
+    const worker = mockDb.workers.find(w => w.username.toLowerCase() === username.toLowerCase().trim());
+    if (worker && await bcrypt.compare(password, worker.password)) {
+      return res.json({ role: 'worker', name: worker.name, id: worker.id, username: worker.username, assignedRoutes: worker.assignedRoutes });
+    }
+    return res.status(401).json({ message: 'Invalid username or password' });
+  }
+
+  try {
+    const worker = await Worker.findOne({ username: { $regex: new RegExp(`^${username.trim()}$`, 'i') } });
+    if (worker && await worker.comparePassword(password)) {
+      return res.json({ role: 'worker', name: worker.name, id: worker._id, username: worker.username, assignedRoutes: worker.assignedRoutes });
+    }
+    res.status(401).json({ message: 'Invalid username or password' });
+  } catch (err) {
+    console.error("Login Error:", err);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
 app.get('/api/shops', async (req, res) => {
   if (useMock) {
     const { workerId } = req.query;
@@ -220,7 +261,6 @@ app.post('/api/routes', async (req, res) => {
   } catch (err) { res.status(400).json({ message: err.message }); }
 });
 
-// Workers API
 app.get('/api/workers', async (req, res) => {
   if (useMock) return res.json(mockDb.workers);
   try {
@@ -249,7 +289,7 @@ app.put('/api/workers/:id', async (req, res) => {
     const idx = mockDb.workers.findIndex(w => w.id === req.params.id);
     if (idx !== -1) {
       const update = { ...req.body };
-      if (update.password) {
+      if (update.password && !update.password.startsWith('$2a$')) {
         const salt = await bcrypt.genSalt(10);
         update.password = await bcrypt.hash(update.password, salt);
       }
@@ -283,25 +323,6 @@ app.delete('/api/workers/:id', async (req, res) => {
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
-app.post('/api/login', async (req, res) => {
-  const { username, password } = req.body;
-  if (username === 'owner' && password === 'owner123') return res.json({ role: 'owner', name: 'Varun Owner' });
-
-  if (useMock) {
-    const worker = mockDb.workers.find(w => w.username.toLowerCase() === username.toLowerCase().trim());
-    if (worker && await bcrypt.compare(password, worker.password)) return res.json({ role: 'worker', name: worker.name, id: worker.id, assignedRoutes: worker.assignedRoutes });
-    return res.status(401).json({ message: 'Invalid username or password' });
-  }
-  try {
-    const worker = await Worker.findOne({ username: { $regex: new RegExp(`^${username.trim()}$`, 'i') } });
-    if (worker && await worker.comparePassword(password)) {
-      return res.json({ role: 'worker', name: worker.name, id: worker._id, username: worker.username, assignedRoutes: worker.assignedRoutes });
-    }
-    res.status(401).json({ message: 'Invalid username or password' });
-  } catch (err) { res.status(500).json({ message: err.message }); }
-});
-
-// Attendance & Visits (Simplified for brevity in the integrated file, mirroring original logic)
 app.get('/api/attendance', async (req, res) => {
   if (useMock) return res.json(mockDb.attendance);
   try { res.json(await Attendance.find()); } catch (err) { res.status(500).json({ message: err.message }); }
@@ -357,7 +378,6 @@ app.post('/api/visits', upload.single('photo'), async (req, res) => {
   } catch (err) { res.status(400).json({ message: err.message }); }
 });
 
-// Products & Orders
 app.get('/api/products', async (req, res) => {
   if (useMock) return res.json(mockDb.products);
   try { res.json(await Product.find()); } catch (err) { res.status(500).json({ message: err.message }); }
@@ -387,12 +407,15 @@ app.post('/api/orders', async (req, res) => {
   } catch (err) { res.status(400).json({ message: err.message }); }
 });
 
-// Static and Catch-all
+// --- STATIC FILES & SPA SUPPORT ---
+
+// Important: express.static must be defined AFTER API routes to avoid intercepting POST requests
 app.use(express.static(path.join(__dirname, '../client/dist')));
+
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../client/dist/index.html'));
 });
 
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(`Server is running on port ${PORT} ${useMock ? '(MOCK MODE)' : ''}`);
 });

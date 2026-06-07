@@ -50,8 +50,11 @@ const ReportsView = () => {
   };
 
   const filteredVisits = useMemo(() => {
-    return (visits || []).filter(v => {
-      const shop = (shops || []).find(s => s.name === v.shopName);
+    const visitsArr = Array.isArray(visits) ? visits : [];
+    const shopsArr = Array.isArray(shops) ? shops : [];
+
+    return visitsArr.filter(v => {
+      const shop = shopsArr.find(s => s.name === v.shopName);
 
       const matchesSearch =
         (v.shopName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||

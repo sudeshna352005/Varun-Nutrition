@@ -36,18 +36,20 @@ const WorkerManagement = () => {
   const fetchRoutes = async () => {
     try {
       const res = await api.get('/api/routes');
-      setRoutes(res.data);
+      setRoutes(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error("Failed to fetch routes", err);
+      setRoutes([]);
     }
   };
 
   const fetchWorkers = async () => {
     try {
       const res = await api.get('/api/workers');
-      setWorkers(res.data);
+      setWorkers(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error("Failed to fetch workers", err);
+      setWorkers([]);
     }
   };
 
@@ -110,9 +112,9 @@ const WorkerManagement = () => {
     }
   };
 
-  const filteredWorkers = workers.filter(w => {
-    const matchesSearch = w.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          w.username.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredWorkers = (Array.isArray(workers) ? workers : []).filter(w => {
+    const matchesSearch = (w.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          (w.username || '').toLowerCase().includes(searchTerm.toLowerCase());
 
     const hasRoutes = w.assignedRoutes && w.assignedRoutes.length > 0;
     let matchesStatus = true;
@@ -120,7 +122,8 @@ const WorkerManagement = () => {
     if (statusFilter === 'no-route') matchesStatus = !hasRoutes;
 
     let matchesRole = true;
-    if (roleFilter !== 'all') matchesRole = w.role === roleFilter;
+    const workerRole = w.role || 'Sales Worker'; // Fallback for legacy workers
+    if (roleFilter !== 'all') matchesRole = workerRole === roleFilter;
 
     return matchesSearch && matchesStatus && matchesRole;
   });
@@ -206,7 +209,7 @@ const WorkerManagement = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${
-                        worker.role === 'Delivery Staff' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-green-500/10 text-green-400 border border-green-500/20'
+                        (worker.role || 'Sales Worker') === 'Delivery Staff' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-green-500/10 text-green-400 border border-green-500/20'
                       }`}>
                         {worker.role || 'Sales Worker'}
                       </span>
@@ -318,7 +321,9 @@ const WorkerManagement = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Assign Routes</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                    {formData.role === 'Delivery Staff' ? 'Assign Delivery Areas' : 'Assign Routes'}
+                  </label>
                   <div className="grid grid-cols-2 gap-3 mt-2 max-h-40 overflow-y-auto p-2 bg-slate-800 rounded-xl border border-slate-700">
                     {routes.map(route => (
                       <label key={route.id} className="flex items-center gap-3 cursor-pointer group">

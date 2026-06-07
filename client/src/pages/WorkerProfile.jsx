@@ -38,13 +38,16 @@ const WorkerProfile = () => {
   if (loading) return <div className="text-center py-10">Loading profile...</div>;
   if (!worker) return <div className="text-center py-10 text-red-500">Worker not found</div>;
 
-  const totalVisits = visits.length;
-  const completedSessions = attendance.filter(a => a.status === 'completed').length;
-  const uniqueShops = new Set(visits.map(v => v.shopName)).size;
+  const visitsArr = Array.isArray(visits) ? visits : [];
+  const attendanceArr = Array.isArray(attendance) ? attendance : [];
+
+  const totalVisits = visitsArr.length;
+  const completedSessions = attendanceArr.filter(a => a.status === 'completed').length;
+  const uniqueShops = new Set(visitsArr.map(v => v.shopName)).size;
 
   const activityTimeline = [
-    ...attendance.map(a => ({ ...a, type: 'attendance', timestamp: a.startTime })),
-    ...visits.map(v => ({ ...v, type: 'visit', timestamp: v.timestamp }))
+    ...attendanceArr.map(a => ({ ...a, type: 'attendance', timestamp: a.startTime })),
+    ...visitsArr.map(v => ({ ...v, type: 'visit', timestamp: v.timestamp }))
   ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
   return (
@@ -97,7 +100,7 @@ const WorkerProfile = () => {
               <div className="flex justify-between items-center p-3 bg-slate-800/30 rounded-lg border border-slate-800">
                 <span className="text-slate-300 font-medium">Avg Visits / Day</span>
                 <span className="font-bold text-white bg-slate-800 px-3 py-1 rounded-md border border-slate-700">
-                  {attendance.length > 0 ? (visits.length / attendance.length).toFixed(1) : 0}
+                  {attendanceArr.length > 0 ? (visitsArr.length / attendanceArr.length).toFixed(1) : 0}
                 </span>
               </div>
             </div>
