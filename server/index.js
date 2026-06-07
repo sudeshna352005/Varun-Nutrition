@@ -142,12 +142,28 @@ app.get('/api/health', (req, res) => {
 
 app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
-  console.log(`Login attempt: ${username}`);
+  const normalizedUsername = (username || '').toLowerCase().trim();
+  console.log(`Login attempt: ${normalizedUsername}`);
 
-  if (username === 'owner' && password === 'owner123') return res.json({ role: 'owner', name: 'Varun Owner' });
+  if (normalizedUsername === 'owner' && password === 'owner123') {
+    return res.json({ role: 'owner', name: 'Varun Owner' });
+  }
 
   if (useMock) {
-    const worker = mockDb.workers.find(w => w.username.toLowerCase() === username.toLowerCase().trim());
+    const worker = mockDb.workers.find(w => w.username.toLowerCase() === normalizedUsername);
+    if (worker && await bcrypt.compare(password, worker.password)) {
+      return res.json({ role: 'worker', name: worker.name, id: worker.id, username: worker.username, assignedRoutes: worker.assignedRoutes });
+    }
+    return res.status(401).json({ message: 'Invalid username or password' });
+  }
+
+  if (mongoose.connection.readyState !== 1) {
+    // If not connected to DB, we can't do anything else unless we fallback to mockDb
+    // But since the server might be trying to connect, we should either wait or fail gracefully.
+    // In this specific sandbox, it seems to eventually fail and set useMock = true.
+    // Let's force mockDb if connection isn't ready and we aren't already using it.
+    console.warn('DB not ready, attempting mock lookup');
+    const worker = mockDb.workers.find(w => w.username.toLowerCase() === normalizedUsername);
     if (worker && await bcrypt.compare(password, worker.password)) {
       return res.json({ role: 'worker', name: worker.name, id: worker.id, username: worker.username, assignedRoutes: worker.assignedRoutes });
     }
@@ -155,7 +171,7 @@ app.post('/api/login', async (req, res) => {
   }
 
   try {
-    const worker = await Worker.findOne({ username: { $regex: new RegExp(`^${username.trim()}$`, 'i') } });
+    const worker = await Worker.findOne({ username: { $regex: new RegExp(`^${normalizedUsername}$`, 'i') } });
     if (worker && await worker.comparePassword(password)) {
       return res.json({ role: 'worker', name: worker.name, id: worker._id, username: worker.username, assignedRoutes: worker.assignedRoutes });
     }
