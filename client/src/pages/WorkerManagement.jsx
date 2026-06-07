@@ -189,12 +189,12 @@ const WorkerManagement = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800">
-              {filteredWorkers.length === 0 ? (
+              {(Array.isArray(filteredWorkers) ? filteredWorkers : []).length === 0 ? (
                 <tr>
                   <td colSpan="4" className="px-6 py-10 text-center text-slate-500 italic">No workers found.</td>
                 </tr>
               ) : (
-                filteredWorkers.map((worker) => (
+                (Array.isArray(filteredWorkers) ? filteredWorkers : []).map((worker) => (
                   <tr key={worker.id || worker._id} className="hover:bg-slate-800/30 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <Link to={`/worker/${worker.id || worker._id}`} className="flex items-center text-green-500 hover:text-green-400 font-bold">
@@ -325,7 +325,7 @@ const WorkerManagement = () => {
                     {formData.role === 'Delivery Staff' ? 'Assign Delivery Areas' : 'Assign Routes'}
                   </label>
                   <div className="grid grid-cols-2 gap-3 mt-2 max-h-40 overflow-y-auto p-2 bg-slate-800 rounded-xl border border-slate-700">
-                    {routes.map(route => (
+                    {(Array.isArray(routes) ? routes : []).map(route => (
                       <label key={route.id} className="flex items-center gap-3 cursor-pointer group">
                         <input
                           type="checkbox"

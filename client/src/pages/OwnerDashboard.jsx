@@ -34,12 +34,12 @@ const OwnerDashboard = () => {
         ]);
 
         setRawData({
-          workers: workersRes.data || [],
-          shops: shopsRes.data || [],
-          visits: visitsRes.data || [],
-          attendance: attendanceRes.data || [],
-          orders: ordersRes.data || [],
-          routes: routesRes.data || []
+          workers: Array.isArray(workersRes.data) ? workersRes.data : [],
+          shops: Array.isArray(shopsRes.data) ? shopsRes.data : [],
+          visits: Array.isArray(visitsRes.data) ? visitsRes.data : [],
+          attendance: Array.isArray(attendanceRes.data) ? attendanceRes.data : [],
+          orders: Array.isArray(ordersRes.data) ? ordersRes.data : [],
+          routes: Array.isArray(routesRes.data) ? routesRes.data : []
         });
       } catch (err) {
         console.error("Failed to fetch dashboard data", err);
@@ -202,7 +202,7 @@ const OwnerDashboard = () => {
                 onChange={(e) => setSelectedWorker(e.target.value)}
               >
                 <option value="">All Workers</option>
-                {rawData.workers.map(w => <option key={w.id || w._id} value={w.name}>{w.name}</option>)}
+                {(Array.isArray(rawData.workers) ? rawData.workers : []).map(w => <option key={w.id || w._id} value={w.name}>{w.name}</option>)}
               </select>
            </div>
            <div className="flex-1 space-y-2">
@@ -213,7 +213,7 @@ const OwnerDashboard = () => {
                 onChange={(e) => setSelectedRoute(e.target.value)}
               >
                 <option value="">All Routes</option>
-                {rawData.routes.map(r => <option key={r.id || r._id} value={r.name}>{r.name}</option>)}
+                {(Array.isArray(rawData.routes) ? rawData.routes : []).map(r => <option key={r.id || r._id} value={r.name}>{r.name}</option>)}
               </select>
            </div>
         </div>
@@ -271,7 +271,7 @@ const OwnerDashboard = () => {
             </h2>
 
             <div className="relative border-l-2 border-slate-800 ml-4 space-y-8 max-h-[600px] overflow-y-auto pr-4 custom-scrollbar">
-              {activityTimeline.map((item) => (
+              {(Array.isArray(activityTimeline) ? activityTimeline : []).map((item) => (
                 <div key={`${item.type}-${item.id}`} className="relative pl-8">
                   <div className={`absolute -left-[9px] top-1 w-4 h-4 rounded-full border-2 border-slate-900 shadow-md ${
                     item.type === 'attendance' ? 'bg-blue-500' : item.type === 'order' ? 'bg-purple-500' : 'bg-green-500'
@@ -327,7 +327,7 @@ const OwnerDashboard = () => {
             <AlertCircle className="text-yellow-500" /> Shops Needing Visit
           </h2>
           <div className="space-y-4">
-            {shopsNotVisited.map((shop) => (
+              {(Array.isArray(shopsNotVisited) ? shopsNotVisited : []).map((shop) => (
               <div key={shop.id || shop._id} className="p-4 bg-slate-800/40 rounded-xl border border-slate-800 flex justify-between items-center">
                 <div>
                   <p className="font-bold text-white text-sm">{shop.name}</p>

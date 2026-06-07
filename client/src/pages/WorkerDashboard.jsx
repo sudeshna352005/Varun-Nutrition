@@ -231,7 +231,7 @@ const WorkerDashboard = ({ user }) => {
                 <MapPin className="w-6 h-6 mr-2" /> {route.name}
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {routeShops.map(shop => (
+                {(Array.isArray(routeShops) ? routeShops : []).map(shop => (
                   <div 
                     key={shop.id} 
                     className={`bg-slate-900 p-6 rounded-2xl shadow-lg border border-slate-800 flex justify-between items-center transition-all ${
@@ -327,7 +327,7 @@ const WorkerDashboard = ({ user }) => {
                       </button>
                     </div>
 
-                    {orderItems.map((item, idx) => (
+                    {(Array.isArray(orderItems) ? orderItems : []).map((item, idx) => (
                       <div key={idx} className="p-3 bg-slate-900 rounded-lg border border-slate-700 space-y-3">
                         <div className="flex justify-between items-start gap-2">
                           <select
@@ -336,7 +336,7 @@ const WorkerDashboard = ({ user }) => {
                             onChange={(e) => updateOrderItem(idx, 'productId', e.target.value)}
                           >
                             <option value="">Select Product</option>
-                            {products.map(p => (
+                            {(Array.isArray(products) ? products : []).map(p => (
                               <option key={p.id || p._id} value={p.id || p._id}>{p.name} ({p.packSize})</option>
                             ))}
                           </select>

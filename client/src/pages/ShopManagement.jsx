@@ -37,10 +37,10 @@ const ShopManagement = () => {
         api.get('/api/visits'),
         api.get('/api/orders')
       ]);
-      setShops(sRes.data || []);
-      setRoutes(rRes.data || []);
-      setVisits(vRes.data || []);
-      setOrders(oRes.data || []);
+      setShops(Array.isArray(sRes.data) ? sRes.data : []);
+      setRoutes(Array.isArray(rRes.data) ? rRes.data : []);
+      setVisits(Array.isArray(vRes.data) ? vRes.data : []);
+      setOrders(Array.isArray(oRes.data) ? oRes.data : []);
     } catch (err) {
       console.error("Failed to fetch shops data", err);
     }
