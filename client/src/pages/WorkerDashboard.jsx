@@ -45,10 +45,10 @@ const WorkerDashboard = ({ user }) => {
         api.get(`/api/visits?workerName=${user.name}`),
         api.get('/api/products')
       ]);
-    setShops(shopsRes.data || []);
-    setRoutes(routesRes.data || []);
-      setProducts(productsRes.data?.filter(p => p.isActive) || []);
-    const visits = visitsRes.data || [];
+    setShops(Array.isArray(shopsRes.data) ? shopsRes.data : []);
+    setRoutes(Array.isArray(routesRes.data) ? routesRes.data : []);
+    setProducts(Array.isArray(productsRes.data) ? productsRes.data.filter(p => p.isActive) : []);
+    const visits = Array.isArray(visitsRes.data) ? visitsRes.data : [];
       setVisitHistory(visits);
     } catch (err) {
       console.error("Failed to fetch dashboard data", err);
@@ -58,9 +58,14 @@ const WorkerDashboard = ({ user }) => {
   };
 
   const checkWorkingStatus = async () => {
-    const res = await api.get('/api/attendance');
-    const active = res.data.find(a => a.workerName === user.name && a.status === 'working');
-    setIsWorking(!!active);
+    try {
+      const res = await api.get('/api/attendance');
+      const attendanceArr = Array.isArray(res.data) ? res.data : [];
+      const active = attendanceArr.find(a => a.workerName === user.name && a.status === 'working');
+      setIsWorking(!!active);
+    } catch (err) {
+      console.error("Failed to check working status", err);
+    }
   };
 
   const handleVisit = async () => {
@@ -143,7 +148,8 @@ const WorkerDashboard = ({ user }) => {
 
   const hasVisitedToday = (shopName) => {
     const today = new Date().toLocaleDateString();
-    return visitHistory.some(v => v.shopName === shopName && new Date(v.timestamp).toLocaleDateString() === today);
+    const visitsArr = Array.isArray(visitHistory) ? visitHistory : [];
+    return visitsArr.some(v => v.shopName === shopName && new Date(v.timestamp).toLocaleDateString() === today);
   };
 
   if (loading) return (
@@ -199,14 +205,16 @@ const WorkerDashboard = ({ user }) => {
       )}
 
       <div className="space-y-12">
-        {routes
+        {(Array.isArray(routes) ? routes : [])
           .filter(route => {
-            const routeMatches = route.name.toLowerCase().includes(searchQuery.toLowerCase());
-            const shopMatches = shops.some(s => s.routeGroup === route.name && s.name.toLowerCase().includes(searchQuery.toLowerCase()));
+            const routeMatches = (route.name || '').toLowerCase().includes(searchQuery.toLowerCase());
+            const shopsArr = Array.isArray(shops) ? shops : [];
+            const shopMatches = shopsArr.some(s => s.routeGroup === route.name && (s.name || '').toLowerCase().includes(searchQuery.toLowerCase()));
             return routeMatches || shopMatches;
           })
           .map(route => {
-          let routeShops = shops.filter(s => s.routeGroup === route.name);
+          const shopsArr = Array.isArray(shops) ? shops : [];
+          let routeShops = shopsArr.filter(s => s.routeGroup === route.name);
 
           if (searchQuery) {
             const routeMatches = route.name.toLowerCase().includes(searchQuery.toLowerCase());

@@ -40,18 +40,22 @@ const RouteManagement = () => {
 
   const getRouteCoverage = (routeName) => {
     const today = new Date().toLocaleDateString();
-    const routeShops = shops.filter(s => s.routeGroup === routeName);
+    const shopsArr = Array.isArray(shops) ? shops : [];
+    const visitsArr = Array.isArray(visits) ? visits : [];
+
+    const routeShops = shopsArr.filter(s => s.routeGroup === routeName);
     if (routeShops.length === 0) return 0;
 
     const visitedCount = routeShops.filter(s =>
-      visits.some(v => v.shopName === s.name && new Date(v.timestamp).toLocaleDateString() === today)
+      visitsArr.some(v => v.shopName === s.name && new Date(v.timestamp).toLocaleDateString() === today)
     ).length;
 
     return Math.round((visitedCount / routeShops.length) * 100);
   };
 
   const getAssignedWorkers = (routeName) => {
-    return workers.filter(w => w.assignedRoutes?.includes(routeName));
+    const workersArr = Array.isArray(workers) ? workers : [];
+    return workersArr.filter(w => w.assignedRoutes?.includes(routeName));
   };
 
   return (
@@ -90,7 +94,7 @@ const RouteManagement = () => {
                         {route.name}
                       </div>
                       <span className="text-[10px] font-bold text-slate-500 uppercase bg-slate-800 px-2 py-0.5 rounded border border-slate-700 group-hover:border-green-500/30 group-hover:text-green-500 transition-colors">
-                        {shops.filter(s => s.routeGroup === route.name).length} Shops
+                        {(Array.isArray(shops) ? shops : []).filter(s => s.routeGroup === route.name).length} Shops
                       </span>
                     </div>
 
@@ -132,8 +136,8 @@ const RouteManagement = () => {
                     <List className="w-4 h-4 mr-2" /> {route.name}
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {shops.filter(s => s.routeGroup === route.name).length > 0 ? (
-                      shops.filter(s => s.routeGroup === route.name).map(shop => (
+                    {(Array.isArray(shops) ? shops : []).filter(s => s.routeGroup === route.name).length > 0 ? (
+                      (Array.isArray(shops) ? shops : []).filter(s => s.routeGroup === route.name).map(shop => (
                         <div key={shop.id} className="p-4 bg-slate-800/50 rounded-xl border border-slate-800 hover:border-slate-700 transition-all">
                           <p className="font-bold text-zinc-200">{shop.name}</p>
                           <p className="text-slate-500 text-xs mt-1">{shop.address}</p>

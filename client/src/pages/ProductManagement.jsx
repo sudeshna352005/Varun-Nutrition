@@ -67,21 +67,27 @@ const ProductManagement = () => {
 
   const productStats = useMemo(() => {
     const stats = {};
-    products.forEach(p => stats[p.id || p._id] = { count: 0, total: 0 });
+    const productsArr = Array.isArray(products) ? products : [];
+    const ordersArr = Array.isArray(orders) ? orders : [];
 
-    orders.filter(o => isInRange(o.timestamp, dateRange)).forEach(order => {
-      order.items.forEach(item => {
-        if (stats[item.productId]) {
-          stats[item.productId].count += item.quantity;
-          stats[item.productId].total += item.total;
-        }
-      });
+    productsArr.forEach(p => stats[p.id || p._id] = { count: 0, total: 0 });
+
+    ordersArr.filter(o => isInRange(o.timestamp, dateRange)).forEach(order => {
+      if (Array.isArray(order.items)) {
+        order.items.forEach(item => {
+          if (stats[item.productId]) {
+            stats[item.productId].count += item.quantity;
+            stats[item.productId].total += item.total;
+          }
+        });
+      }
     });
     return stats;
   }, [products, orders, dateRange]);
 
   const filteredProducts = useMemo(() => {
-    let list = products.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
+    const productsArr = Array.isArray(products) ? products : [];
+    let list = productsArr.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
     if (perfFilter === 'no-orders') {
       list = list.filter(p => (productStats[p.id || p._id]?.count || 0) === 0);

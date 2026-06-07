@@ -51,9 +51,13 @@ const OwnerDashboard = () => {
   }, []);
 
   const filteredData = useMemo(() => {
-    let visits = rawData.visits.filter(v => isInRange(v.timestamp, dateRange));
-    let attendance = rawData.attendance.filter(a => isInRange(a.startTime, dateRange));
-    let orders = rawData.orders.filter(o => isInRange(o.timestamp, dateRange));
+    const visitsArr = Array.isArray(rawData.visits) ? rawData.visits : [];
+    const attendanceArr = Array.isArray(rawData.attendance) ? rawData.attendance : [];
+    const ordersArr = Array.isArray(rawData.orders) ? rawData.orders : [];
+
+    let visits = visitsArr.filter(v => isInRange(v.timestamp, dateRange));
+    let attendance = attendanceArr.filter(a => isInRange(a.startTime, dateRange));
+    let orders = ordersArr.filter(o => isInRange(o.timestamp, dateRange));
 
     if (selectedWorker) {
       visits = visits.filter(v => v.workerName === selectedWorker);
@@ -70,25 +74,28 @@ const OwnerDashboard = () => {
   }, [rawData, dateRange, selectedWorker, selectedRoute]);
 
   const stats = useMemo(() => {
-    const ordersList = filteredData.orders;
+    const ordersList = Array.isArray(filteredData.orders) ? filteredData.orders : [];
     const totalSales = ordersList.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
-    const activeAtSomePoint = new Set(filteredData.attendance.map(a => a.workerName)).size;
+    const attendanceList = Array.isArray(filteredData.attendance) ? filteredData.attendance : [];
+    const activeAtSomePoint = new Set(attendanceList.map(a => a.workerName)).size;
+    const visitsList = Array.isArray(filteredData.visits) ? filteredData.visits : [];
 
     return {
-      shops: rawData.shops.length,
-      workers: rawData.workers.length,
+      shops: (rawData.shops || []).length,
+      workers: (rawData.workers || []).length,
       activeWorkers: activeAtSomePoint,
-      visits: filteredData.visits.length,
+      visits: visitsList.length,
       orders: ordersList.length,
       delivered: ordersList.filter(o => o.status === 'delivered').length,
       sales: totalSales,
       pending: ordersList.filter(o => o.status === 'pending').length
     };
-  }, [filteredData, rawData.shops.length, rawData.workers.length]);
+  }, [filteredData, rawData.shops, rawData.workers]);
 
   const shopsNotVisited = useMemo(() => {
     const lastVisits = {};
-    rawData.visits.forEach(v => {
+    const visitsArr = Array.isArray(rawData.visits) ? rawData.visits : [];
+    visitsArr.forEach(v => {
       const existing = lastVisits[v.shopName];
       if (!existing || new Date(v.timestamp) > new Date(existing)) {
         lastVisits[v.shopName] = v.timestamp;
@@ -109,10 +116,14 @@ const OwnerDashboard = () => {
   }, [rawData.shops, rawData.visits]);
 
   const activityTimeline = useMemo(() => {
+    const attendance = Array.isArray(filteredData.attendance) ? filteredData.attendance : [];
+    const visits = Array.isArray(filteredData.visits) ? filteredData.visits : [];
+    const orders = Array.isArray(filteredData.orders) ? filteredData.orders : [];
+
     const timeline = [
-      ...filteredData.attendance.map(a => ({ ...a, type: 'attendance', id: a.id || a._id, timestamp: a.startTime })),
-      ...filteredData.visits.map(v => ({ ...v, type: 'visit', id: v.id || v._id, timestamp: v.timestamp })),
-      ...filteredData.orders.map(o => ({ ...o, type: 'order', id: o.id || o._id, timestamp: o.timestamp }))
+      ...attendance.map(a => ({ ...a, type: 'attendance', id: a.id || a._id, timestamp: a.startTime })),
+      ...visits.map(v => ({ ...v, type: 'visit', id: v.id || v._id, timestamp: v.timestamp })),
+      ...orders.map(o => ({ ...o, type: 'order', id: o.id || o._id, timestamp: o.timestamp }))
     ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     return timeline.slice(0, 20); // Show last 20
   }, [filteredData]);

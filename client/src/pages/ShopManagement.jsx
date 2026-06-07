@@ -82,7 +82,11 @@ const ShopManagement = () => {
     const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    return shops.filter(shop => {
+    const shopsArr = Array.isArray(shops) ? shops : [];
+    const visitsArr = Array.isArray(visits) ? visits : [];
+    const ordersArr = Array.isArray(orders) ? orders : [];
+
+    return shopsArr.filter(shop => {
       const matchesSearch = shop.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                             shop.address.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesRoute = !selectedRoute || shop.routeGroup === selectedRoute;

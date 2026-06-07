@@ -13,13 +13,23 @@ const AttendanceView = () => {
   }, []);
 
   const fetchWorkers = async () => {
-    const res = await api.get('/api/workers');
-    setWorkers(res.data);
+    try {
+      const res = await api.get('/api/workers');
+      setWorkers(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      console.error("Failed to fetch workers", err);
+      setWorkers([]);
+    }
   };
 
   const fetchAttendance = async () => {
-    const res = await api.get('/api/attendance');
-    setAttendance(res.data);
+    try {
+      const res = await api.get('/api/attendance');
+      setAttendance(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      console.error("Failed to fetch attendance", err);
+      setAttendance([]);
+    }
   };
 
   const formatTime = (date) => {

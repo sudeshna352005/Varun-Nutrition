@@ -34,14 +34,20 @@ const DashboardAnalytics = ({ data }) => {
   const visitsByDayData = getDailyData();
 
   // 2. Worker Performance (Bar Chart)
-  const workerPerformanceData = (workers || []).map(w => ({
+  const visitsArr = Array.isArray(visits) ? visits : [];
+  const workersArr = Array.isArray(workers) ? workers : [];
+  const shopsArr = Array.isArray(shops) ? shops : [];
+  const attendanceArr = Array.isArray(attendance) ? attendance : [];
+  const ordersArr = Array.isArray(orders) ? orders : [];
+
+  const workerPerformanceData = workersArr.map(w => ({
     name: w.name,
-    visits: (visits || []).filter(v => v.workerName === w.name).length
+    visits: visitsArr.filter(v => v.workerName === w.name).length
   })).sort((a, b) => (b.visits || 0) - (a.visits || 0)).slice(0, 5);
 
   // 3. Route Coverage (Pie Chart)
-  const routeCounts = (visits || []).reduce((acc, v) => {
-    const shop = (shops || []).find(s => s.name === v.shopName);
+  const routeCounts = visitsArr.reduce((acc, v) => {
+    const shop = shopsArr.find(s => s.name === v.shopName);
     const route = shop ? shop.routeGroup : 'Unknown';
     acc[route] = (acc[route] || 0) + 1;
     return acc;
@@ -55,7 +61,7 @@ const DashboardAnalytics = ({ data }) => {
   // 4. Attendance Trend (Area Chart)
   const getAttendanceTrend = () => {
     const trendMap = {};
-    (attendance || []).forEach(a => {
+    attendanceArr.forEach(a => {
       const date = new Date(a.startTime).toLocaleDateString([], { month: 'short', day: 'numeric' });
       if (!trendMap[date]) trendMap[date] = new Set();
       trendMap[date].add(a.workerName);
@@ -69,13 +75,13 @@ const DashboardAnalytics = ({ data }) => {
   const today = new Date().toISOString().split('T')[0];
   const thisMonth = new Date().toISOString().slice(0, 7);
 
-  const visitsToday = (visits || []).filter(v => v.timestamp?.startsWith(today)).length;
-  const visitsThisMonth = (visits || []).filter(v => v.timestamp?.startsWith(thisMonth)).length;
+  const visitsToday = visitsArr.filter(v => v.timestamp?.startsWith(today)).length;
+  const visitsThisMonth = visitsArr.filter(v => v.timestamp?.startsWith(thisMonth)).length;
 
-  const presentTodayCount = new Set((attendance || []).filter(a => a.startTime?.startsWith(today)).map(a => a.workerName)).size;
-  const attendanceTodayPct = workers.length > 0 ? Math.round((presentTodayCount / workers.length) * 100) : 0;
+  const presentTodayCount = new Set(attendanceArr.filter(a => a.startTime?.startsWith(today)).map(a => a.workerName)).size;
+  const attendanceTodayPct = workersArr.length > 0 ? Math.round((presentTodayCount / workersArr.length) * 100) : 0;
 
-  const avgVisitsPerWorker = workers.length > 0 ? (visits.length / workers.length).toFixed(1) : 0;
+  const avgVisitsPerWorker = workersArr.length > 0 ? (visitsArr.length / workersArr.length).toFixed(1) : 0;
 
   // Top Performer
   const topWorker = workerPerformanceData[0]?.name || 'N/A';
@@ -84,7 +90,7 @@ const DashboardAnalytics = ({ data }) => {
   const topRoute = routeCoverageData.sort((a, b) => b.value - a.value)[0]?.name || 'N/A';
 
   // Most Visited Shop
-  const shopCounts = (visits || []).reduce((acc, v) => {
+  const shopCounts = visitsArr.reduce((acc, v) => {
     if (v?.shopName) {
       acc[v.shopName] = (acc[v.shopName] || 0) + 1;
     }
@@ -130,7 +136,10 @@ const DashboardAnalytics = ({ data }) => {
               <span className="text-emerald-500 font-bold">
                 {(() => {
                   const workerSales = {};
-                  orders.forEach(o => workerSales[o.workerName] = (workerSales[o.workerName] || 0) + o.totalAmount);
+                  ordersArr.forEach(o => {
+                    const name = o.workerName || 'Unknown';
+                    workerSales[name] = (workerSales[name] || 0) + (o.totalAmount || 0);
+                  });
                   return Object.keys(workerSales).sort((a,b) => workerSales[b] - workerSales[a])[0] || 'N/A';
                 })()}
               </span>

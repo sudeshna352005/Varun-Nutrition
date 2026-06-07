@@ -11,9 +11,14 @@ const WorkerAttendance = ({ user }) => {
   }, []);
 
   const checkActiveSession = async () => {
-    const res = await api.get('/api/attendance');
-    const active = res.data.find(a => a.workerName === user.name && a.status === 'working');
-    if (active) setSession(active);
+    try {
+      const res = await api.get('/api/attendance');
+      const attendanceArr = Array.isArray(res.data) ? res.data : [];
+      const active = attendanceArr.find(a => a.workerName === user.name && a.status === 'working');
+      if (active) setSession(active);
+    } catch (err) {
+      console.error("Failed to check active session", err);
+    }
   };
 
   const handleStartWork = async () => {
