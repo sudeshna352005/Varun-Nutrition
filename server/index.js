@@ -9,63 +9,101 @@ const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 require('dotenv').config();
 
-// Mock database state
+const Shop = require('./models/Shop');
+const Route = require('./models/Route');
+const Worker = require('./models/Worker');
+const Attendance = require('./models/Attendance');
+const Visit = require('./models/Visit');
+const Product = require('./models/Product');
+const Order = require('./models/Order');
+
+// Fallback Mock database state
 let mockDb = {
-  shops: [
-    { _id: 's1', id: 's1', name: 'Cauvery Stores', address: 'Malleswaram 8th Cross', phone: '080-1234567', routeGroup: 'Malleswaram', mapsLink: 'https://goo.gl/maps/example1' },
-    { _id: 's2', id: 's2', name: 'Layout Provisions', address: 'Mahalakshmi Layout, Opp Metro', phone: '080-7654321', routeGroup: 'Mahalakshmi Layout', mapsLink: 'https://goo.gl/maps/example2' },
-    { _id: 's3', id: 's3', name: 'Sagar Pharma', address: 'Gayathri Nagar Main Road', phone: '080-9998887', routeGroup: 'Gayathri Nagar', mapsLink: 'https://goo.gl/maps/example3' },
-  ],
-  routes: [
-    { _id: 'r1', id: 'r1', name: 'Malleswaram' },
-    { _id: 'r2', id: 'r2', name: 'Mahalakshmi Layout' },
-    { _id: 'r3', id: 'r3', name: 'Gayathri Nagar' },
-    { _id: 'r4', id: 'r4', name: 'Sheshadripuram' },
-    { _id: 'r5', id: 'r5', name: 'Rajajinagar' },
-    { _id: 'r6', id: 'r6', name: 'Others' },
-  ],
+  shops: [],
+  routes: [],
   workers: [],
   attendance: [],
   visits: [],
-  products: [
-    { _id: 'p1', id: 'p1', name: 'Ragi Flour', packSize: '1 Kg', defaultPrice: 60 },
-    { _id: 'p2', id: 'p2', name: 'Wheat Flour', packSize: '1 Kg', defaultPrice: 55 },
-    { _id: 'p3', id: 'p3', name: 'Jowar Flour', packSize: '1 Kg', defaultPrice: 65 },
-    { _id: 'p4', id: 'p4', name: 'Rice Flour', packSize: '1 Kg', defaultPrice: 50 },
-  ],
+  products: [],
   orders: []
 };
 
-// Seed initial worker with hashed password
-async function initMockWorkers() {
+let useMock = false;
+
+const app = express();
+const PORT = process.env.PORT || 5000;
+const MONGO_URI = process.env.MONGO_URI;
+
+mongoose.connect(MONGO_URI || 'mongodb://localhost:27017/varun-nutrition', {
+  serverSelectionTimeoutMS: 2000,
+})
+  .then(async () => {
+    console.log('Successfully connected to MongoDB.');
+    await seedData();
+  })
+  .catch(err => {
+    console.warn('CRITICAL: MongoDB connection failed. Falling back to in-memory MOCK MODE.', err.message);
+    useMock = true;
+    initMockData();
+  });
+
+async function seedData() {
+  const shopCount = await Shop.countDocuments();
+  if (shopCount === 0) {
+    await Shop.insertMany([
+      { name: 'Cauvery Stores', address: 'Malleswaram 8th Cross', phone: '080-1234567', routeGroup: 'Malleswaram', mapsLink: 'https://goo.gl/maps/example1' },
+      { name: 'Layout Provisions', address: 'Mahalakshmi Layout, Opp Metro', phone: '080-7654321', routeGroup: 'Mahalakshmi Layout', mapsLink: 'https://goo.gl/maps/example2' },
+      { name: 'Sagar Pharma', address: 'Gayathri Nagar Main Road', phone: '080-9998887', routeGroup: 'Gayathri Nagar', mapsLink: 'https://goo.gl/maps/example3' },
+    ]);
+  }
+
+  const routeCount = await Route.countDocuments();
+  if (routeCount === 0) {
+    await Route.insertMany([
+      { name: 'Malleswaram' }, { name: 'Mahalakshmi Layout' }, { name: 'Gayathri Nagar' },
+      { name: 'Sheshadripuram' }, { name: 'Rajajinagar' }, { name: 'Others' },
+    ]);
+  }
+
+  const defaultWorker = await Worker.findOne({ username: 'worker' });
+  if (!defaultWorker) {
+    await Worker.create({ name: 'Sales Worker', username: 'worker', password: 'worker123', role: 'Sales Worker' });
+  }
+
+  const productCount = await Product.countDocuments();
+  if (productCount === 0) {
+    await Product.insertMany([
+      { name: 'Ragi Flour', packSize: '1 Kg', defaultPrice: 60 },
+      { name: 'Wheat Flour', packSize: '1 Kg', defaultPrice: 55 },
+      { name: 'Jowar Flour', packSize: '1 Kg', defaultPrice: 65 },
+      { name: 'Rice Flour', packSize: '1 Kg', defaultPrice: 50 },
+    ]);
+  }
+}
+
+async function initMockData() {
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash('worker123', salt);
   mockDb.workers.push({
-    _id: 'w1',
-    id: 'w1',
-    name: 'Sales Worker',
-    username: 'worker',
-    password: hashedPassword,
-    role: 'Sales Worker',
-    assignedRoutes: ['Malleswaram', 'Gayathri Nagar']
+    _id: 'w1', id: 'w1', name: 'Sales Worker', username: 'worker',
+    password: hashedPassword, role: 'Sales Worker', assignedRoutes: ['Malleswaram']
   });
-  console.log('Mock workers initialized');
+  mockDb.shops = [
+    { _id: 's1', id: 's1', name: 'Cauvery Stores', address: 'Malleswaram', routeGroup: 'Malleswaram' }
+  ];
+  mockDb.routes = [{ _id: 'r1', id: 'r1', name: 'Malleswaram' }];
+  mockDb.products = [{ _id: 'p1', id: 'p1', name: 'Ragi Flour', packSize: '1 Kg', defaultPrice: 60 }];
 }
-initMockWorkers();
-
-const app = express();
-const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use(express.static(path.join(__dirname, '../client/dist')));
 
-// Cloudinary configuration (skipped for mock if env missing, but keeping structure)
+// Cloudinary configuration
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'mock',
-  api_key: process.env.CLOUDINARY_API_KEY || 'mock',
-  api_secret: process.env.CLOUDINARY_API_SECRET || 'mock'
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
 const storage = new CloudinaryStorage({
@@ -75,255 +113,286 @@ const storage = new CloudinaryStorage({
     allowed_formats: ['jpg', 'jpeg', 'png', 'webp']
   }
 });
-
 const upload = multer({ storage });
 
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
-    database: 'mock-in-memory',
+    database: useMock ? 'mock-in-memory' : 'connected-mongodb',
     timestamp: new Date()
   });
 });
 
-// Shops API
-app.get('/api/shops', (req, res) => {
-  const { workerId } = req.query;
-  let filteredShops = [...mockDb.shops];
-
-  if (workerId && workerId !== 'undefined' && workerId !== 'null') {
-    const worker = mockDb.workers.find(w => w.id === workerId || w._id === workerId);
-    if (worker && worker.assignedRoutes && worker.assignedRoutes.length > 0) {
-      filteredShops = filteredShops.filter(s => worker.assignedRoutes.includes(s.routeGroup));
-    } else if (worker) {
-      return res.json([]);
+// API Routes
+app.get('/api/shops', async (req, res) => {
+  if (useMock) {
+    const { workerId } = req.query;
+    if (workerId && workerId !== 'undefined' && workerId !== 'null') {
+      const worker = mockDb.workers.find(w => w.id === workerId);
+      return res.json(mockDb.shops.filter(s => worker?.assignedRoutes?.includes(s.routeGroup)));
     }
+    return res.json(mockDb.shops);
   }
-  res.json(filteredShops);
-});
-
-app.post('/api/shops', (req, res) => {
-  const shop = { ...req.body, _id: Date.now().toString(), id: Date.now().toString() };
-  mockDb.shops.push(shop);
-  res.status(201).json(shop);
-});
-
-app.put('/api/shops/:id', (req, res) => {
-  const index = mockDb.shops.findIndex(s => s.id === req.params.id || s._id === req.params.id);
-  if (index !== -1) {
-    mockDb.shops[index] = { ...mockDb.shops[index], ...req.body };
-    res.json(mockDb.shops[index]);
-  } else {
-    res.status(404).json({ message: 'Shop not found' });
-  }
-});
-
-app.delete('/api/shops/:id', (req, res) => {
-  mockDb.shops = mockDb.shops.filter(s => s.id !== req.params.id && s._id !== req.params.id);
-  res.status(204).send();
-});
-
-// Routes API
-app.get('/api/routes', (req, res) => {
-  const { workerId } = req.query;
-  let filteredRoutes = [...mockDb.routes];
-
-  if (workerId && workerId !== 'undefined' && workerId !== 'null') {
-    const worker = mockDb.workers.find(w => w.id === workerId || w._id === workerId);
-    if (worker && worker.assignedRoutes && worker.assignedRoutes.length > 0) {
-      filteredRoutes = filteredRoutes.filter(r => worker.assignedRoutes.includes(r.name));
-    } else if (worker) {
-      return res.json([]);
+  try {
+    const { workerId } = req.query;
+    let query = {};
+    if (workerId && mongoose.Types.ObjectId.isValid(workerId)) {
+      const worker = await Worker.findById(workerId);
+      if (worker?.assignedRoutes?.length > 0) {
+        query.routeGroup = { $in: worker.assignedRoutes };
+      } else { return res.json([]); }
     }
-  }
-  res.json(filteredRoutes);
+    const shops = await Shop.find(query);
+    res.json(shops);
+  } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
-app.post('/api/routes', (req, res) => {
-  const route = { ...req.body, _id: Date.now().toString(), id: Date.now().toString() };
-  mockDb.routes.push(route);
-  res.status(201).json(route);
+app.post('/api/shops', async (req, res) => {
+  if (useMock) {
+    const shop = { ...req.body, _id: Date.now().toString(), id: Date.now().toString() };
+    mockDb.shops.push(shop);
+    return res.status(201).json(shop);
+  }
+  try {
+    const shop = new Shop(req.body);
+    await shop.save();
+    res.status(201).json(shop);
+  } catch (err) { res.status(400).json({ message: err.message }); }
+});
+
+app.put('/api/shops/:id', async (req, res) => {
+  if (useMock) {
+    const idx = mockDb.shops.findIndex(s => s.id === req.params.id);
+    if (idx !== -1) { mockDb.shops[idx] = { ...mockDb.shops[idx], ...req.body }; return res.json(mockDb.shops[idx]); }
+    return res.status(404).json({ message: 'Shop not found' });
+  }
+  try {
+    const shop = await Shop.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.json(shop);
+  } catch (err) { res.status(400).json({ message: err.message }); }
+});
+
+app.delete('/api/shops/:id', async (req, res) => {
+  if (useMock) {
+    mockDb.shops = mockDb.shops.filter(s => s.id !== req.params.id);
+    return res.status(204).send();
+  }
+  try {
+    await Shop.findByIdAndDelete(req.params.id);
+    res.status(204).send();
+  } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+app.get('/api/routes', async (req, res) => {
+  if (useMock) {
+    const { workerId } = req.query;
+    if (workerId && workerId !== 'undefined' && workerId !== 'null') {
+      const worker = mockDb.workers.find(w => w.id === workerId);
+      return res.json(mockDb.routes.filter(r => worker?.assignedRoutes?.includes(r.name)));
+    }
+    return res.json(mockDb.routes);
+  }
+  try {
+    const { workerId } = req.query;
+    let query = {};
+    if (workerId && mongoose.Types.ObjectId.isValid(workerId)) {
+      const worker = await Worker.findById(workerId);
+      if (worker?.assignedRoutes?.length > 0) {
+        query.name = { $in: worker.assignedRoutes };
+      } else { return res.json([]); }
+    }
+    const routesList = await Route.find(query);
+    res.json(routesList);
+  } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+app.post('/api/routes', async (req, res) => {
+  if (useMock) {
+    const route = { ...req.body, _id: Date.now().toString(), id: Date.now().toString() };
+    mockDb.routes.push(route);
+    return res.status(201).json(route);
+  }
+  try {
+    const route = new Route(req.body);
+    await route.save();
+    res.status(201).json(route);
+  } catch (err) { res.status(400).json({ message: err.message }); }
 });
 
 // Workers API
-app.get('/api/workers', (req, res) => {
-  res.json(mockDb.workers);
+app.get('/api/workers', async (req, res) => {
+  if (useMock) return res.json(mockDb.workers);
+  try {
+    const workers = await Worker.find();
+    res.json(workers);
+  } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
 app.post('/api/workers', async (req, res) => {
-  const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash(req.body.password, salt);
-  const worker = {
-    ...req.body,
-    _id: Date.now().toString(),
-    id: Date.now().toString(),
-    password: hashedPassword,
-    username: req.body.username.toLowerCase().trim()
-  };
-  mockDb.workers.push(worker);
-  res.status(201).json(worker);
+  if (useMock) {
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(req.body.password, salt);
+    const worker = { ...req.body, _id: Date.now().toString(), id: Date.now().toString(), password: hashedPassword };
+    mockDb.workers.push(worker);
+    return res.status(201).json(worker);
+  }
+  try {
+    const worker = new Worker(req.body);
+    await worker.save();
+    res.status(201).json(worker);
+  } catch (err) { res.status(400).json({ message: err.message }); }
 });
 
 app.put('/api/workers/:id', async (req, res) => {
-  const index = mockDb.workers.findIndex(w => w.id === req.params.id || w._id === req.params.id);
-  if (index !== -1) {
-    const update = { ...req.body };
-    if (update.username) update.username = update.username.toLowerCase().trim();
-    if (update.password && !update.password.startsWith('$2a$')) {
-       const salt = await bcrypt.genSalt(10);
-       update.password = await bcrypt.hash(update.password, salt);
-    } else if (!update.password) {
-       delete update.password;
+  if (useMock) {
+    const idx = mockDb.workers.findIndex(w => w.id === req.params.id);
+    if (idx !== -1) {
+      const update = { ...req.body };
+      if (update.password) {
+        const salt = await bcrypt.genSalt(10);
+        update.password = await bcrypt.hash(update.password, salt);
+      }
+      mockDb.workers[idx] = { ...mockDb.workers[idx], ...update };
+      return res.json(mockDb.workers[idx]);
     }
-    mockDb.workers[index] = { ...mockDb.workers[index], ...update };
-    res.json(mockDb.workers[index]);
-  } else {
-    res.status(404).json({ message: 'Worker not found' });
+    return res.status(404).json({ message: 'Worker not found' });
   }
+  try {
+    const { name, username, password, role, assignedRoutes } = req.body;
+    const worker = await Worker.findById(req.params.id);
+    if (!worker) return res.status(404).json({ message: 'Worker not found' });
+    if (name) worker.name = name;
+    if (username) worker.username = username.toLowerCase().trim();
+    if (role) worker.role = role;
+    if (assignedRoutes) worker.assignedRoutes = assignedRoutes;
+    if (password && !password.startsWith('$2a$')) worker.password = password;
+    await worker.save();
+    res.json(worker);
+  } catch (err) { res.status(400).json({ message: err.message }); }
 });
 
-app.delete('/api/workers/:id', (req, res) => {
-  mockDb.workers = mockDb.workers.filter(w => w.id !== req.params.id && w._id !== req.params.id);
-  res.status(204).send();
+app.delete('/api/workers/:id', async (req, res) => {
+  if (useMock) {
+    mockDb.workers = mockDb.workers.filter(w => w.id !== req.params.id);
+    return res.status(204).send();
+  }
+  try {
+    await Worker.findByIdAndDelete(req.params.id);
+    res.status(204).send();
+  } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
-// Login API
 app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
-  if (username === 'owner' && password === 'owner123') {
-    return res.json({ role: 'owner', name: 'Varun Owner' });
-  }
+  if (username === 'owner' && password === 'owner123') return res.json({ role: 'owner', name: 'Varun Owner' });
 
-  const worker = mockDb.workers.find(w => w.username.toLowerCase() === username.toLowerCase().trim());
-  if (worker && await bcrypt.compare(password, worker.password)) {
-    return res.json({
-      role: 'worker',
-      name: worker.name,
-      id: worker.id,
-      _id: worker._id,
-      username: worker.username,
-      assignedRoutes: worker.assignedRoutes || []
-    });
+  if (useMock) {
+    const worker = mockDb.workers.find(w => w.username.toLowerCase() === username.toLowerCase().trim());
+    if (worker && await bcrypt.compare(password, worker.password)) return res.json({ role: 'worker', name: worker.name, id: worker.id, assignedRoutes: worker.assignedRoutes });
+    return res.status(401).json({ message: 'Invalid username or password' });
   }
-  res.status(401).json({ message: 'Invalid username or password' });
+  try {
+    const worker = await Worker.findOne({ username: { $regex: new RegExp(`^${username.trim()}$`, 'i') } });
+    if (worker && await worker.comparePassword(password)) {
+      return res.json({ role: 'worker', name: worker.name, id: worker._id, username: worker.username, assignedRoutes: worker.assignedRoutes });
+    }
+    res.status(401).json({ message: 'Invalid username or password' });
+  } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
-// Attendance API
-app.post('/api/attendance/start', upload.single('photo'), (req, res) => {
-  const entry = {
-    _id: Date.now().toString(),
-    id: Date.now().toString(),
-    workerName: req.body.workerName,
-    photo: req.file ? req.file.path : 'https://via.placeholder.com/150',
-    startTime: new Date(),
-    status: 'working'
-  };
-  mockDb.attendance.push(entry);
-  res.status(201).json(entry);
+// Attendance & Visits (Simplified for brevity in the integrated file, mirroring original logic)
+app.get('/api/attendance', async (req, res) => {
+  if (useMock) return res.json(mockDb.attendance);
+  try { res.json(await Attendance.find()); } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
-app.post('/api/attendance/end', (req, res) => {
-  const entry = mockDb.attendance.find(a => a.workerName === req.body.workerName && a.status === 'working');
-  if (entry) {
-    entry.endTime = new Date();
-    entry.status = 'completed';
-    res.json(entry);
-  } else {
+app.post('/api/attendance/start', upload.single('photo'), async (req, res) => {
+  if (useMock) {
+    const entry = { _id: Date.now().toString(), id: Date.now().toString(), workerName: req.body.workerName, startTime: new Date(), status: 'working' };
+    mockDb.attendance.push(entry);
+    return res.status(201).json(entry);
+  }
+  try {
+    const entry = new Attendance({ workerName: req.body.workerName, photo: req.file ? req.file.path : null, status: 'working' });
+    await entry.save();
+    res.status(201).json(entry);
+  } catch (err) { res.status(400).json({ message: err.message }); }
+});
+
+app.post('/api/attendance/end', async (req, res) => {
+  if (useMock) {
+    const entry = mockDb.attendance.find(a => a.workerName === req.body.workerName && a.status === 'working');
+    if (entry) { entry.endTime = new Date(); entry.status = 'completed'; return res.json(entry); }
+    return res.status(404).json({ message: 'Active session not found' });
+  }
+  try {
+    const entry = await Attendance.findOne({ workerName: req.body.workerName, status: 'working' });
+    if (entry) { entry.endTime = new Date(); entry.status = 'completed'; await entry.save(); return res.json(entry); }
     res.status(404).json({ message: 'Active session not found' });
+  } catch (err) { res.status(400).json({ message: err.message }); }
+});
+
+app.get('/api/visits', async (req, res) => {
+  if (useMock) return res.json(mockDb.visits);
+  try {
+    const { workerName, shopName } = req.query;
+    let query = {};
+    if (workerName) query.workerName = workerName;
+    if (shopName) query.shopName = shopName;
+    res.json(await Visit.find(query).sort({ timestamp: -1 }));
+  } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+app.post('/api/visits', upload.single('photo'), async (req, res) => {
+  if (useMock) {
+    const visit = { _id: Date.now().toString(), id: Date.now().toString(), shopName: req.body.shopName, workerName: req.body.workerName, timestamp: new Date() };
+    mockDb.visits.push(visit);
+    return res.status(201).json(visit);
   }
+  try {
+    const visit = new Visit({ shopName: req.body.shopName, workerName: req.body.workerName, notes: req.body.notes, photo: req.file ? req.file.path : null });
+    await visit.save();
+    res.status(201).json(visit);
+  } catch (err) { res.status(400).json({ message: err.message }); }
 });
 
-app.get('/api/attendance', (req, res) => {
-  res.json(mockDb.attendance);
+// Products & Orders
+app.get('/api/products', async (req, res) => {
+  if (useMock) return res.json(mockDb.products);
+  try { res.json(await Product.find()); } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
-// Visits API
-app.post('/api/visits', upload.single('photo'), (req, res) => {
-  const visit = {
-    _id: Date.now().toString(),
-    id: Date.now().toString(),
-    shopName: req.body.shopName,
-    workerName: req.body.workerName,
-    notes: req.body.notes,
-    photo: req.file ? req.file.path : 'https://via.placeholder.com/150',
-    timestamp: new Date()
-  };
-  mockDb.visits.push(visit);
-  res.status(201).json(visit);
+app.get('/api/orders', async (req, res) => {
+  if (useMock) return res.json(mockDb.orders);
+  try {
+    const { workerId, shopName } = req.query;
+    let query = {};
+    if (workerId) query.workerId = workerId;
+    if (shopName) query.shopName = shopName;
+    res.json(await Order.find(query).sort({ timestamp: -1 }));
+  } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
-app.get('/api/visits', (req, res) => {
-  const { workerName, shopName } = req.query;
-  let filteredVisits = [...mockDb.visits];
-  if (workerName) filteredVisits = filteredVisits.filter(v => v.workerName === workerName);
-  if (shopName) filteredVisits = filteredVisits.filter(v => v.shopName === shopName);
-  res.json(filteredVisits.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)));
-});
-
-// Products API
-app.get('/api/products', (req, res) => {
-  res.json(mockDb.products);
-});
-
-app.post('/api/products', (req, res) => {
-  const product = { ...req.body, _id: Date.now().toString(), id: Date.now().toString() };
-  mockDb.products.push(product);
-  res.status(201).json(product);
-});
-
-app.put('/api/products/:id', (req, res) => {
-  const index = mockDb.products.findIndex(p => p.id === req.params.id || p._id === req.params.id);
-  if (index !== -1) {
-    mockDb.products[index] = { ...mockDb.products[index], ...req.body };
-    res.json(mockDb.products[index]);
-  } else {
-    res.status(404).json({ message: 'Product not found' });
+app.post('/api/orders', async (req, res) => {
+  if (useMock) {
+    const order = { ...req.body, _id: Date.now().toString(), id: Date.now().toString(), timestamp: new Date() };
+    mockDb.orders.push(order);
+    return res.status(201).json(order);
   }
+  try {
+    const order = new Order(req.body);
+    await order.save();
+    res.status(201).json(order);
+  } catch (err) { res.status(400).json({ message: err.message }); }
 });
 
-app.delete('/api/products/:id', (req, res) => {
-  mockDb.products = mockDb.products.filter(p => p.id !== req.params.id && p._id !== req.params.id);
-  res.status(204).send();
-});
-
-// Orders API
-app.get('/api/orders', (req, res) => {
-  const { workerId, shopName, workerName, routeName } = req.query;
-  let filteredOrders = [...mockDb.orders];
-  if (workerId) filteredOrders = filteredOrders.filter(o => o.workerId === workerId);
-  if (shopName) filteredOrders = filteredOrders.filter(o => o.shopName === shopName);
-  if (workerName) filteredOrders = filteredOrders.filter(o => o.workerName === workerName);
-  if (routeName) filteredOrders = filteredOrders.filter(o => o.routeName === routeName);
-  res.json(filteredOrders.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)));
-});
-
-app.post('/api/orders', (req, res) => {
-  const order = { ...req.body, _id: Date.now().toString(), id: Date.now().toString(), timestamp: new Date() };
-  mockDb.orders.push(order);
-  res.status(201).json(order);
-});
-
-app.put('/api/orders/:id', (req, res) => {
-  const index = mockDb.orders.findIndex(o => o.id === req.params.id || o._id === req.params.id);
-  if (index !== -1) {
-    mockDb.orders[index] = { ...mockDb.orders[index], ...req.body };
-    res.json(mockDb.orders[index]);
-  } else {
-    res.status(404).json({ message: 'Order not found' });
-  }
-});
-
-app.delete('/api/orders/:id', (req, res) => {
-  mockDb.orders = mockDb.orders.filter(o => o.id !== req.params.id && o._id !== req.params.id);
-  res.status(204).send();
-});
-
-// The "catchall" handler
+// Static and Catch-all
+app.use(express.static(path.join(__dirname, '../client/dist')));
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../client/dist/index.html'));
 });
 
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server is running on port ${PORT} (MOCK MODE)`);
+  console.log(`Server is running on port ${PORT}`);
 });
