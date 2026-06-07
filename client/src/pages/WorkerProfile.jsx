@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import api, { getImageUrl } from '../api';
-import { User, Calendar, MapPin, Camera, Clock, TrendingUp, Briefcase, ChevronRight, Mail } from 'lucide-react';
+import { User, Calendar, MapPin, Camera, Clock, TrendingUp, Briefcase, ChevronRight, Mail, ShoppingBag } from 'lucide-react';
 
 const WorkerProfile = () => {
   const { id } = useParams();
   const [worker, setWorker] = useState(null);
   const [attendance, setAttendance] = useState([]);
   const [visits, setVisits] = useState([]);
+  const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -19,13 +20,15 @@ const WorkerProfile = () => {
 
         if (currentWorker) {
           setWorker(currentWorker);
-          const [attendanceRes, visitsRes] = await Promise.all([
+          const [attendanceRes, visitsRes, ordersRes] = await Promise.all([
             api.get('/api/attendance'),
-            api.get(`/api/visits?workerName=${currentWorker.name}`)
+            api.get(`/api/visits?workerName=${currentWorker.name}`),
+            api.get(`/api/orders?workerName=${currentWorker.name}`)
           ]);
           const att = Array.isArray(attendanceRes.data) ? attendanceRes.data : [];
           setAttendance(att.filter(a => a?.workerName === currentWorker.name));
           setVisits(Array.isArray(visitsRes.data) ? visitsRes.data : []);
+          setOrders(Array.isArray(ordersRes.data) ? ordersRes.data : []);
         }
       } catch (err) {
         console.error("Error fetching worker profile:", err);
@@ -41,14 +44,17 @@ const WorkerProfile = () => {
 
   const visitsArr = Array.isArray(visits) ? visits : [];
   const attendanceArr = Array.isArray(attendance) ? attendance : [];
+  const ordersArr = Array.isArray(orders) ? orders : [];
 
   const totalVisits = visitsArr.length;
   const completedSessions = attendanceArr.filter(a => a.status === 'completed').length;
   const uniqueShops = new Set(visitsArr.map(v => v.shopName)).size;
+  const totalSales = ordersArr.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
 
   const activityTimeline = [
     ...attendanceArr.map(a => ({ ...a, type: 'attendance', timestamp: a.startTime })),
-    ...visitsArr.map(v => ({ ...v, type: 'visit', timestamp: v.timestamp }))
+    ...visitsArr.map(v => ({ ...v, type: 'visit', timestamp: v.timestamp })),
+    ...ordersArr.map(o => ({ ...o, type: 'order', timestamp: o.timestamp }))
   ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
   return (
@@ -60,23 +66,27 @@ const WorkerProfile = () => {
             <User size={48} strokeWidth={2.5} />
           </div>
           <div className="text-center md:text-left flex-1">
-            <h1 className="text-5xl font-extrabold mb-2 tracking-tighter">{worker.name}</h1>
+            <h1 className="text-4xl md:text-5xl font-extrabold mb-2 tracking-tighter">{worker.name}</h1>
             <p className="text-slate-400 flex items-center justify-center md:justify-start gap-2 font-medium">
               <Mail size={16} className="text-green-500" /> {worker.username}
             </p>
           </div>
-          <div className="grid grid-cols-3 gap-4 w-full md:w-auto">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full md:w-auto">
             <div className="bg-slate-800 p-4 rounded-xl text-center border border-slate-700 shadow-inner">
-              <p className="text-slate-500 text-xs uppercase font-bold mb-1 tracking-widest">Visits</p>
-              <p className="text-2xl font-bold text-green-500">{totalVisits}</p>
+              <p className="text-slate-500 text-[10px] uppercase font-bold mb-1 tracking-widest">Visits</p>
+              <p className="text-xl md:text-2xl font-bold text-green-500">{totalVisits}</p>
             </div>
             <div className="bg-slate-800 p-4 rounded-xl text-center border border-slate-700 shadow-inner">
-              <p className="text-slate-500 text-xs uppercase font-bold mb-1 tracking-widest">Days</p>
-              <p className="text-2xl font-bold text-green-500">{completedSessions}</p>
+              <p className="text-slate-500 text-[10px] uppercase font-bold mb-1 tracking-widest">Days</p>
+              <p className="text-xl md:text-2xl font-bold text-green-500">{completedSessions}</p>
             </div>
             <div className="bg-slate-800 p-4 rounded-xl text-center border border-slate-700 shadow-inner">
-              <p className="text-slate-500 text-xs uppercase font-bold mb-1 tracking-widest">Shops</p>
-              <p className="text-2xl font-bold text-green-500">{uniqueShops}</p>
+              <p className="text-slate-500 text-[10px] uppercase font-bold mb-1 tracking-widest">Shops</p>
+              <p className="text-xl md:text-2xl font-bold text-green-500">{uniqueShops}</p>
+            </div>
+            <div className="bg-slate-800 p-4 rounded-xl text-center border border-slate-700 shadow-inner">
+              <p className="text-slate-500 text-[10px] uppercase font-bold mb-1 tracking-widest">Sales</p>
+              <p className="text-xl md:text-2xl font-bold text-green-500">₹{totalSales.toLocaleString()}</p>
             </div>
           </div>
         </div>
@@ -92,16 +102,26 @@ const WorkerProfile = () => {
             <div className="space-y-4">
               <div className="flex justify-between items-center p-3 bg-slate-800/30 rounded-lg border border-slate-800">
                 <span className="text-slate-300 font-medium">Total Working Days</span>
-                <span className="font-bold text-white bg-slate-800 px-3 py-1 rounded-md border border-slate-700">{attendance.length}</span>
+                <span className="font-bold text-white bg-slate-800 px-3 py-1 rounded-md border border-slate-700">{attendanceArr.length}</span>
               </div>
               <div className="flex justify-between items-center p-3 bg-slate-800/30 rounded-lg border border-slate-800">
                 <span className="text-slate-300 font-medium">Total Shop Visits</span>
-                <span className="font-bold text-white bg-slate-800 px-3 py-1 rounded-md border border-slate-700">{visits.length}</span>
+                <span className="font-bold text-white bg-slate-800 px-3 py-1 rounded-md border border-slate-700">{visitsArr.length}</span>
               </div>
               <div className="flex justify-between items-center p-3 bg-slate-800/30 rounded-lg border border-slate-800">
                 <span className="text-slate-300 font-medium">Avg Visits / Day</span>
                 <span className="font-bold text-white bg-slate-800 px-3 py-1 rounded-md border border-slate-700">
                   {attendanceArr.length > 0 ? (visitsArr.length / attendanceArr.length).toFixed(1) : 0}
+                </span>
+              </div>
+              <div className="flex justify-between items-center p-3 bg-slate-800/30 rounded-lg border border-slate-800">
+                <span className="text-slate-300 font-medium">Total Sales</span>
+                <span className="font-bold text-green-500 bg-slate-800 px-3 py-1 rounded-md border border-slate-700">₹{totalSales.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between items-center p-3 bg-slate-800/30 rounded-lg border border-slate-800">
+                <span className="text-slate-300 font-medium">Avg Order Value</span>
+                <span className="font-bold text-white bg-slate-800 px-3 py-1 rounded-md border border-slate-700">
+                  ₹{ordersArr.length > 0 ? (totalSales / ordersArr.length).toFixed(0) : 0}
                 </span>
               </div>
             </div>
@@ -138,7 +158,7 @@ const WorkerProfile = () => {
                 <div key={item.id} className="relative pl-8">
                   {/* Timeline Dot */}
                   <div className={`absolute -left-[9px] top-1 w-4 h-4 rounded-full border-2 border-slate-900 shadow-md ${
-                    item.type === 'attendance' ? 'bg-blue-500' : 'bg-green-500'
+                    item.type === 'attendance' ? 'bg-blue-500' : item.type === 'order' ? 'bg-purple-500' : 'bg-green-500'
                   }`} />
 
                   <div className="mb-2 flex items-center gap-3">
@@ -148,6 +168,11 @@ const WorkerProfile = () => {
                     {item.type === 'attendance' && (
                       <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded text-[10px] font-bold uppercase tracking-wider">
                         {item.status === 'working' ? 'Shift Started' : 'Shift Ended'}
+                      </span>
+                    )}
+                    {item.type === 'order' && (
+                      <span className="px-2 py-0.5 bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded text-[10px] font-bold uppercase tracking-wider">
+                        Order Placed
                       </span>
                     )}
                   </div>
@@ -162,6 +187,22 @@ const WorkerProfile = () => {
                           <p className="font-bold text-white">Attendance Marked</p>
                           <p className="text-sm text-slate-400">{item.status === 'working' ? 'Started work for the day' : 'Completed shift'}</p>
                         </div>
+                      </div>
+                    ) : item.type === 'order' ? (
+                      <div className="space-y-3">
+                         <div className="flex justify-between items-start">
+                            <div className="flex items-center gap-2 text-purple-400 font-bold text-lg">
+                               <ShoppingBag size={20} className="text-purple-500" /> {item.shopName}
+                            </div>
+                            <span className="text-xl font-black text-green-500">₹{item.totalAmount.toLocaleString()}</span>
+                         </div>
+                         <div className="flex flex-wrap gap-2">
+                            {(item.items || []).map((prod, pidx) => (
+                               <span key={pidx} className="px-2 py-1 bg-slate-800 rounded text-[10px] text-slate-400 border border-slate-700">
+                                  {prod.name} x {prod.quantity}
+                               </span>
+                            ))}
+                         </div>
                       </div>
                     ) : (
                       <div className="space-y-4">

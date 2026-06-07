@@ -55,9 +55,9 @@ const OwnerDashboard = () => {
     const attendanceArr = Array.isArray(rawData.attendance) ? rawData.attendance : [];
     const ordersArr = Array.isArray(rawData.orders) ? rawData.orders : [];
 
-    let visits = visitsArr.filter(v => isInRange(v.timestamp, dateRange));
-    let attendance = attendanceArr.filter(a => isInRange(a.startTime, dateRange));
-    let orders = ordersArr.filter(o => isInRange(o.timestamp, dateRange));
+    let visits = visitsArr.filter(v => v && v.timestamp && isInRange(v.timestamp, dateRange));
+    let attendance = attendanceArr.filter(a => a && a.startTime && isInRange(a.startTime, dateRange));
+    let orders = ordersArr.filter(o => o && o.timestamp && isInRange(o.timestamp, dateRange));
 
     if (selectedWorker) {
       visits = visits.filter(v => v.workerName === selectedWorker);

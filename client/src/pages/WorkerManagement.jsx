@@ -176,7 +176,8 @@ const WorkerManagement = () => {
         </div>
       </div>
 
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
+      {/* Desktop Table View */}
+      <div className="hidden md:block bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-zinc-800">
             <thead className="bg-slate-800/50">
@@ -191,7 +192,7 @@ const WorkerManagement = () => {
             <tbody className="divide-y divide-zinc-800">
               {(Array.isArray(filteredWorkers) ? filteredWorkers : []).length === 0 ? (
                 <tr>
-                  <td colSpan="4" className="px-6 py-10 text-center text-slate-500 italic">No workers found.</td>
+                  <td colSpan="5" className="px-6 py-10 text-center text-slate-500 italic">No workers found.</td>
                 </tr>
               ) : (
                 (Array.isArray(filteredWorkers) ? filteredWorkers : []).map((worker) => (
@@ -242,6 +243,57 @@ const WorkerManagement = () => {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Mobile Card View */}
+      <div className="md:hidden space-y-4">
+        {(Array.isArray(filteredWorkers) ? filteredWorkers : []).length === 0 ? (
+          <div className="bg-slate-900 p-10 text-center rounded-2xl border border-slate-800 text-slate-500 italic">No workers found.</div>
+        ) : (
+          (Array.isArray(filteredWorkers) ? filteredWorkers : []).map((worker) => (
+            <div key={worker.id || worker._id} className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
+              <div className="flex justify-between items-start mb-4">
+                <Link to={`/worker/${worker.id || worker._id}`} className="flex items-center text-green-500 font-bold">
+                  <div className="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center mr-3 border border-slate-700">
+                    <User className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-lg">{worker.name}</p>
+                    <p className="text-xs text-slate-500 font-normal">{worker.username}</p>
+                  </div>
+                </Link>
+                <span className={`px-2 py-1 rounded-md text-[9px] font-bold uppercase tracking-wider ${
+                  (worker.role || 'Sales Worker') === 'Delivery Staff' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-green-500/10 text-green-400 border border-green-500/20'
+                }`}>
+                  {worker.role || 'Sales Worker'}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between pt-4 border-t border-slate-800">
+                <div className="flex items-center gap-2">
+                  <Lock size={12} className="text-slate-500" />
+                  <span className="font-mono text-[10px] text-slate-500">
+                    {visiblePasswords[worker.id || worker._id] ? worker.password : '••••••••'}
+                  </span>
+                  <button
+                    onClick={() => togglePasswordVisibility(worker.id || worker._id)}
+                    className="p-1 text-slate-600 hover:text-green-500"
+                  >
+                    {visiblePasswords[worker.id || worker._id] ? <EyeOff size={14} /> : <Eye size={14} />}
+                  </button>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => handleEdit(worker)} className="p-2 bg-slate-800 text-blue-500 rounded-lg">
+                    <Edit2 size={16} />
+                  </button>
+                  <button onClick={() => handleDelete(worker)} className="p-2 bg-slate-800 text-red-500 rounded-lg">
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
       {isModalOpen && (
