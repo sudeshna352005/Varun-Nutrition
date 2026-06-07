@@ -9,6 +9,8 @@
     "build": "cd client && npm run build"
   },
   "dependencies": {
+    "@playwright/test": "^1.60.0",
+    "axios": "^1.17.0",
     "express": "^5.2.1"
   }
 }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api';
-import { Plus, Edit2, Trash2, User, Lock, Mail, MapPin, Eye, EyeOff, Search } from 'lucide-react';
+import { Plus, Edit2, Trash2, User, Lock, Mail, MapPin, Eye, EyeOff, Search, Briefcase } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const WorkerManagement = () => {
@@ -8,12 +8,14 @@ const WorkerManagement = () => {
   const [routes, setRoutes] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all'); // 'all', 'route-assigned', 'no-route'
+  const [roleFilter, setRoleFilter] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingWorker, setEditingWorker] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
     username: '',
     password: '',
+    role: 'Sales Worker',
     assignedRoutes: []
   });
   const [showPassword, setShowPassword] = useState(false);
@@ -64,7 +66,7 @@ const WorkerManagement = () => {
       }
       setIsModalOpen(false);
       setEditingWorker(null);
-      setFormData({ name: '', username: '', password: '', assignedRoutes: [] });
+      setFormData({ name: '', username: '', password: '', role: 'Sales Worker', assignedRoutes: [] });
       setShowPassword(false);
       fetchWorkers();
     } catch (err) {
@@ -79,6 +81,7 @@ const WorkerManagement = () => {
       name: worker.name,
       username: worker.username,
       password: '', // Clear password field when editing to avoid sending back the hash
+      role: worker.role || 'Sales Worker',
       assignedRoutes: Array.isArray(worker.assignedRoutes) ? [...worker.assignedRoutes] : []
     });
     setIsModalOpen(true);
@@ -116,7 +119,10 @@ const WorkerManagement = () => {
     if (statusFilter === 'route-assigned') matchesStatus = hasRoutes;
     if (statusFilter === 'no-route') matchesStatus = !hasRoutes;
 
-    return matchesSearch && matchesStatus;
+    let matchesRole = true;
+    if (roleFilter !== 'all') matchesRole = w.role === roleFilter;
+
+    return matchesSearch && matchesStatus && matchesRole;
   });
 
   return (
@@ -146,6 +152,18 @@ const WorkerManagement = () => {
               </button>
             ))}
           </div>
+
+          <div className="flex bg-slate-900 border border-slate-800 rounded-xl p-1 w-full md:w-auto">
+            {['all', 'Sales Worker', 'Delivery Staff'].map(r => (
+              <button
+                key={r}
+                onClick={() => setRoleFilter(r)}
+                className={`flex-1 px-3 py-1.5 text-[9px] uppercase font-bold rounded-lg transition-all ${roleFilter === r ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-white'}`}
+              >
+                {r === 'all' ? 'All Roles' : r.split(' ')[0]}
+              </button>
+            ))}
+          </div>
           <button
             onClick={() => setIsModalOpen(true)}
             className="w-full md:w-auto bg-green-600 text-zinc-900 px-6 py-2.5 rounded-xl font-bold flex items-center justify-center hover:bg-green-500 transition-all shadow-lg shadow-green-600/20"
@@ -162,6 +180,7 @@ const WorkerManagement = () => {
               <tr>
                 <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-widest">Name</th>
                 <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-widest">Username</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-widest">Role</th>
                 <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-widest">Password Info</th>
                 <th className="px-6 py-4 text-right text-xs font-bold text-slate-400 uppercase tracking-widest">Actions</th>
               </tr>
@@ -184,6 +203,13 @@ const WorkerManagement = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-300 font-medium">
                       {worker.username}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                        worker.role === 'Delivery Staff' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-green-500/10 text-green-400 border border-green-500/20'
+                      }`}>
+                        {worker.role || 'Sales Worker'}
+                      </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
                       <div className="flex items-center gap-2">
@@ -270,6 +296,24 @@ const WorkerManagement = () => {
                     >
                       {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Role</label>
+                  <div className="relative">
+                    <Briefcase className="absolute left-4 top-3.5 h-5 w-5 text-slate-500" />
+                    <select
+                      className="pl-12 block w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-green-500 outline-none transition-all appearance-none cursor-pointer"
+                      value={formData.role}
+                      onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                    >
+                      <option value="Sales Worker">Sales Worker</option>
+                      <option value="Delivery Staff">Delivery Staff</option>
+                    </select>
+                    <div className="absolute right-4 top-4 pointer-events-none">
+                       <User size={16} className="text-slate-600" />
+                    </div>
                   </div>
                 </div>
 
