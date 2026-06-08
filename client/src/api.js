@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Use relative URL so it works with Vite proxy in dev and unified port in prod
-export const API_BASE_URL = '';
+export const API_BASE_URL = 'https://varun-nutrition.onrender.com';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
