@@ -13,6 +13,9 @@ const DeliveryDashboard = ({ user }) => {
   const [dateRange, setDateRange] = useState(getRangeDates('today'));
   const [statusFilter, setStatusFilter] = useState('all');
   const [isWorking, setIsWorking] = useState(false);
+  const [completingOrder, setCompletingOrder] = useState(null);
+  const [deliveryNotes, setDeliveryNotes] = useState('');
+  const [deliveryPhoto, setDeliveryPhoto] = useState(null);
 
   useEffect(() => {
     fetchData();
@@ -48,13 +51,39 @@ const DeliveryDashboard = ({ user }) => {
     }
   };
 
-  const handleMarkDelivered = async (orderId) => {
+  const handleMarkDelivered = async () => {
+    if (!deliveryPhoto) {
+      alert('Visit proof photo is mandatory.');
+      return;
+    }
+
     try {
+      const orderId = completingOrder.id || completingOrder._id;
+
+      // 1. Log as a visit proof
+      const formData = new FormData();
+      formData.append('shopName', completingOrder.shopName);
+      formData.append('workerName', user.name);
+      formData.append('workerRole', user.role || 'Delivery Staff');
+      formData.append('routeName', completingOrder.routeName);
+      formData.append('notes', deliveryNotes || 'Order Delivered');
+      formData.append('photo', deliveryPhoto);
+
+      await api.post('/api/visits', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      // 2. Update order status
       await api.put(`/api/orders/${orderId}`, {
         deliveryStatus: 'Delivered',
-        deliveredAt: new Date()
+        deliveredAt: new Date(),
+        notes: deliveryNotes
       });
-      fetchOrders();
+
+      setCompletingOrder(null);
+      setDeliveryNotes('');
+      setDeliveryPhoto(null);
+      await fetchData();
     } catch (err) {
       console.error("Failed to update delivery status", err);
       alert("Failed to update delivery status: " + (err.response?.data?.message || err.message));
@@ -209,7 +238,7 @@ const DeliveryDashboard = ({ user }) => {
 
             {order.deliveryStatus === 'Pending' && (
               <button
-                onClick={() => handleMarkDelivered(order.id || order._id)}
+                onClick={() => setCompletingOrder(order)}
                 disabled={!isWorking}
                 className={`w-full flex items-center justify-center gap-2 px-6 py-4 rounded-xl text-sm font-black transition-all shadow-lg ${
                   isWorking
@@ -271,6 +300,56 @@ const DeliveryDashboard = ({ user }) => {
           </div>
         </div>
       </div>
+
+      {completingOrder && (
+        <div className="fixed inset-0 bg-zinc-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
+            <div className="p-6 border-b border-slate-800/50 text-center">
+              <h2 className="text-2xl font-bold text-white">Deliver Order</h2>
+              <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mt-1">{completingOrder.shopName}</p>
+            </div>
+
+            <div className="p-6 space-y-6">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Delivery Notes</label>
+                <textarea
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 h-24 text-white outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="Any notes about the delivery..."
+                  value={deliveryNotes}
+                  onChange={(e) => setDeliveryNotes(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Proof of Delivery (Photo) *</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  required
+                  onChange={(e) => setDeliveryPhoto(e.target.files[0])}
+                  className="w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-slate-800 file:text-zinc-300 hover:file:bg-zinc-700 transition-all cursor-pointer"
+                />
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-slate-800/50 flex gap-4">
+              <button
+                onClick={() => setCompletingOrder(null)}
+                className="flex-1 px-6 py-3 bg-slate-800 text-slate-400 font-bold rounded-xl hover:bg-slate-700 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleMarkDelivered}
+                className="flex-[2] px-6 py-3 bg-green-600 text-zinc-900 font-bold rounded-xl hover:bg-green-500 transition-all shadow-lg shadow-green-600/20"
+              >
+                Confirm Delivery
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

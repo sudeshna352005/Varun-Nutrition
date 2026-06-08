@@ -398,12 +398,29 @@ app.get('/api/visits', async (req, res) => {
 
 app.post('/api/visits', upload.single('photo'), async (req, res) => {
   if (useMock) {
-    const visit = { _id: Date.now().toString(), id: Date.now().toString(), shopName: req.body.shopName, workerName: req.body.workerName, timestamp: new Date() };
+    const visit = {
+      _id: Date.now().toString(),
+      id: Date.now().toString(),
+      shopName: req.body.shopName,
+      workerName: req.body.workerName,
+      workerRole: req.body.workerRole,
+      routeName: req.body.routeName,
+      notes: req.body.notes,
+      photo: 'mock-photo-url',
+      timestamp: new Date()
+    };
     mockDb.visits.push(visit);
     return res.status(201).json(visit);
   }
   try {
-    const visit = new Visit({ shopName: req.body.shopName, workerName: req.body.workerName, notes: req.body.notes, photo: req.file ? req.file.path : null });
+    const visit = new Visit({
+      shopName: req.body.shopName,
+      workerName: req.body.workerName,
+      workerRole: req.body.workerRole,
+      routeName: req.body.routeName,
+      notes: req.body.notes,
+      photo: req.file ? req.file.path : null
+    });
     await visit.save();
     res.status(201).json(visit);
   } catch (err) { res.status(400).json({ message: err.message }); }
