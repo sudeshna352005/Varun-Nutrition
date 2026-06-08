@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import api from './api';
 import Navbar from './components/Navbar';
 import Login from './pages/Login';
 import OwnerDashboard from './pages/OwnerDashboard';
@@ -8,6 +9,7 @@ import RouteManagement from './pages/RouteManagement';
 import AttendanceView from './pages/AttendanceView';
 import ReportsView from './pages/ReportsView';
 import WorkerDashboard from './pages/WorkerDashboard';
+import DeliveryDashboard from './pages/DeliveryDashboard';
 import WorkerAttendance from './pages/WorkerAttendance';
 import WorkerManagement from './pages/WorkerManagement';
 import WorkerProfile from './pages/WorkerProfile';
@@ -16,14 +18,39 @@ import OrdersView from './pages/OrdersView';
 
 function App() {
   const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')));
+  const [workerRole, setWorkerRole] = useState(localStorage.getItem('workerRole') || '');
 
   useEffect(() => {
     if (user) {
       localStorage.setItem('user', JSON.stringify(user));
+      if (user.role !== 'owner' && !workerRole) {
+        if (user.role === 'Sales Worker' || user.role === 'Delivery Staff') {
+          setWorkerRole(user.role);
+          localStorage.setItem('workerRole', user.role);
+        } else {
+          fetchWorkerRole(user.id || user._id);
+        }
+      }
     } else {
       localStorage.removeItem('user');
+      localStorage.removeItem('workerRole');
+      setWorkerRole('');
     }
   }, [user]);
+
+  const fetchWorkerRole = async (id) => {
+    try {
+      const res = await api.get('/api/workers');
+      const workers = Array.isArray(res.data) ? res.data : [];
+      const current = workers.find(w => (w.id || w._id) === id);
+      if (current) {
+        setWorkerRole(current.role);
+        localStorage.setItem('workerRole', current.role);
+      }
+    } catch (err) {
+      console.error("Failed to fetch worker role", err);
+    }
+  };
 
   const handleLogout = () => {
     setUser(null);
@@ -39,7 +66,9 @@ function App() {
             
             <Route path="/" element={
               user ? (
-                user.role === 'owner' ? <OwnerDashboard /> : <WorkerDashboard user={user} />
+                user.role === 'owner'
+                ? <OwnerDashboard />
+                : (workerRole === 'Delivery Staff' ? <DeliveryDashboard user={user} /> : <WorkerDashboard user={user} />)
               ) : <Navigate to="/login" />
             } />
 
@@ -54,8 +83,8 @@ function App() {
             <Route path="/orders" element={user?.role === 'owner' ? <OrdersView user={user} /> : <Navigate to="/" />} />
 
             {/* Worker Routes */}
-            <Route path="/worker-attendance" element={user?.role === 'worker' ? <WorkerAttendance user={user} /> : <Navigate to="/" />} />
-            <Route path="/worker-orders" element={user?.role === 'worker' ? <OrdersView user={user} /> : <Navigate to="/" />} />
+            <Route path="/worker-attendance" element={user && user.role !== 'owner' ? <WorkerAttendance user={user} /> : <Navigate to="/" />} />
+            <Route path="/worker-orders" element={user && user.role !== 'owner' ? <OrdersView user={user} /> : <Navigate to="/" />} />
           </Routes>
         </main>
       </div>

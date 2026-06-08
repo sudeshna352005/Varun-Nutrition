@@ -14,13 +14,8 @@ async function fix() {
       // Check if password looks like a bcrypt hash
       if (!worker.password.startsWith('$2a$') && !worker.password.startsWith('$2b$')) {
         console.log(`Hashing password for worker: ${worker.username}`);
-        // We need to re-save to trigger the pre-save hook,
-        // OR manually hash it here.
-        // Re-saving might not work if we just set the same plain text password because of isModified('password')
-        // Actually isModified checks the field value.
-        // Let's just manually hash and update to be sure.
-        const salt = await bcrypt.genSalt(10);
-        worker.password = await bcrypt.hash(worker.password, salt);
+        // Trigger pre-save hook by setting password to itself
+        worker.markModified('password');
         await worker.save();
         console.log(`Done for ${worker.username}`);
       } else {

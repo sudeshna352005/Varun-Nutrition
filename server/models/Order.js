@@ -17,7 +17,13 @@ const orderSchema = new mongoose.Schema({
   items: [orderItemSchema],
   totalQuantity: { type: Number, required: true },
   totalAmount: { type: Number, required: true },
+  assignedDeliveryStaff: {
+    id: { type: mongoose.Schema.Types.ObjectId, ref: 'Worker', index: true },
+    name: { type: String },
+    username: { type: String }
+  },
   status: { type: String, enum: ['pending', 'delivered', 'cancelled'], default: 'pending', index: true },
+  deliveryStatus: { type: String, enum: ['Pending', 'Delivered'], default: 'Pending', index: true },
   deliveredAt: { type: Date },
   notes: { type: String },
   timestamp: { type: Date, default: Date.now, index: true }

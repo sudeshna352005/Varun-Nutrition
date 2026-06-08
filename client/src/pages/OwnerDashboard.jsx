@@ -60,14 +60,14 @@ const OwnerDashboard = () => {
     let orders = ordersArr.filter(o => o && o.timestamp && isInRange(o.timestamp, dateRange));
 
     if (selectedWorker) {
-      visits = visits.filter(v => v.workerName === selectedWorker);
-      attendance = attendance.filter(a => a.workerName === selectedWorker);
-      orders = orders.filter(o => o.workerName === selectedWorker);
+      visits = visits.filter(v => v && v.workerName === selectedWorker);
+      attendance = attendance.filter(a => a && a.workerName === selectedWorker);
+      orders = orders.filter(o => o && o.workerName === selectedWorker);
     }
 
     if (selectedRoute) {
-      visits = visits.filter(v => v.routeName === selectedRoute);
-      orders = orders.filter(o => o.routeName === selectedRoute);
+      visits = visits.filter(v => v && v.routeName === selectedRoute);
+      orders = orders.filter(o => o && o.routeName === selectedRoute);
     }
 
     return { ...rawData, visits, attendance, orders };
@@ -86,9 +86,9 @@ const OwnerDashboard = () => {
       activeWorkers: activeAtSomePoint,
       visits: visitsList.length,
       orders: ordersList.length,
-      delivered: ordersList.filter(o => o.status === 'delivered').length,
+      delivered: ordersList.filter(o => o.deliveryStatus === 'Delivered').length,
       sales: totalSales,
-      pending: ordersList.filter(o => o.status === 'pending').length
+      pending: ordersList.filter(o => o.deliveryStatus === 'Pending').length
     };
   }, [filteredData, rawData.shops, rawData.workers]);
 
@@ -102,7 +102,7 @@ const OwnerDashboard = () => {
       }
     });
 
-    return rawData.shops
+    return (Array.isArray(rawData.shops) ? rawData.shops : [])
       .map(shop => ({
         ...shop,
         lastVisit: lastVisits[shop.name] || null,
@@ -285,7 +285,7 @@ const OwnerDashboard = () => {
                       <span className="text-blue-400 font-bold text-xs uppercase">{item.workerName}</span>
                     </div>
                     {item.type === 'order' && (
-                      <span className="text-green-500 font-black text-sm">₹{item.totalAmount.toFixed(0)}</span>
+                      <span className="text-green-500 font-black text-sm">₹{(item.totalAmount || 0).toFixed(0)}</span>
                     )}
                   </div>
 
