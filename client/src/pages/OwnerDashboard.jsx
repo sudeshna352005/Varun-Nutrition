@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import api, { getImageUrl } from '../api';
-import { Store, Users, MapPin, ClipboardCheck, ShoppingBag, IndianRupee, Clock, ArrowRight, Briefcase, Camera, Search, Filter, Download, AlertCircle, CheckCircle } from 'lucide-react';
+import { Store, Users, MapPin, ClipboardCheck, ShoppingBag, IndianRupee, Clock, ArrowRight, Briefcase, Camera, Search, Filter, Download, AlertCircle, CheckCircle, Play, Package } from 'lucide-react';
 import DashboardAnalytics from '../components/DashboardAnalytics';
 import DateFilter from '../components/DateFilter';
 import Skeleton from '../components/Skeleton';
@@ -120,12 +121,33 @@ const OwnerDashboard = () => {
     const visits = Array.isArray(filteredData.visits) ? filteredData.visits : [];
     const orders = Array.isArray(filteredData.orders) ? filteredData.orders : [];
 
-    const timeline = [
-      ...attendance.map(a => ({ ...a, type: 'attendance', id: a.id || a._id, timestamp: a.startTime })),
-      ...visits.map(v => ({ ...v, type: 'visit', id: v.id || v._id, timestamp: v.timestamp })),
-      ...orders.map(o => ({ ...o, type: 'order', id: o.id || o._id, timestamp: o.timestamp }))
-    ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-    return timeline.slice(0, 20); // Show last 20
+    const events = [];
+
+    attendance.forEach(a => {
+      if (a.startTime) {
+        events.push({ ...a, type: 'attendance-start', id: `${a.id || a._id}-start`, timestamp: a.startTime });
+      }
+      if (a.endTime) {
+        events.push({ ...a, type: 'attendance-end', id: `${a.id || a._id}-end`, timestamp: a.endTime });
+      }
+    });
+
+    visits.forEach(v => {
+      if (v.timestamp) {
+        events.push({ ...v, type: 'visit', id: v.id || v._id, timestamp: v.timestamp });
+      }
+    });
+
+    orders.forEach(o => {
+      if (o.timestamp) {
+        events.push({ ...o, type: 'order', id: o.id || o._id, timestamp: o.timestamp });
+      }
+      if (o.deliveryStatus === 'Delivered' && o.deliveredAt) {
+        events.push({ ...o, type: 'delivery', id: `${o.id || o._id}-delivered`, timestamp: o.deliveredAt });
+      }
+    });
+
+    return events.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
   }, [filteredData]);
 
   const cards = [
@@ -136,32 +158,6 @@ const OwnerDashboard = () => {
     { name: 'Pending Orders', value: stats.pending, icon: Clock, color: 'bg-yellow-500/20 text-yellow-500' },
     { name: 'Active Workers', value: stats.activeWorkers, icon: Users, color: 'bg-blue-500/20 text-blue-500' },
   ];
-
-  const exportDashboard = () => {
-    const data = [
-      ['Dashboard Statistics'],
-      ['Metric', 'Value'],
-      ['Total Visits', stats.visits],
-      ['Orders Received', stats.orders],
-      ['Total Sales', stats.sales],
-      ['Active Workers', stats.activeWorkers],
-      [],
-      ['Recent Activity'],
-      ['Timestamp', 'Type', 'Worker', 'Target/Shop', 'Amount'],
-      ...activityTimeline.map(item => [
-        new Date(item.timestamp).toLocaleString(),
-        item.type.toUpperCase(),
-        item.workerName,
-        item.shopName || '-',
-        item.totalAmount || '-'
-      ])
-    ];
-
-    const ws = XLSX.utils.aoa_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Dashboard Analytics");
-    XLSX.writeFile(wb, `dashboard_export_${new Date().toISOString().split('T')[0]}.xlsx`);
-  };
 
   if (loading) return (
     <div className="space-y-10">
@@ -185,9 +181,6 @@ const OwnerDashboard = () => {
           <p className="text-slate-500 mt-1 font-medium">Comprehensive business analytics and activity tracking.</p>
         </div>
         <div className="flex flex-wrap items-center gap-4">
-          <button onClick={exportDashboard} className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-slate-300 rounded-xl hover:bg-slate-700 transition-all font-bold border border-slate-700">
-            <Download size={18} /> Export Data
-          </button>
           <DateFilter onRangeChange={setDateRange} />
         </div>
       </div>
@@ -270,52 +263,117 @@ const OwnerDashboard = () => {
               <Clock className="text-green-500" /> Recent Activity Timeline
             </h2>
 
-            <div className="relative border-l-2 border-slate-800 ml-4 space-y-8 max-h-[600px] overflow-y-auto pr-4 custom-scrollbar">
-              {(Array.isArray(activityTimeline) ? activityTimeline : []).map((item) => (
-                <div key={`${item.type}-${item.id}`} className="relative pl-8">
-                  <div className={`absolute -left-[9px] top-1 w-4 h-4 rounded-full border-2 border-slate-900 shadow-md ${
-                    item.type === 'attendance' ? 'bg-blue-500' : item.type === 'order' ? 'bg-purple-500' : 'bg-green-500'
-                  }`} />
+            <div className="relative border-l-2 border-slate-800 ml-4 space-y-12 max-h-[800px] overflow-y-auto pr-4 custom-scrollbar py-4">
+              {(Array.isArray(activityTimeline) ? activityTimeline : []).map((item) => {
+                let icon = <Clock size={16} />;
+                let colorClass = 'bg-slate-500';
+                let title = '';
+                let details = null;
 
-                  <div className="mb-2 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-800 px-2 py-1 rounded border border-slate-700">
-                        {new Date(item.timestamp).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
-                      </span>
-                      <span className="text-blue-400 font-bold text-xs uppercase">{item.workerName}</span>
-                    </div>
-                    {item.type === 'order' && (
-                      <span className="text-green-500 font-black text-sm">₹{(item.totalAmount || 0).toFixed(0)}</span>
-                    )}
-                  </div>
+                const workerId = item.workerId || item.id || item._id; // Fallback if workerId not direct
+                // Note: workers array is available in rawData.workers
+                const workerObj = rawData.workers.find(w => w.name === item.workerName);
+                const workerLink = workerObj ? `/worker/${workerObj.id || workerObj._id}` : null;
 
-                  <div className="bg-slate-800/40 p-4 rounded-xl border border-slate-800 hover:border-slate-700 transition-all">
-                    {item.type === 'attendance' ? (
-                      <div className="flex items-center gap-3">
-                        <Camera size={14} className="text-blue-400" />
-                        <p className="text-sm text-slate-300">Marked attendance: <span className="font-bold text-white capitalize">{item.status}</span></p>
-                      </div>
-                    ) : item.type === 'order' ? (
-                      <div className="flex items-center gap-3">
-                        <ShoppingBag size={14} className="text-purple-400" />
-                        <p className="text-sm text-slate-300">Placed order at <span className="font-bold text-white">{item.shopName}</span> ({item.totalQuantity} items)</p>
-                      </div>
-                    ) : (
+                switch(item.type) {
+                  case 'attendance-start':
+                    icon = <Play size={16} />;
+                    colorClass = 'bg-purple-500';
+                    title = 'START WORK';
+                    details = (
+                      <p className="text-sm text-slate-400">
+                        Attendance marked by {workerLink ? <Link to={workerLink} className="font-bold text-white hover:text-green-500 transition-colors">{item.workerName}</Link> : <span className="font-bold text-white">{item.workerName}</span>}
+                      </p>
+                    );
+                    break;
+                  case 'attendance-end':
+                    icon = <CheckCircle size={16} />;
+                    colorClass = 'bg-green-500';
+                    title = 'WORK COMPLETED';
+                    details = (
+                      <p className="text-sm text-slate-400">
+                        {workerLink ? <Link to={workerLink} className="font-bold text-white hover:text-green-500 transition-colors">{item.workerName}</Link> : <span className="font-bold text-white">{item.workerName}</span>} finished for the day
+                      </p>
+                    );
+                    break;
+                  case 'visit':
+                    icon = <Store size={16} />;
+                    colorClass = 'bg-blue-500';
+                    title = 'SHOP VISITED';
+                    details = (
                       <div className="space-y-3">
-                        <div className="flex items-center gap-2 text-sm text-white font-bold">
+                        <p className="text-sm text-slate-300 font-bold flex items-center gap-2">
                           <MapPin size={14} className="text-green-500" /> {item.shopName}
-                        </div>
+                        </p>
+                        <p className="text-xs text-slate-500 uppercase font-bold tracking-wider">
+                          Visited by {workerLink ? <Link to={workerLink} className="text-slate-300 hover:text-green-500 transition-colors underline underline-offset-4 decoration-slate-800">{item.workerName}</Link> : item.workerName}
+                        </p>
                         {item.photo && (
-                          <div className="w-20 h-20 rounded-lg overflow-hidden border border-slate-700">
+                          <div className="w-24 h-24 rounded-xl overflow-hidden border border-slate-700 shadow-lg">
                              <img src={getImageUrl(item.photo)} alt="Visit" className="w-full h-full object-cover" />
                           </div>
                         )}
                       </div>
-                    )}
+                    );
+                    break;
+                  case 'order':
+                    icon = <ShoppingBag size={16} />;
+                    colorClass = 'bg-orange-500';
+                    title = 'ORDER CREATED';
+                    details = (
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <p className="text-sm text-slate-300">Order placed at <span className="font-bold text-white">{item.shopName}</span></p>
+                          <p className="text-xs text-slate-500 mt-1">
+                            {item.totalQuantity} items • by {workerLink ? <Link to={workerLink} className="text-slate-400 hover:text-green-500 transition-colors">{item.workerName}</Link> : item.workerName}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                           <p className="text-lg font-black text-green-500">₹{(item.totalAmount || 0).toLocaleString()}</p>
+                        </div>
+                      </div>
+                    );
+                    break;
+                  case 'delivery':
+                    icon = <Package size={16} />;
+                    colorClass = 'bg-green-600';
+                    title = 'DELIVERY COMPLETED';
+                    details = (
+                      <div>
+                        <p className="text-sm text-slate-300">Delivered to <span className="font-bold text-white">{item.shopName}</span></p>
+                        <p className="text-xs text-slate-500 mt-1">
+                          Status marked as Delivered by {workerLink ? <Link to={workerLink} className="text-slate-400 hover:text-green-500 transition-colors">{item.workerName}</Link> : item.workerName}
+                        </p>
+                      </div>
+                    );
+                    break;
+                }
+
+                return (
+                  <div key={item.id} className="relative pl-10 animate-in fade-in slide-in-from-left-4 duration-500">
+                    <div className={`absolute -left-[9px] top-0 w-4 h-4 rounded-full border-2 border-zinc-950 shadow-xl ${colorClass}`} />
+
+                    <div className="flex flex-col md:flex-row md:items-center justify-between mb-3 gap-2">
+                       <h4 className={`text-xs font-black tracking-widest ${colorClass.replace('bg-', 'text-')} flex items-center gap-2`}>
+                         {icon} {title}
+                       </h4>
+                       <span className="text-[10px] font-bold text-slate-500 bg-slate-900 border border-slate-800 px-2 py-1 rounded-lg">
+                         {new Date(item.timestamp).toLocaleString([], { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' })}
+                       </span>
+                    </div>
+
+                    <div className="bg-slate-900/60 p-5 rounded-2xl border border-slate-800 hover:border-slate-700 transition-all shadow-lg backdrop-blur-sm group">
+                      {details}
+                    </div>
                   </div>
+                );
+              })}
+              {activityTimeline.length === 0 && (
+                <div className="text-center py-20">
+                  <Clock className="w-12 h-12 text-slate-800 mx-auto mb-4" />
+                  <p className="text-slate-500 italic">No activity found for the selected period.</p>
                 </div>
-              ))}
-              {activityTimeline.length === 0 && <p className="text-slate-500 italic text-center py-10">No activity found for the selected period.</p>}
+              )}
             </div>
           </div>
         </div>

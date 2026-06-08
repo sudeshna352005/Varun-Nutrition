@@ -72,11 +72,6 @@ const Login = ({ onLogin }) => {
             Sign In
           </button>
         </form>
-        <div className="mt-8 pt-6 border-t border-slate-800 text-xs text-slate-400">
-          <p>Demo Credentials:</p>
-          <p>Owner: owner / owner123</p>
-          <p>Worker: worker / worker123</p>
-        </div>
       </div>
     </div>
   );

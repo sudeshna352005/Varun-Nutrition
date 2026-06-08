@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import api, { getImageUrl } from '../api';
-import { User, Calendar, MapPin, Camera, Clock, TrendingUp, Briefcase, ChevronRight, Mail, ShoppingBag } from 'lucide-react';
+import { User, Calendar, MapPin, Camera, Clock, TrendingUp, Briefcase, ChevronRight, Mail, ShoppingBag, Play, CheckCircle, Package, Store } from 'lucide-react';
 
 const WorkerProfile = () => {
   const { id } = useParams();
@@ -51,11 +51,23 @@ const WorkerProfile = () => {
   const uniqueShops = new Set(visitsArr.map(v => v.shopName)).size;
   const totalSales = ordersArr.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
 
-  const activityTimeline = [
-    ...attendanceArr.map(a => ({ ...a, type: 'attendance', timestamp: a.startTime })),
-    ...visitsArr.map(v => ({ ...v, type: 'visit', timestamp: v.timestamp })),
-    ...ordersArr.map(o => ({ ...o, type: 'order', timestamp: o.timestamp }))
-  ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+  const activityTimeline = useMemo(() => {
+    const events = [];
+    attendanceArr.forEach(a => {
+      if (a.startTime) events.push({ ...a, type: 'attendance-start', id: `${a.id || a._id}-start`, timestamp: a.startTime });
+      if (a.endTime) events.push({ ...a, type: 'attendance-end', id: `${a.id || a._id}-end`, timestamp: a.endTime });
+    });
+    visitsArr.forEach(v => {
+      if (v.timestamp) events.push({ ...v, type: 'visit', id: v.id || v._id, timestamp: v.timestamp });
+    });
+    ordersArr.forEach(o => {
+      if (o.timestamp) events.push({ ...o, type: 'order', id: o.id || o._id, timestamp: o.timestamp });
+      if (o.deliveryStatus === 'Delivered' && o.deliveredAt) {
+        events.push({ ...o, type: 'delivery', id: `${o.id || o._id}-delivered`, timestamp: o.deliveredAt });
+      }
+    });
+    return events.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  }, [attendanceArr, visitsArr, ordersArr]);
 
   return (
     <div className="max-w-6xl mx-auto px-4">
@@ -153,83 +165,96 @@ const WorkerProfile = () => {
               <Briefcase className="text-green-500" /> Activity Timeline
             </h2>
 
-            <div className="relative border-l-2 border-slate-800 ml-4 space-y-8">
-              {(Array.isArray(activityTimeline) ? activityTimeline : []).map((item, index) => (
-                <div key={item.id} className="relative pl-8">
-                  {/* Timeline Dot */}
-                  <div className={`absolute -left-[9px] top-1 w-4 h-4 rounded-full border-2 border-slate-900 shadow-md ${
-                    item.type === 'attendance' ? 'bg-blue-500' : item.type === 'order' ? 'bg-purple-500' : 'bg-green-500'
-                  }`} />
+            <div className="relative border-l-2 border-slate-800 ml-4 space-y-12">
+              {(Array.isArray(activityTimeline) ? activityTimeline : []).map((item) => {
+                let icon = <Clock size={16} />;
+                let colorClass = 'bg-slate-500';
+                let title = '';
+                let details = null;
 
-                  <div className="mb-2 flex items-center gap-3">
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest bg-slate-800 px-2 py-1 rounded border border-slate-700">
-                      {new Date(item.timestamp).toLocaleDateString()} • {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                    {item.type === 'attendance' && (
-                      <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded text-[10px] font-bold uppercase tracking-wider">
-                        {item.status === 'working' ? 'Shift Started' : 'Shift Ended'}
-                      </span>
-                    )}
-                    {item.type === 'order' && (
-                      <span className="px-2 py-0.5 bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded text-[10px] font-bold uppercase tracking-wider">
-                        Order Placed
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="bg-slate-800/40 p-5 rounded-xl border border-slate-800 shadow-sm hover:border-slate-700 transition-all group">
-                    {item.type === 'attendance' ? (
-                      <div className="flex items-center gap-4">
-                        <div className="p-3 bg-slate-800 rounded-lg text-blue-400">
-                          <Camera size={20} />
-                        </div>
-                        <div>
-                          <p className="font-bold text-white">Attendance Marked</p>
-                          <p className="text-sm text-slate-400">{item.status === 'working' ? 'Started work for the day' : 'Completed shift'}</p>
-                        </div>
-                      </div>
-                    ) : item.type === 'order' ? (
+                switch(item.type) {
+                  case 'attendance-start':
+                    icon = <Play size={16} />;
+                    colorClass = 'bg-purple-500';
+                    title = 'START WORK';
+                    details = <p className="text-sm text-slate-400">Attendance marked by <span className="font-bold text-white">{worker.name}</span></p>;
+                    break;
+                  case 'attendance-end':
+                    icon = <CheckCircle size={16} />;
+                    colorClass = 'bg-green-500';
+                    title = 'WORK COMPLETED';
+                    details = <p className="text-sm text-slate-400"><span className="font-bold text-white">{worker.name}</span> finished for the day</p>;
+                    break;
+                  case 'visit':
+                    icon = <Store size={16} />;
+                    colorClass = 'bg-blue-500';
+                    title = 'SHOP VISITED';
+                    details = (
                       <div className="space-y-3">
-                         <div className="flex justify-between items-start">
-                            <div className="flex items-center gap-2 text-purple-400 font-bold text-lg">
-                               <ShoppingBag size={20} className="text-purple-500" /> {item.shopName}
-                            </div>
-                            <span className="text-xl font-black text-green-500">₹{item.totalAmount.toLocaleString()}</span>
-                         </div>
-                         <div className="flex flex-wrap gap-2">
-                            {(Array.isArray(item.items) ? item.items : []).map((prod, pidx) => (
-                               <span key={pidx} className="px-2 py-1 bg-slate-800 rounded text-[10px] text-slate-400 border border-slate-700">
-                                  {prod.name} x {prod.quantity}
-                               </span>
-                            ))}
-                         </div>
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-2 text-green-400 font-bold text-lg">
-                          <MapPin size={20} className="text-green-500" /> {item.shopName}
-                        </div>
+                        <p className="text-sm text-slate-300 font-bold flex items-center gap-2">
+                          <MapPin size={14} className="text-green-500" /> {item.shopName}
+                        </p>
                         {item.notes && (
-                          <div className="relative pl-4 border-l-2 border-green-500/30">
-                            <p className="text-sm text-slate-300 italic leading-relaxed">"{item.notes}"</p>
+                          <div className="relative pl-4 border-l-2 border-slate-800 py-1">
+                            <p className="text-sm text-slate-300 italic">"{item.notes}"</p>
                           </div>
                         )}
                         {item.photo && (
-                          <div className="relative w-40 h-40 group-hover:scale-[1.02] transition-transform">
-                            <img
-                              src={getImageUrl(item.photo)}
-                              alt="Visit"
-                              loading="lazy"
-                              className="w-full h-full object-cover rounded-xl shadow-lg border border-slate-700"
-                            />
-                            <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors rounded-xl" />
+                          <div className="w-24 h-24 rounded-xl overflow-hidden border border-slate-700 shadow-lg">
+                             <img src={getImageUrl(item.photo)} alt="Visit" className="w-full h-full object-cover" />
                           </div>
                         )}
                       </div>
-                    )}
+                    );
+                    break;
+                  case 'order':
+                    icon = <ShoppingBag size={16} />;
+                    colorClass = 'bg-orange-500';
+                    title = 'ORDER CREATED';
+                    details = (
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <p className="text-sm text-slate-300 font-bold">Order placed at {item.shopName}</p>
+                          <p className="text-xs text-slate-500 mt-1">{item.totalQuantity} items</p>
+                        </div>
+                        <div className="text-right">
+                           <p className="text-lg font-black text-green-500">₹{(item.totalAmount || 0).toLocaleString()}</p>
+                        </div>
+                      </div>
+                    );
+                    break;
+                  case 'delivery':
+                    icon = <Package size={16} />;
+                    colorClass = 'bg-green-600';
+                    title = 'DELIVERY COMPLETED';
+                    details = (
+                      <div>
+                        <p className="text-sm text-slate-300 font-bold">Delivered to {item.shopName}</p>
+                        <p className="text-xs text-slate-500 mt-1 uppercase font-bold tracking-widest">Status: {item.deliveryStatus}</p>
+                      </div>
+                    );
+                    break;
+                }
+
+                return (
+                  <div key={item.id} className="relative pl-10">
+                    <div className={`absolute -left-[9px] top-0 w-4 h-4 rounded-full border-2 border-zinc-950 shadow-xl ${colorClass}`} />
+
+                    <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-2">
+                       <h4 className={`text-xs font-black tracking-widest ${colorClass.replace('bg-', 'text-')} flex items-center gap-2`}>
+                         {icon} {title}
+                       </h4>
+                       <span className="text-[10px] font-bold text-slate-500 bg-slate-900 border border-slate-800 px-2 py-1 rounded-lg">
+                         {new Date(item.timestamp).toLocaleString([], { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' })}
+                       </span>
+                    </div>
+
+                    <div className="bg-slate-900/60 p-6 rounded-2xl border border-slate-800 hover:border-slate-700 transition-all shadow-xl backdrop-blur-sm">
+                      {details}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
               {activityTimeline.length === 0 && (
                 <div className="pl-8 text-slate-500 italic">No recent activity recorded.</div>
               )}

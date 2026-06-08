@@ -21,14 +21,21 @@ const DashboardAnalytics = ({ data }) => {
   // Colors for charts
   const COLORS = ['#22c55e', '#3b82f6', '#a855f7', '#f97316', '#ef4444', '#06b6d4'];
 
-  // 1. Visits per Day (Line Chart)
+  // 1. Visits per Day (Line Chart) - Chronological Order
   const getDailyData = () => {
     const dailyMap = {};
     (visits || []).forEach(v => {
-      const date = new Date(v.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' });
-      dailyMap[date] = (dailyMap[date] || 0) + 1;
+      const dateKey = new Date(v.timestamp).toISOString().split('T')[0];
+      dailyMap[dateKey] = (dailyMap[dateKey] || 0) + 1;
     });
-    return Object.keys(dailyMap).map(date => ({ name: date, visits: dailyMap[date] })).slice(-10);
+
+    return Object.keys(dailyMap)
+      .sort() // Sort ISO dates chronologically
+      .map(dateKey => ({
+        name: new Date(dateKey).toLocaleDateString([], { month: 'short', day: 'numeric' }),
+        visits: dailyMap[dateKey]
+      }))
+      .slice(-10);
   };
 
   const visitsByDayData = getDailyData();
