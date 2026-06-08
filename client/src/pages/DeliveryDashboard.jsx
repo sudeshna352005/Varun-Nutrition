@@ -1,29 +1,50 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import api from '../api';
-import { Package, Search, Filter, Calendar, Check, X, Clock, ShoppingCart } from 'lucide-react';
+import { Package, Search, Filter, Calendar, Check, X, Clock, ShoppingCart, MapPin, CheckCircle, ExternalLink, Info } from 'lucide-react';
 import DateFilter from '../components/DateFilter';
 import { isInRange, getRangeDates } from '../utils/dateUtils';
 
 const DeliveryDashboard = ({ user }) => {
   const [orders, setOrders] = useState([]);
+  const [shops, setShops] = useState([]);
+  const [routes, setRoutes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [dateRange, setDateRange] = useState(getRangeDates('today'));
   const [statusFilter, setStatusFilter] = useState('all');
+  const [isWorking, setIsWorking] = useState(false);
 
   useEffect(() => {
-    fetchOrders();
+    fetchData();
+    checkWorkingStatus();
   }, []);
 
-  const fetchOrders = async () => {
+  const fetchData = async () => {
     try {
       const deliveryStaffId = user.id || user._id;
-      const response = await api.get(`/api/orders?deliveryStaffId=${deliveryStaffId}`);
-      setOrders(Array.isArray(response.data) ? response.data : []);
+      const [ordersRes, shopsRes, routesRes] = await Promise.all([
+        api.get(`/api/orders?deliveryStaffId=${deliveryStaffId}`),
+        api.get(`/api/shops?workerId=${deliveryStaffId}`),
+        api.get(`/api/routes?workerId=${deliveryStaffId}`)
+      ]);
+      setOrders(Array.isArray(ordersRes.data) ? ordersRes.data : []);
+      setShops(Array.isArray(shopsRes.data) ? shopsRes.data : []);
+      setRoutes(Array.isArray(routesRes.data) ? routesRes.data : []);
     } catch (err) {
-      console.error("Failed to fetch assigned orders", err);
+      console.error("Failed to fetch delivery data", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const checkWorkingStatus = async () => {
+    try {
+      const res = await api.get('/api/attendance');
+      const attendanceArr = Array.isArray(res.data) ? res.data : [];
+      const active = attendanceArr.find(a => a.workerName === user.name && a.status === 'working');
+      setIsWorking(!!active);
+    } catch (err) {
+      console.error("Failed to check working status", err);
     }
   };
 
@@ -58,7 +79,7 @@ const DeliveryDashboard = ({ user }) => {
     };
   }, [orders]);
 
-  if (loading) return <div className="text-center py-20 text-slate-500">Loading Assigned Deliveries...</div>;
+  if (loading) return <div className="text-center py-20 text-slate-500">Loading Delivery Dashboard...</div>;
 
   return (
     <div className="space-y-10">
@@ -126,7 +147,21 @@ const DeliveryDashboard = ({ user }) => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6">
+      {!isWorking && (
+        <div className="bg-yellow-500/10 border border-yellow-500/20 p-4 rounded-xl flex items-start">
+          <Info className="w-5 h-5 text-yellow-500 mr-3 mt-0.5 flex-shrink-0" />
+          <p className="text-yellow-500 text-sm">
+            <strong className="font-bold uppercase tracking-wider text-xs block mb-1">Attendance Required</strong>
+            Please go to the <a href="/worker-attendance" className="underline font-bold">Attendance</a> page and mark "Start Work" to enable delivery actions.
+          </p>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+        <div className="lg:col-span-2 space-y-6">
+          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+            <ShoppingCart className="text-green-500" /> Assigned Orders
+          </h2>
         {filteredOrders.map((order) => (
           <div key={order.id || order._id} className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl overflow-hidden">
             <div className="flex flex-col md:flex-row justify-between mb-6 gap-4">
@@ -175,7 +210,12 @@ const DeliveryDashboard = ({ user }) => {
             {order.deliveryStatus === 'Pending' && (
               <button
                 onClick={() => handleMarkDelivered(order.id || order._id)}
-                className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-green-600 text-zinc-900 rounded-xl text-sm font-black hover:bg-green-500 transition-all shadow-lg shadow-green-600/20"
+                disabled={!isWorking}
+                className={`w-full flex items-center justify-center gap-2 px-6 py-4 rounded-xl text-sm font-black transition-all shadow-lg ${
+                  isWorking
+                  ? 'bg-green-600 text-zinc-900 hover:bg-green-500 shadow-green-600/20'
+                  : 'bg-slate-800 text-slate-600 cursor-not-allowed border border-slate-700'
+                }`}
               >
                 <Check size={18} /> MARK AS DELIVERED
               </button>
@@ -189,11 +229,47 @@ const DeliveryDashboard = ({ user }) => {
           </div>
         ))}
 
-        {filteredOrders.length === 0 && (
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-20 text-center text-slate-500 italic">
-            No deliveries found matching your filters.
+          {filteredOrders.length === 0 && (
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-20 text-center text-slate-500 italic">
+              No deliveries found matching your filters.
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-6">
+          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+            <MapPin className="text-green-500" /> My Routes & Shops
+          </h2>
+          <div className="space-y-8">
+            {(Array.isArray(routes) ? routes : []).map(route => {
+              const routeShops = (Array.isArray(shops) ? shops : []).filter(s => s.routeGroup === route.name);
+              if (routeShops.length === 0) return null;
+
+              return (
+                <div key={route.id || route._id} className="space-y-3">
+                  <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">{route.name}</h3>
+                  <div className="space-y-3">
+                    {routeShops.map(shop => (
+                      <div key={shop.id || shop._id} className="bg-slate-900 border border-slate-800 p-4 rounded-xl hover:border-slate-700 transition-all group">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="font-bold text-white text-sm group-hover:text-green-500 transition-colors">{shop.name}</p>
+                            <p className="text-[10px] text-slate-500 mt-1">{shop.address}</p>
+                          </div>
+                          {shop.mapsLink && (
+                            <a href={shop.mapsLink} target="_blank" rel="noopener noreferrer" className="p-2 bg-slate-800 rounded-lg text-blue-500 hover:text-white transition-all">
+                              <ExternalLink size={14} />
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

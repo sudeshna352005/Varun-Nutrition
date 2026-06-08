@@ -68,7 +68,17 @@ async function seedData() {
 
     const defaultWorker = await Worker.findOne({ username: 'worker' });
     if (!defaultWorker) {
-      await Worker.create({ name: 'Sales Worker', username: 'worker', password: 'worker123', role: 'Sales Worker' });
+      await Worker.create({ name: 'Sales Worker', username: 'worker', password: 'worker123', role: 'Sales Worker', assignedRoutes: ['Malleswaram'] });
+    }
+
+    const rohith = await Worker.findOne({ username: 'rohith' });
+    if (!rohith) {
+      await Worker.create({ name: 'Rohith', username: 'rohith', password: 'delivery123', role: 'Delivery Staff', assignedRoutes: ['Malleswaram'] });
+    }
+
+    const gopi = await Worker.findOne({ username: 'gopi' });
+    if (!gopi) {
+      await Worker.create({ name: 'Gopi', username: 'gopi', password: 'delivery123', role: 'Delivery Staff', assignedRoutes: ['Mahalakshmi Layout'] });
     }
 
     // Legacy password migration: ensure all existing workers have hashed passwords
@@ -104,8 +114,12 @@ async function initMockData() {
     password: hashedPassword, role: 'Sales Worker', assignedRoutes: ['Malleswaram']
   });
   mockDb.workers.push({
-    _id: 'w2', id: 'w2', name: 'Delivery Staff', username: 'delivery',
+    _id: 'w2', id: 'w2', name: 'Rohith', username: 'rohith',
     password: hashedPassword, role: 'Delivery Staff', assignedRoutes: ['Malleswaram']
+  });
+  mockDb.workers.push({
+    _id: 'w3', id: 'w3', name: 'Gopi', username: 'gopi',
+    password: hashedPassword, role: 'Delivery Staff', assignedRoutes: ['Mahalakshmi Layout']
   });
   mockDb.shops = [
     { _id: 's1', id: 's1', name: 'Cauvery Stores', address: 'Malleswaram', routeGroup: 'Malleswaram' }
