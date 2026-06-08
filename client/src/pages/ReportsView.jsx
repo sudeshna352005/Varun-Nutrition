@@ -82,12 +82,12 @@ const ReportsView = () => {
     });
   }, [visits, shops, searchTerm, dateRange, selectedWorker, selectedShop, selectedRoute, showOnlyPhotos, visitType, sortBy]);
 
-  const stats = {
+  const stats = useMemo(() => ({
     total: filteredVisits.length,
     withPhotos: filteredVisits.filter(v => !!v.photo).length,
     uniqueShops: new Set(filteredVisits.map(v => v.shopName)).size,
     uniqueWorkers: new Set(filteredVisits.map(v => v.workerName)).size
-  };
+  }), [filteredVisits]);
 
   const exportCSV = () => {
     const headers = ['Date', 'Time', 'Shop Name', 'Worker Name', 'Notes', 'Photo URL'];
@@ -321,11 +321,14 @@ const ReportsView = () => {
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                     <span className="flex items-center gap-2 text-xs font-bold text-blue-400 uppercase tracking-widest">
                       <User size={14} className="text-blue-500" />
-                      {workers.find(w => w.name === visit.workerName) ? (
-                        <Link to={`/worker/${workers.find(w => w.name === visit.workerName).id}`} className="hover:text-green-500 transition-colors">
-                          {visit.workerName}
-                        </Link>
-                      ) : visit.workerName}
+                      {(() => {
+                        const worker = workers.find(w => w.name === visit.workerName);
+                        return worker ? (
+                          <Link to={`/worker/${worker.id || worker._id}`} className="hover:text-green-500 transition-colors">
+                            {visit.workerName}
+                          </Link>
+                        ) : visit.workerName;
+                      })()}
                     </span>
                     <span className="hidden md:inline text-slate-700">•</span>
                     <span className="flex items-center gap-2 text-xs text-slate-400 font-medium">
@@ -336,11 +339,14 @@ const ReportsView = () => {
                     </span>
                   </div>
                 </div>
-                {shops.find(s => s.name === visit.shopName) && (
-                  <div className="px-3 py-1 bg-slate-800 border border-slate-700 rounded-full text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 group-hover:border-slate-600 transition-all">
-                    <MapPin size={10} className="text-green-500" /> {shops.find(s => s.name === visit.shopName).routeGroup}
-                  </div>
-                )}
+                {(() => {
+                  const shop = (Array.isArray(shops) ? shops : []).find(s => s.name === visit.shopName);
+                  return shop ? (
+                    <div className="px-3 py-1 bg-slate-800 border border-slate-700 rounded-full text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 group-hover:border-slate-600 transition-all">
+                      <MapPin size={10} className="text-green-500" /> {shop.routeGroup}
+                    </div>
+                  ) : null;
+                })()}
               </div>
 
               <div className="bg-slate-800/20 p-4 md:p-6 rounded-xl border border-slate-800 group-hover:bg-slate-800/30 transition-all">

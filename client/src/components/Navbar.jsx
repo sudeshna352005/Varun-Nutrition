@@ -12,6 +12,8 @@ const Navbar = ({ user, onLogout }) => {
     navigate('/login');
   };
 
+  const workerRole = localStorage.getItem('workerRole') || '';
+
   const navLinks = user?.role === 'owner' ? [
     { name: 'Dashboard', path: '/', icon: LayoutDashboard },
     { name: 'Shops', path: '/shops', icon: Store },
@@ -21,11 +23,14 @@ const Navbar = ({ user, onLogout }) => {
     { name: 'Orders', path: '/orders', icon: ShoppingCart },
     { name: 'Attendance', path: '/attendance', icon: UserCheck },
     { name: 'Reports', path: '/reports', icon: ClipboardList },
+  ] : (workerRole === 'Delivery Staff' ? [
+    { name: 'Deliveries', path: '/', icon: Package },
+    { name: 'Attendance', path: '/worker-attendance', icon: UserCheck },
   ] : [
     { name: 'My Routes', path: '/', icon: MapPin },
     { name: 'Orders', path: '/worker-orders', icon: ShoppingCart },
     { name: 'Attendance', path: '/worker-attendance', icon: UserCheck },
-  ];
+  ]);
 
   return (
     <nav className="bg-slate-900 text-white shadow-lg border-b border-slate-800">

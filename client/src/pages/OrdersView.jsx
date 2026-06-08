@@ -9,6 +9,7 @@ const OrdersView = ({ user }) => {
   const [shops, setShops] = useState([]);
   const [routes, setRoutes] = useState([]);
   const [products, setProducts] = useState([]);
+  const [allWorkers, setAllWorkers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [dateRange, setDateRange] = useState(getRangeDates('last30'));
@@ -27,17 +28,19 @@ const OrdersView = ({ user }) => {
       const isOwner = user?.role === 'owner';
       const params = isOwner ? {} : { workerId: user.id || user._id };
 
-      const [ordersRes, shopsRes, routesRes, productsRes] = await Promise.all([
+      const [ordersRes, shopsRes, routesRes, productsRes, workersRes] = await Promise.all([
         api.get('/api/orders', { params }),
         api.get('/api/shops'),
         api.get('/api/routes'),
-        api.get('/api/products')
+        api.get('/api/products'),
+        isOwner ? api.get('/api/workers') : Promise.resolve({ data: [] })
       ]);
 
       setOrders(Array.isArray(ordersRes.data) ? ordersRes.data : []);
       setShops(Array.isArray(shopsRes.data) ? shopsRes.data : []);
       setRoutes(Array.isArray(routesRes.data) ? routesRes.data : []);
       setProducts(Array.isArray(productsRes.data) ? productsRes.data : []);
+      setAllWorkers(Array.isArray(workersRes.data) ? workersRes.data : []);
     } catch (err) {
       console.error("Failed to fetch orders data", err);
     } finally {
@@ -57,10 +60,11 @@ const OrdersView = ({ user }) => {
       const matchesWorker = !selectedWorker || order.workerName === selectedWorker;
       const matchesDate = isInRange(order.timestamp, dateRange);
       const matchesProduct = !selectedProduct || order.items.some(item => item.productId === selectedProduct || item.name === selectedProduct);
+      const matchesStatus = selectedStatus === 'all' || order.deliveryStatus === selectedStatus;
 
-      return matchesSearch && matchesShop && matchesRoute && matchesWorker && matchesDate && matchesProduct;
+      return matchesSearch && matchesShop && matchesRoute && matchesWorker && matchesDate && matchesProduct && matchesStatus;
     });
-  }, [orders, searchTerm, selectedShop, selectedRoute, selectedWorker, dateRange, selectedProduct]);
+  }, [orders, searchTerm, selectedShop, selectedRoute, selectedWorker, dateRange, selectedProduct, selectedStatus]);
 
   const handleUpdateOrder = async () => {
     try {
@@ -74,6 +78,35 @@ const OrdersView = ({ user }) => {
 
       await api.put(`/api/orders/${orderId}`, updatedOrderData);
       setEditingOrder(null);
+      fetchData();
+    } catch (err) {
+      console.error("Failed to update order", err);
+      alert("Failed to update order: " + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const assignDelivery = async (orderId, worker) => {
+    try {
+      const assignedDeliveryStaff = worker ? {
+        id: worker.id || worker._id,
+        name: worker.name,
+        username: worker.username
+      } : null;
+
+      await api.put(`/api/orders/${orderId}`, {
+        assignedDeliveryStaff,
+        deliveryStatus: 'Pending'
+      });
+      fetchData();
+    } catch (err) {
+      console.error("Failed to assign delivery", err);
+      alert("Failed to assign delivery: " + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const updateDeliveryStatus = async (orderId, status) => {
+    try {
+      await api.put(`/api/orders/${orderId}`, { deliveryStatus: status });
       fetchData();
     } catch (err) {
       console.error("Failed to update order", err);
@@ -99,6 +132,10 @@ const OrdersView = ({ user }) => {
     items[idx] = item;
     setEditingOrder({ ...editingOrder, items });
   };
+
+  const deliveryStaff = useMemo(() =>
+    allWorkers.filter(w => w.role === 'Delivery Staff'),
+  [allWorkers]);
 
   if (loading) return <div className="text-center py-20 text-slate-500">Loading Orders...</div>;
 
@@ -138,6 +175,16 @@ const OrdersView = ({ user }) => {
             >
               <option value="">All Products</option>
               {(Array.isArray(products) ? products : []).map(p => <option key={p.id || p._id} value={p.id || p._id}>{p.name}</option>)}
+            </select>
+
+            <select
+              className="flex-1 lg:flex-none bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white outline-none focus:ring-2 focus:ring-green-500"
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+            >
+              <option value="all">All Status</option>
+              <option value="Pending">Pending</option>
+              <option value="Delivered">Delivered</option>
             </select>
 
             {user.role === 'owner' && (
@@ -184,7 +231,7 @@ const OrdersView = ({ user }) => {
               </div>
             </div>
 
-            <div className="bg-slate-800/30 rounded-xl overflow-hidden border border-slate-800">
+            <div className="bg-slate-800/30 rounded-xl overflow-hidden border border-slate-800 mb-6">
               <table className="min-w-full divide-y divide-slate-800">
                 <thead className="bg-slate-800/50">
                   <tr>
@@ -209,16 +256,55 @@ const OrdersView = ({ user }) => {
               </table>
             </div>
 
-            {user.role === 'worker' && (
-              <div className="mt-6 flex justify-end">
-                <button
-                  onClick={() => setEditingOrder(JSON.parse(JSON.stringify(order)))}
-                  className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-blue-400 rounded-lg text-sm font-bold hover:bg-slate-700 transition-all"
-                >
-                  <Edit2 size={16} /> Edit Order
-                </button>
+            <div className="flex flex-col md:flex-row justify-between items-end gap-6 mt-6 pt-6 border-t border-slate-800">
+              {user.role === 'owner' && (
+                <div className="w-full md:w-auto flex-1">
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Assign Delivery Staff</label>
+                  <div className="flex gap-2">
+                    <select
+                      className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white outline-none focus:ring-2 focus:ring-green-500"
+                      value={order.assignedDeliveryStaff?.id || ''}
+                      onChange={(e) => {
+                        const worker = deliveryStaff.find(w => (w.id || w._id) === e.target.value);
+                        assignDelivery(order.id || order._id, worker);
+                      }}
+                    >
+                      <option value="">Unassigned</option>
+                      {deliveryStaff.map(w => (
+                        <option key={w.id || w._id} value={w.id || w._id}>{w.name}</option>
+                      ))}
+                    </select>
+                    {order.assignedDeliveryStaff && (
+                      <div className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest flex items-center gap-2 ${
+                        order.deliveryStatus === 'Delivered' ? 'bg-green-500/10 text-green-500' : 'bg-yellow-500/10 text-yellow-500'
+                      }`}>
+                        {order.deliveryStatus === 'Delivered' ? <Check size={14}/> : <Package size={14}/>}
+                        {order.deliveryStatus}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                {user.role === 'owner' && order.deliveryStatus === 'Pending' && order.assignedDeliveryStaff && (
+                   <button
+                    onClick={() => updateDeliveryStatus(order.id || order._id, 'Delivered')}
+                    className="flex items-center gap-2 px-4 py-2 bg-green-600/10 text-green-500 rounded-lg text-sm font-bold hover:bg-green-600/20 transition-all"
+                  >
+                    <Check size={16} /> Mark Delivered
+                  </button>
+                )}
+                {user.role === 'worker' && (
+                  <button
+                    onClick={() => setEditingOrder(JSON.parse(JSON.stringify(order)))}
+                    className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-blue-400 rounded-lg text-sm font-bold hover:bg-slate-700 transition-all"
+                  >
+                    <Edit2 size={16} /> Edit Order
+                  </button>
+                )}
               </div>
-            )}
+            </div>
           </div>
         ))}
 

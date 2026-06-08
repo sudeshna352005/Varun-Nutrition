@@ -136,7 +136,7 @@ const ShopManagement = () => {
             onChange={(e) => setSelectedRoute(e.target.value)}
           >
             <option value="">All Routes</option>
-            {routes.map(r => <option key={r.id || r._id} value={r.name}>{r.name}</option>)}
+            {(Array.isArray(routes) ? routes : []).map(r => <option key={r.id || r._id} value={r.name}>{r.name}</option>)}
           </select>
         </div>
         <div className="flex flex-wrap bg-slate-900 border border-slate-800 rounded-xl p-1 lg:col-span-2">

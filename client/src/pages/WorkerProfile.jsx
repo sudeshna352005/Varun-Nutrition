@@ -15,8 +15,8 @@ const WorkerProfile = () => {
     const fetchData = async () => {
       try {
         const workersRes = await api.get('/api/workers');
-        const workers = workersRes.data || [];
-        const currentWorker = workers.find(w => String(w.id || w._id) === String(id));
+        const workersArr = Array.isArray(workersRes.data) ? workersRes.data : [];
+        const currentWorker = workersArr.find(w => String(w.id || w._id) === String(id));
 
         if (currentWorker) {
           setWorker(currentWorker);
@@ -197,7 +197,7 @@ const WorkerProfile = () => {
                             <span className="text-xl font-black text-green-500">₹{item.totalAmount.toLocaleString()}</span>
                          </div>
                          <div className="flex flex-wrap gap-2">
-                            {(item.items || []).map((prod, pidx) => (
+                            {(Array.isArray(item.items) ? item.items : []).map((prod, pidx) => (
                                <span key={pidx} className="px-2 py-1 bg-slate-800 rounded text-[10px] text-slate-400 border border-slate-700">
                                   {prod.name} x {prod.quantity}
                                </span>

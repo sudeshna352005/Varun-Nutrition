@@ -76,8 +76,8 @@ async function seedData() {
     for (const w of allWorkers) {
       if (w.password && !w.password.startsWith('$2a$') && !w.password.startsWith('$2b$')) {
         console.log(`Hashing legacy password for user: ${w.username}`);
-        const salt = await bcrypt.genSalt(10);
-        w.password = await bcrypt.hash(w.password, salt);
+        // Worker.js has a pre-save hook that hashes the password.
+        // We just need to save the plain text password and it will be hashed.
         await w.save();
       }
     }
@@ -102,6 +102,10 @@ async function initMockData() {
   mockDb.workers.push({
     _id: 'w1', id: 'w1', name: 'Sales Worker', username: 'worker',
     password: hashedPassword, role: 'Sales Worker', assignedRoutes: ['Malleswaram']
+  });
+  mockDb.workers.push({
+    _id: 'w2', id: 'w2', name: 'Delivery Staff', username: 'delivery',
+    password: hashedPassword, role: 'Delivery Staff', assignedRoutes: ['Malleswaram']
   });
   mockDb.shops = [
     { _id: 's1', id: 's1', name: 'Cauvery Stores', address: 'Malleswaram', routeGroup: 'Malleswaram' }
@@ -152,20 +156,17 @@ app.post('/api/login', async (req, res) => {
   if (useMock) {
     const worker = mockDb.workers.find(w => w.username.toLowerCase() === normalizedUsername);
     if (worker && await bcrypt.compare(password, worker.password)) {
-      return res.json({ role: 'worker', name: worker.name, id: worker.id, username: worker.username, assignedRoutes: worker.assignedRoutes });
+      return res.json({ role: worker.role, name: worker.name, id: worker.id, username: worker.username, assignedRoutes: worker.assignedRoutes });
     }
     return res.status(401).json({ message: 'Invalid username or password' });
   }
 
   if (mongoose.connection.readyState !== 1) {
     // If not connected to DB, we can't do anything else unless we fallback to mockDb
-    // But since the server might be trying to connect, we should either wait or fail gracefully.
-    // In this specific sandbox, it seems to eventually fail and set useMock = true.
-    // Let's force mockDb if connection isn't ready and we aren't already using it.
     console.warn('DB not ready, attempting mock lookup');
     const worker = mockDb.workers.find(w => w.username.toLowerCase() === normalizedUsername);
     if (worker && await bcrypt.compare(password, worker.password)) {
-      return res.json({ role: 'worker', name: worker.name, id: worker.id, username: worker.username, assignedRoutes: worker.assignedRoutes });
+      return res.json({ role: worker.role, name: worker.name, id: worker.id, username: worker.username, assignedRoutes: worker.assignedRoutes });
     }
     return res.status(401).json({ message: 'Invalid username or password' });
   }
@@ -173,7 +174,7 @@ app.post('/api/login', async (req, res) => {
   try {
     const worker = await Worker.findOne({ username: { $regex: new RegExp(`^${normalizedUsername}$`, 'i') } });
     if (worker && await worker.comparePassword(password)) {
-      return res.json({ role: 'worker', name: worker.name, id: worker._id, username: worker.username, assignedRoutes: worker.assignedRoutes });
+      return res.json({ role: worker.role, name: worker.name, id: worker._id, username: worker.username, assignedRoutes: worker.assignedRoutes });
     }
     res.status(401).json({ message: 'Invalid username or password' });
   } catch (err) {
@@ -399,13 +400,62 @@ app.get('/api/products', async (req, res) => {
   try { res.json(await Product.find()); } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
-app.get('/api/orders', async (req, res) => {
-  if (useMock) return res.json(mockDb.orders);
+app.post('/api/products', async (req, res) => {
+  if (useMock) {
+    const product = { ...req.body, _id: Date.now().toString(), id: Date.now().toString() };
+    mockDb.products.push(product);
+    return res.status(201).json(product);
+  }
   try {
-    const { workerId, shopName } = req.query;
+    const product = new Product(req.body);
+    await product.save();
+    res.status(201).json(product);
+  } catch (err) { res.status(400).json({ message: err.message }); }
+});
+
+app.put('/api/products/:id', async (req, res) => {
+  if (useMock) {
+    const idx = mockDb.products.findIndex(p => p.id === req.params.id);
+    if (idx !== -1) {
+      mockDb.products[idx] = { ...mockDb.products[idx], ...req.body };
+      return res.json(mockDb.products[idx]);
+    }
+    return res.status(404).json({ message: 'Product not found' });
+  }
+  try {
+    const product = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!product) return res.status(404).json({ message: 'Product not found' });
+    res.json(product);
+  } catch (err) { res.status(400).json({ message: err.message }); }
+});
+
+app.delete('/api/products/:id', async (req, res) => {
+  if (useMock) {
+    mockDb.products = mockDb.products.filter(p => p.id !== req.params.id);
+    return res.status(204).send();
+  }
+  try {
+    const product = await Product.findByIdAndDelete(req.params.id);
+    if (!product) return res.status(404).json({ message: 'Product not found' });
+    res.status(204).send();
+  } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+app.get('/api/orders', async (req, res) => {
+  if (useMock) {
+    const { workerId, shopName, deliveryStaffId } = req.query;
+    let result = [...mockDb.orders];
+    if (workerId) result = result.filter(o => o.workerId === workerId);
+    if (shopName) result = result.filter(o => o.shopName === shopName);
+    if (deliveryStaffId) result = result.filter(o => o.assignedDeliveryStaff?.id === deliveryStaffId);
+    return res.json(result);
+  }
+  try {
+    const { workerId, shopName, deliveryStaffId } = req.query;
     let query = {};
     if (workerId) query.workerId = workerId;
     if (shopName) query.shopName = shopName;
+    if (deliveryStaffId) query['assignedDeliveryStaff.id'] = deliveryStaffId;
     res.json(await Order.find(query).sort({ timestamp: -1 }));
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
@@ -420,6 +470,22 @@ app.post('/api/orders', async (req, res) => {
     const order = new Order(req.body);
     await order.save();
     res.status(201).json(order);
+  } catch (err) { res.status(400).json({ message: err.message }); }
+});
+
+app.put('/api/orders/:id', async (req, res) => {
+  if (useMock) {
+    const idx = mockDb.orders.findIndex(o => o.id === req.params.id);
+    if (idx !== -1) {
+      mockDb.orders[idx] = { ...mockDb.orders[idx], ...req.body };
+      return res.json(mockDb.orders[idx]);
+    }
+    return res.status(404).json({ message: 'Order not found' });
+  }
+  try {
+    const order = await Order.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+    res.json(order);
   } catch (err) { res.status(400).json({ message: err.message }); }
 });
 
