@@ -74,10 +74,17 @@ const WorkerDashboard = ({ user }) => {
       return;
     }
 
+    if (!photo) {
+      alert('Visit proof photo is mandatory.');
+      return;
+    }
+
     try {
       const formData = new FormData();
       formData.append('shopName', selectedShop.name);
       formData.append('workerName', user.name);
+      formData.append('workerRole', user.role || 'Sales Worker');
+      formData.append('routeName', selectedShop.routeGroup);
       formData.append('notes', notes);
 
       if (photo) {

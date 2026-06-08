@@ -325,7 +325,7 @@ const ReportsView = () => {
                         const worker = workers.find(w => w.name === visit.workerName);
                         return worker ? (
                           <Link to={`/worker/${worker.id || worker._id}`} className="hover:text-green-500 transition-colors">
-                            {visit.workerName}
+                            {visit.workerName} <span className="text-[10px] text-slate-500 lowercase">({visit.workerRole || worker.role})</span>
                           </Link>
                         ) : visit.workerName;
                       })()}
@@ -339,14 +339,12 @@ const ReportsView = () => {
                     </span>
                   </div>
                 </div>
-                {(() => {
-                  const shop = (Array.isArray(shops) ? shops : []).find(s => s.name === visit.shopName);
-                  return shop ? (
-                    <div className="px-3 py-1 bg-slate-800 border border-slate-700 rounded-full text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 group-hover:border-slate-600 transition-all">
-                      <MapPin size={10} className="text-green-500" /> {shop.routeGroup}
-                    </div>
-                  ) : null;
-                })()}
+                <div className="px-3 py-1 bg-slate-800 border border-slate-700 rounded-full text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 group-hover:border-slate-600 transition-all">
+                  <MapPin size={10} className="text-green-500" /> {visit.routeName || (() => {
+                    const shop = (Array.isArray(shops) ? shops : []).find(s => s.name === visit.shopName);
+                    return shop ? shop.routeGroup : 'Unknown';
+                  })()}
+                </div>
               </div>
 
               <div className="bg-slate-800/20 p-4 md:p-6 rounded-xl border border-slate-800 group-hover:bg-slate-800/30 transition-all">
