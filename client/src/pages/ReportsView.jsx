@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import api, { getImageUrl } from '../api';
-import { Calendar, Store, MessageSquare, ClipboardList, Search, Filter, Download, Printer, User, MapPin, Camera, X, ChevronDown, ChevronUp, Clock } from 'lucide-react';
+import { Calendar, Store, MessageSquare, ClipboardList, Search, Filter, Download, Printer, User, MapPin, Camera, X, ChevronDown, ChevronUp, Clock, Play, CheckCircle, ShoppingBag, Package } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import Skeleton from '../components/Skeleton';
@@ -12,6 +12,8 @@ const ReportsView = () => {
   const [workers, setWorkers] = useState([]);
   const [shops, setShops] = useState([]);
   const [routes, setRoutes] = useState([]);
+  const [attendance, setAttendance] = useState([]);
+  const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Filter states
@@ -32,16 +34,20 @@ const ReportsView = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [workersRes, shopsRes, routesRes, visitsRes] = await Promise.all([
+      const [workersRes, shopsRes, routesRes, visitsRes, attendanceRes, ordersRes] = await Promise.all([
         api.get('/api/workers'),
         api.get('/api/shops'),
         api.get('/api/routes'),
-        api.get('/api/visits')
+        api.get('/api/visits'),
+        api.get('/api/attendance'),
+        api.get('/api/orders')
       ]);
       setWorkers(Array.isArray(workersRes.data) ? workersRes.data : []);
       setShops(Array.isArray(shopsRes.data) ? shopsRes.data : []);
       setRoutes(Array.isArray(routesRes.data) ? routesRes.data : []);
       setVisits(Array.isArray(visitsRes.data) ? visitsRes.data : []);
+      setAttendance(Array.isArray(attendanceRes.data) ? attendanceRes.data : []);
+      setOrders(Array.isArray(ordersRes.data) ? ordersRes.data : []);
     } catch (err) {
       console.error("Failed to fetch data", err);
     } finally {
@@ -49,11 +55,39 @@ const ReportsView = () => {
     }
   };
 
-  const filteredVisits = useMemo(() => {
+  const timelineEvents = useMemo(() => {
     const visitsArr = Array.isArray(visits) ? visits : [];
+    const attendanceArr = Array.isArray(attendance) ? attendance : [];
+    const ordersArr = Array.isArray(orders) ? orders : [];
     const shopsArr = Array.isArray(shops) ? shops : [];
 
-    return visitsArr.filter(v => {
+    const events = [];
+
+    attendanceArr.forEach(a => {
+      if (a.startTime && isInRange(a.startTime, dateRange)) {
+        events.push({ ...a, type: 'attendance-start', id: `${a.id || a._id}-start`, timestamp: a.startTime });
+      }
+      if (a.endTime && isInRange(a.endTime, dateRange)) {
+        events.push({ ...a, type: 'attendance-end', id: `${a.id || a._id}-end`, timestamp: a.endTime });
+      }
+    });
+
+    visitsArr.forEach(v => {
+      if (v.timestamp && isInRange(v.timestamp, dateRange)) {
+        events.push({ ...v, type: 'visit', id: v.id || v._id, timestamp: v.timestamp });
+      }
+    });
+
+    ordersArr.forEach(o => {
+      if (o.timestamp && isInRange(o.timestamp, dateRange)) {
+        events.push({ ...o, type: 'order', id: o.id || o._id, timestamp: o.timestamp });
+      }
+      if (o.deliveryStatus === 'Delivered' && o.deliveredAt && isInRange(o.deliveredAt, dateRange)) {
+        events.push({ ...o, type: 'delivery', id: `${o.id || o._id}-delivered`, timestamp: o.deliveredAt });
+      }
+    });
+
+    return events.filter(v => {
       const shop = shopsArr.find(s => s.name === v.shopName);
 
       const matchesSearch =
@@ -61,40 +95,32 @@ const ReportsView = () => {
         (v.workerName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         (v.notes && v.notes.toLowerCase().includes(searchTerm.toLowerCase()));
 
-      const matchesDate = isInRange(v.timestamp, dateRange);
       const matchesWorker = !selectedWorker || v.workerName === selectedWorker;
       const matchesShop = !selectedShop || v.shopName === selectedShop;
-      const matchesRoute = !selectedRoute || (shop && shop.routeGroup === selectedRoute);
+      const matchesRoute = !selectedRoute || (v.routeName === selectedRoute) || (shop && shop.routeGroup === selectedRoute);
       const matchesPhotos = !showOnlyPhotos || !!v.photo;
       const matchesType = visitType === 'all' ||
-                         (visitType === 'with-notes' && v.notes?.trim()) ||
-                         (visitType === 'without-notes' && !v.notes?.trim());
+                         (v.notes?.trim()) ||
+                         (!v.notes?.trim()); // Basic logic to match visitType if needed
 
-      return matchesSearch && matchesDate && matchesWorker && matchesShop && matchesRoute && matchesPhotos && matchesType;
-    }).sort((a, b) => {
-      const timeA = new Date(a.timestamp || 0);
-      const timeB = new Date(b.timestamp || 0);
-      if (sortBy === 'newest') return timeB - timeA;
-      if (sortBy === 'oldest') return timeA - timeB;
-      if (sortBy === 'shop-az') return (a.shopName || '').localeCompare(b.shopName || '');
-      if (sortBy === 'worker-az') return (a.workerName || '').localeCompare(b.workerName || '');
-      return 0;
-    });
-  }, [visits, shops, searchTerm, dateRange, selectedWorker, selectedShop, selectedRoute, showOnlyPhotos, visitType, sortBy]);
+      return matchesSearch && matchesWorker && matchesShop && matchesRoute && matchesPhotos;
+    }).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  }, [visits, attendance, orders, shops, searchTerm, dateRange, selectedWorker, selectedShop, selectedRoute, showOnlyPhotos, visitType]);
 
   const stats = useMemo(() => ({
-    total: filteredVisits.length,
-    withPhotos: filteredVisits.filter(v => !!v.photo).length,
-    uniqueShops: new Set(filteredVisits.map(v => v.shopName)).size,
-    uniqueWorkers: new Set(filteredVisits.map(v => v.workerName)).size
-  }), [filteredVisits]);
+    total: timelineEvents.filter(e => e.type === 'visit').length,
+    withPhotos: timelineEvents.filter(v => !!v.photo).length,
+    uniqueShops: new Set(timelineEvents.filter(e => e.shopName).map(v => v.shopName)).size,
+    uniqueWorkers: new Set(timelineEvents.map(v => v.workerName)).size
+  }), [timelineEvents]);
 
   const exportCSV = () => {
-    const headers = ['Date', 'Time', 'Shop Name', 'Worker Name', 'Notes', 'Photo URL'];
-    const data = filteredVisits.map(v => [
+    const headers = ['Date', 'Time', 'Event', 'Shop Name', 'Worker Name', 'Notes', 'Photo URL'];
+    const data = timelineEvents.map(v => [
       new Date(v.timestamp).toLocaleDateString(),
       new Date(v.timestamp).toLocaleTimeString(),
-      v.shopName,
+      v.type.toUpperCase(),
+      v.shopName || '-',
       v.workerName,
       v.notes || '',
       v.photo || ''
@@ -111,10 +137,11 @@ const ReportsView = () => {
   };
 
   const exportExcel = () => {
-    const data = filteredVisits.map(v => ({
+    const data = timelineEvents.map(v => ({
       Date: new Date(v.timestamp).toLocaleDateString(),
       Time: new Date(v.timestamp).toLocaleTimeString(),
-      'Shop Name': v.shopName,
+      Type: v.type.toUpperCase(),
+      'Shop Name': v.shopName || '-',
       'Worker Name': v.workerName,
       Notes: v.notes || '',
       'Photo URL': v.photo || ''
@@ -303,83 +330,137 @@ const ReportsView = () => {
         </div>
       </div>
 
-      {/* Reports List */}
-      <div className="space-y-6 print:space-y-8 pb-10">
-        {(Array.isArray(filteredVisits) ? filteredVisits : []).length === 0 ? (
-          <div className="bg-slate-900 p-10 md:p-20 text-center rounded-2xl border border-slate-800 shadow-xl">
-            <ClipboardList className="w-12 h-12 md:w-16 md:h-16 mx-auto text-slate-800 mb-6" />
-            <p className="text-slate-500 font-medium italic text-sm md:text-base">No reports match your current search or filters.</p>
+      {/* Reports Timeline */}
+      <div className="relative border-l-2 border-slate-800 ml-4 space-y-12 pb-20 mt-10">
+        {timelineEvents.length === 0 ? (
+          <div className="bg-slate-900 p-20 text-center rounded-2xl border border-slate-800 shadow-xl ml-6">
+            <ClipboardList className="w-16 h-16 mx-auto text-slate-800 mb-6" />
+            <p className="text-slate-500 font-medium italic">No activities match your filters.</p>
           </div>
         ) : (
-          (Array.isArray(filteredVisits) ? filteredVisits : []).map((visit) => (
-            <div key={visit.id} className="bg-slate-900 p-5 md:p-8 rounded-2xl shadow-xl border border-slate-800 hover:border-slate-700 transition-all break-inside-avoid group">
-              <div className="flex flex-col md:flex-row justify-between items-start mb-6 gap-4">
-                <div>
-                  <h3 className="text-lg md:text-xl font-bold flex items-center text-white mb-2">
-                    <Store className="w-5 h-5 mr-3 text-green-500 shrink-0" /> {visit.shopName}
-                  </h3>
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                    <span className="flex items-center gap-2 text-xs font-bold text-blue-400 uppercase tracking-widest">
-                      <User size={14} className="text-blue-500" />
-                      {(() => {
-                        const worker = workers.find(w => w.name === visit.workerName);
-                        return worker ? (
-                          <Link to={`/worker/${worker.id || worker._id}`} className="hover:text-green-500 transition-colors">
-                            {visit.workerName} <span className="text-[10px] text-slate-500 lowercase">({visit.workerRole || worker.role})</span>
-                          </Link>
-                        ) : visit.workerName;
-                      })()}
-                    </span>
-                    <span className="hidden md:inline text-slate-700">•</span>
-                    <span className="flex items-center gap-2 text-xs text-slate-400 font-medium">
-                      <Calendar size={14} className="text-slate-500" /> {new Date(visit.timestamp).toLocaleDateString()}
-                    </span>
-                    <span className="flex items-center gap-2 text-xs text-slate-500 font-medium">
-                      <Clock size={14} className="text-slate-600" /> {new Date(visit.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                  </div>
-                </div>
-                <div className="px-3 py-1 bg-slate-800 border border-slate-700 rounded-full text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 group-hover:border-slate-600 transition-all">
-                  <MapPin size={10} className="text-green-500" /> {visit.routeName || (() => {
-                    const shop = (Array.isArray(shops) ? shops : []).find(s => s.name === visit.shopName);
-                    return shop ? shop.routeGroup : 'Unknown';
-                  })()}
-                </div>
-              </div>
+          timelineEvents.map((item) => {
+            let icon = <Clock size={16} />;
+            let colorClass = 'bg-slate-500';
+            let title = '';
+            let details = null;
 
-              <div className="bg-slate-800/20 p-4 md:p-6 rounded-xl border border-slate-800 group-hover:bg-slate-800/30 transition-all">
-                <div className="flex flex-col lg:flex-row gap-6 md:gap-8">
-                  <div className="flex-1 order-2 lg:order-1">
-                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-                      <MessageSquare size={12} className="text-slate-400" /> Notes & Remarks
-                    </p>
-                    <p className="text-slate-200 leading-relaxed text-sm selection:bg-green-500/30">
-                      {visit.notes || <span className="italic text-slate-600">No notes provided for this visit.</span>}
-                    </p>
-                  </div>
-
-                  {visit.photo && (
-                    <div className="flex-shrink-0 order-1 lg:order-2 mb-4 lg:mb-0">
-                      <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-                        <Camera size={12} className="text-slate-400" /> Evidence Photo
-                      </p>
-                      <div className="relative overflow-hidden rounded-xl bg-slate-800 max-w-xs md:max-w-none">
-                        <img
-                          src={getImageUrl(visit.photo)}
-                          alt="Visit Evidence"
-                          loading="lazy"
-                          className="w-full md:w-64 h-48 md:h-48 object-cover rounded-xl border border-slate-700 shadow-lg group-hover:scale-105 transition-all duration-500 cursor-zoom-in"
-                        />
-                        <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-all pointer-events-none" />
+            switch(item.type) {
+              case 'attendance-start': {
+                const workerObj = workers.find(w => w.name === item.workerName);
+                const workerLink = workerObj ? `/worker/${workerObj.id || workerObj._id}` : null;
+                icon = <Play size={16} />;
+                colorClass = 'bg-purple-500';
+                title = 'START WORK';
+                details = (
+                  <p className="text-sm text-slate-400">
+                    Attendance marked by {workerLink ? <Link to={workerLink} className="font-bold text-white hover:text-green-500 transition-colors uppercase tracking-tight">{item.workerName}</Link> : <span className="font-bold text-white uppercase tracking-tight">{item.workerName}</span>}
+                  </p>
+                );
+                break;
+              }
+              case 'attendance-end': {
+                const workerObj = workers.find(w => w.name === item.workerName);
+                const workerLink = workerObj ? `/worker/${workerObj.id || workerObj._id}` : null;
+                icon = <CheckCircle size={16} />;
+                colorClass = 'bg-green-500';
+                title = 'WORK COMPLETED';
+                details = (
+                  <p className="text-sm text-slate-400">
+                    {workerLink ? <Link to={workerLink} className="font-bold text-white hover:text-green-500 transition-colors uppercase tracking-tight">{item.workerName}</Link> : <span className="font-bold text-white uppercase tracking-tight">{item.workerName}</span>} finished for the day
+                  </p>
+                );
+                break;
+              }
+              case 'visit': {
+                const workerObj = workers.find(w => w.name === item.workerName);
+                const workerLink = workerObj ? `/worker/${workerObj.id || workerObj._id}` : null;
+                icon = <Store size={16} />;
+                colorClass = 'bg-blue-500';
+                title = 'SHOP VISITED';
+                details = (
+                  <div className="space-y-4">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div>
+                        <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                          <MapPin size={18} className="text-green-500" /> {item.shopName}
+                        </h3>
+                        <p className="text-xs text-slate-500 mt-1 font-bold uppercase tracking-widest">
+                          Route: {item.routeName || 'Unknown'} • Worker: {workerLink ? <Link to={workerLink} className="text-slate-400 hover:text-green-500 transition-colors">{item.workerName}</Link> : item.workerName}
+                        </p>
                       </div>
                     </div>
-                  )}
+                    {item.notes && (
+                      <p className="text-sm text-slate-300 italic border-l-2 border-slate-800 pl-4 py-1">{item.notes}</p>
+                    )}
+                    {item.photo && (
+                      <div className="relative overflow-hidden rounded-xl bg-slate-800 w-full md:w-64 h-48 border border-slate-700 shadow-lg">
+                        <img
+                          src={getImageUrl(item.photo)}
+                          alt="Visit Evidence"
+                          loading="lazy"
+                          className="w-full h-full object-cover transition-all duration-500 cursor-zoom-in"
+                        />
+                      </div>
+                    )}
+                  </div>
+                );
+                break;
+              }
+              case 'order': {
+                const workerObj = workers.find(w => w.name === item.workerName);
+                const workerLink = workerObj ? `/worker/${workerObj.id || workerObj._id}` : null;
+                icon = <ShoppingBag size={16} />;
+                colorClass = 'bg-orange-500';
+                title = 'ORDER CREATED';
+                details = (
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p className="text-sm text-slate-300 font-bold">Order placed at {item.shopName}</p>
+                      <p className="text-xs text-slate-500 mt-1 uppercase font-bold tracking-widest">{item.totalQuantity} items • by {workerLink ? <Link to={workerLink} className="text-slate-400 hover:text-green-500 transition-colors">{item.workerName}</Link> : item.workerName}</p>
+                    </div>
+                    <div className="text-right">
+                       <p className="text-xl font-black text-green-500">₹{(item.totalAmount || 0).toLocaleString()}</p>
+                    </div>
+                  </div>
+                );
+                break;
+              }
+              case 'delivery': {
+                const workerObj = workers.find(w => w.name === item.workerName);
+                const workerLink = workerObj ? `/worker/${workerObj.id || workerObj._id}` : null;
+                icon = <Package size={16} />;
+                colorClass = 'bg-green-600';
+                title = 'DELIVERY COMPLETED';
+                details = (
+                  <div>
+                    <p className="text-sm text-slate-300 font-bold">Order Delivered to {item.shopName}</p>
+                    <p className="text-xs text-slate-500 mt-1 uppercase font-bold tracking-widest">Status: {item.deliveryStatus} • by {workerLink ? <Link to={workerLink} className="text-slate-400 hover:text-green-500 transition-colors">{item.workerName}</Link> : item.workerName}</p>
+                  </div>
+                );
+                break;
+              }
+            }
+
+            return (
+              <div key={item.id} className="relative pl-10">
+                <div className={`absolute -left-[9px] top-0 w-4 h-4 rounded-full border-2 border-zinc-950 shadow-xl ${colorClass}`} />
+
+                <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-2">
+                   <h4 className={`text-xs font-black tracking-widest ${colorClass.replace('bg-', 'text-')} flex items-center gap-2`}>
+                     {icon} {title}
+                   </h4>
+                   <span className="text-[10px] font-bold text-slate-500 bg-slate-900 border border-slate-800 px-2 py-1 rounded-lg">
+                     {new Date(item.timestamp).toLocaleString([], { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short', year: 'numeric' })}
+                   </span>
+                </div>
+
+                <div className="bg-slate-900/60 p-6 rounded-2xl border border-slate-800 hover:border-slate-700 transition-all shadow-xl backdrop-blur-sm">
+                  {details}
                 </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
-
       </div>
     </div>
   );
