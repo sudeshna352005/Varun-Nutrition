@@ -359,14 +359,14 @@ app.get('/api/attendance', async (req, res) => {
   try { res.json(await Attendance.find()); } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
-app.post('/api/attendance/start', upload.single('photo'), async (req, res) => {
+app.post('/api/attendance/start', async (req, res) => {
   if (useMock) {
     const entry = { _id: Date.now().toString(), id: Date.now().toString(), workerName: req.body.workerName, startTime: new Date(), status: 'working' };
     mockDb.attendance.push(entry);
     return res.status(201).json(entry);
   }
   try {
-    const entry = new Attendance({ workerName: req.body.workerName, photo: req.file ? req.file.path : null, status: 'working' });
+    const entry = new Attendance({ workerName: req.body.workerName, status: 'working' });
     await entry.save();
     res.status(201).json(entry);
   } catch (err) { res.status(400).json({ message: err.message }); }

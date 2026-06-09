@@ -37,6 +37,13 @@ const AttendanceView = () => {
     return new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
+  const calculateHours = (start, end) => {
+    if (!start || !end) return '-';
+    const diff = new Date(end) - new Date(start);
+    const hours = diff / (1000 * 60 * 60);
+    return `${hours.toFixed(1)} hrs`;
+  };
+
   return (
     <div>
       <h1 className="text-4xl font-extrabold mb-8 text-white tracking-tight">Worker Attendance</h1>
@@ -50,7 +57,7 @@ const AttendanceView = () => {
                 <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Date</th>
                 <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Start Time</th>
                 <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">End Time</th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Photo</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Total Hours</th>
                 <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Status</th>
               </tr>
             </thead>
@@ -89,15 +96,8 @@ const AttendanceView = () => {
                         <Clock className="w-4 h-4 mr-2" /> {formatTime(record.endTime)}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {record.photo ? (
-                        <div className="relative group cursor-pointer inline-block">
-                          <Camera className="w-6 h-6 text-blue-500 hover:text-blue-400 transition-colors" />
-                          <div className="absolute hidden group-hover:block z-20 p-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl mt-2 -left-12">
-                            <img src={getImageUrl(record.photo)} alt="Attendance" loading="lazy" className="w-48 h-48 object-cover rounded-lg" />
-                          </div>
-                        </div>
-                      ) : <span className="text-zinc-600">-</span>}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-green-500">
+                      {calculateHours(record.startTime, record.endTime)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-3 py-1 inline-flex text-[10px] leading-5 font-bold rounded-full uppercase tracking-widest border ${
@@ -148,27 +148,26 @@ const AttendanceView = () => {
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="grid grid-cols-3 gap-4">
                  <div className="bg-slate-800/50 p-3 rounded-xl border border-slate-800">
                     <p className="text-[9px] font-bold text-slate-500 uppercase mb-1">In</p>
-                    <p className="text-sm font-bold text-green-500 flex items-center gap-2">
-                       <Clock size={12} /> {formatTime(record.startTime)}
+                    <p className="text-xs font-bold text-green-500 flex items-center gap-1">
+                       <Clock size={10} /> {formatTime(record.startTime)}
                     </p>
                  </div>
                  <div className="bg-slate-800/50 p-3 rounded-xl border border-slate-800">
                     <p className="text-[9px] font-bold text-slate-500 uppercase mb-1">Out</p>
-                    <p className="text-sm font-bold text-slate-400 flex items-center gap-2">
-                       <Clock size={12} /> {formatTime(record.endTime)}
+                    <p className="text-xs font-bold text-slate-400 flex items-center gap-1">
+                       <Clock size={10} /> {formatTime(record.endTime)}
+                    </p>
+                 </div>
+                 <div className="bg-slate-800/50 p-3 rounded-xl border border-slate-800">
+                    <p className="text-[9px] font-bold text-slate-500 uppercase mb-1">Total</p>
+                    <p className="text-xs font-black text-green-500">
+                       {calculateHours(record.startTime, record.endTime)}
                     </p>
                  </div>
               </div>
-
-              {record.photo && (
-                <div className="mt-4 pt-4 border-t border-slate-800">
-                   <p className="text-[9px] font-bold text-slate-500 uppercase mb-2">Selfie Verification</p>
-                   <img src={getImageUrl(record.photo)} alt="Attendance" className="w-full h-40 object-cover rounded-xl border border-slate-800" />
-                </div>
-              )}
             </div>
           ))
         )}
