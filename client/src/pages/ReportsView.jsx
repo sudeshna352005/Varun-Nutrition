@@ -107,12 +107,6 @@ const ReportsView = () => {
     }).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
   }, [visits, attendance, orders, shops, searchTerm, dateRange, selectedWorker, selectedShop, selectedRoute, showOnlyPhotos, visitType]);
 
-  const stats = useMemo(() => ({
-    total: timelineEvents.filter(e => e.type === 'visit').length,
-    withPhotos: timelineEvents.filter(v => !!v.photo).length,
-    uniqueShops: new Set(timelineEvents.filter(e => e.shopName).map(v => v.shopName)).size,
-    uniqueWorkers: new Set(timelineEvents.map(v => v.workerName)).size
-  }), [timelineEvents]);
 
   const exportCSV = () => {
     const headers = ['Date', 'Time', 'Event', 'Shop Name', 'Worker Name', 'Notes', 'Photo URL'];
@@ -163,6 +157,13 @@ const ReportsView = () => {
     setVisitType('all');
     setShowOnlyPhotos(false);
   };
+
+  const stats = useMemo(() => ({
+    total: timelineEvents.filter(e => e.type === 'visit').length,
+    withPhotos: timelineEvents.filter(v => !!v.photo).length,
+    uniqueShops: new Set(timelineEvents.filter(e => e.shopName).map(v => v.shopName)).size,
+    uniqueWorkers: new Set(timelineEvents.map(v => v.workerName)).size
+  }), [timelineEvents]);
 
   if (loading) return (
     <div className="space-y-8 p-4">

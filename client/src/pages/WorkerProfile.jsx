@@ -39,17 +39,14 @@ const WorkerProfile = () => {
     fetchData();
   }, [id]);
 
-  if (loading) return <div className="text-center py-10">Loading profile...</div>;
-  if (!worker) return <div className="text-center py-10 text-red-500">Worker not found</div>;
-
-  const visitsArr = Array.isArray(visits) ? visits : [];
-  const attendanceArr = Array.isArray(attendance) ? attendance : [];
-  const ordersArr = Array.isArray(orders) ? orders : [];
+  const visitsArr = useMemo(() => Array.isArray(visits) ? visits : [], [visits]);
+  const attendanceArr = useMemo(() => Array.isArray(attendance) ? attendance : [], [attendance]);
+  const ordersArr = useMemo(() => Array.isArray(orders) ? orders : [], [orders]);
 
   const totalVisits = visitsArr.length;
-  const completedSessions = attendanceArr.filter(a => a.status === 'completed').length;
-  const uniqueShops = new Set(visitsArr.map(v => v.shopName)).size;
-  const totalSales = ordersArr.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+  const completedSessions = useMemo(() => attendanceArr.filter(a => a?.status === 'completed').length, [attendanceArr]);
+  const uniqueShops = useMemo(() => new Set(visitsArr.map(v => v?.shopName).filter(Boolean)).size, [visitsArr]);
+  const totalSales = useMemo(() => ordersArr.reduce((sum, o) => sum + (o?.totalAmount || 0), 0), [ordersArr]);
 
   const activityTimeline = useMemo(() => {
     const events = [];
@@ -68,6 +65,10 @@ const WorkerProfile = () => {
     });
     return events.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
   }, [attendanceArr, visitsArr, ordersArr]);
+
+  // Early returns must come AFTER all hooks (useState, useEffect, useMemo)
+  if (loading) return <div className="text-center py-20 text-slate-500">Loading profile...</div>;
+  if (!worker) return <div className="text-center py-20 text-red-500 italic">Worker not found</div>;
 
   return (
     <div className="max-w-6xl mx-auto px-4">
@@ -177,13 +178,13 @@ const WorkerProfile = () => {
                     icon = <Play size={16} />;
                     colorClass = 'bg-purple-500';
                     title = 'START WORK';
-                    details = <p className="text-sm text-slate-400">Attendance marked by <span className="font-bold text-white">{worker.name}</span></p>;
+                    details = <p className="text-sm text-slate-400">Attendance marked by <span className="font-bold text-white">{worker?.name || 'Worker'}</span></p>;
                     break;
                   case 'attendance-end':
                     icon = <CheckCircle size={16} />;
                     colorClass = 'bg-green-500';
                     title = 'WORK COMPLETED';
-                    details = <p className="text-sm text-slate-400"><span className="font-bold text-white">{worker.name}</span> finished for the day</p>;
+                    details = <p className="text-sm text-slate-400"><span className="font-bold text-white">{worker?.name || 'Worker'}</span> finished for the day</p>;
                     break;
                   case 'visit':
                     icon = <Store size={16} />;
