@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api';
 import { Camera, Play, Square, CheckCircle, MessageSquare, MapPin } from 'lucide-react';
+import CameraCapture from '../components/CameraCapture';
 
 const WorkerAttendance = ({ user }) => {
   const [session, setSession] = useState(null);
@@ -77,22 +78,12 @@ const WorkerAttendance = ({ user }) => {
             <h2 className="text-2xl font-bold text-white mb-2">Start Your Shift</h2>
             <p className="text-slate-500 text-sm mb-10 uppercase tracking-widest font-bold">Identity verification required</p>
             
-            <div className="mb-10">
-              <label className="block w-full bg-slate-800/50 border-2 border-dashed border-slate-700 rounded-2xl p-6 cursor-pointer hover:border-green-500/50 hover:bg-slate-800 transition-all group">
-                <input
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  className="hidden"
-                  onChange={(e) => setPhoto(e.target.files[0])}
-                />
-                <div className="flex flex-col items-center">
-                  <Camera className="w-8 h-8 text-zinc-600 mb-2 group-hover:text-green-500 transition-colors" />
-                  <span className="text-sm font-medium text-slate-400 group-hover:text-zinc-200 transition-colors">
-                    {photo ? photo.name : 'Take a selfie to begin'}
-                  </span>
-                </div>
-              </label>
+            <div className="mb-10 text-left">
+              <CameraCapture
+                onCapture={setPhoto}
+                label="Selfie Identity Proof"
+                required
+              />
             </div>
 
             <button

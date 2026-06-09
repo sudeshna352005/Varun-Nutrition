@@ -3,6 +3,7 @@ import api from '../api';
 import { Package, Search, Filter, Calendar, Check, X, Clock, ShoppingCart, MapPin, CheckCircle, ExternalLink, Info } from 'lucide-react';
 import DateFilter from '../components/DateFilter';
 import { isInRange, getRangeDates } from '../utils/dateUtils';
+import CameraCapture from '../components/CameraCapture';
 
 const DeliveryDashboard = ({ user }) => {
   const [orders, setOrders] = useState([]);
@@ -320,17 +321,11 @@ const DeliveryDashboard = ({ user }) => {
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Proof of Delivery (Photo) *</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  required
-                  onChange={(e) => setDeliveryPhoto(e.target.files[0])}
-                  className="w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-slate-800 file:text-zinc-300 hover:file:bg-zinc-700 transition-all cursor-pointer"
-                />
-              </div>
+              <CameraCapture
+                onCapture={setDeliveryPhoto}
+                label="Proof of Delivery"
+                required
+              />
             </div>
 
             <div className="p-6 border-t border-slate-800/50 flex gap-4">
