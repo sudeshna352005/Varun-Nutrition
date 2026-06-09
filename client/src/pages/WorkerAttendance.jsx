@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import api from '../api';
-import { Play, Square, Calendar, Clock, History } from 'lucide-react';
+import { Play, Square, Calendar, Clock, History, Camera } from 'lucide-react';
+import CameraCapture from '../components/CameraCapture';
 
 const WorkerAttendance = ({ user }) => {
   const [session, setSession] = useState(null);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [photo, setPhoto] = useState(null);
 
   useEffect(() => {
     fetchData();
@@ -34,9 +36,21 @@ const WorkerAttendance = ({ user }) => {
   };
 
   const handleStartWork = async () => {
+    if (!photo) {
+      alert("Selfie verification is required to start shift.");
+      return;
+    }
+
     try {
-      const res = await api.post('/api/attendance/start', { workerName: user.name });
+      const formData = new FormData();
+      formData.append('workerName', user.name);
+      formData.append('photo', photo);
+
+      const res = await api.post('/api/attendance/start', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
       setSession(res.data);
+      setPhoto(null);
       fetchData();
     } catch (err) {
       console.error(err);
@@ -95,7 +109,16 @@ const WorkerAttendance = ({ user }) => {
                   <Clock size={32} />
                 </div>
                 <h2 className="text-xl font-bold text-white mb-1">Ready to Work?</h2>
-                <p className="text-slate-500 text-xs mb-8 uppercase tracking-widest font-bold">No active session</p>
+                <p className="text-slate-500 text-xs mb-6 uppercase tracking-widest font-bold text-center">Selfie Identity Verification Required</p>
+
+                <div className="mb-8 text-left">
+                  <CameraCapture
+                    onCapture={setPhoto}
+                    label="Front Camera Selfie"
+                    required
+                    facingMode="user"
+                  />
+                </div>
 
                 <button
                   onClick={handleStartWork}
