@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { Camera, RefreshCw, Check, X, Play } from 'lucide-react';
 
-const CameraCapture = ({ onCapture, label = "Proof Photo", required = false }) => {
+const CameraCapture = ({ onCapture, label = "Proof Photo", required = false, facingMode = "environment" }) => {
   const [stream, setStream] = useState(null);
   const [preview, setPreview] = useState(null);
   const [error, setError] = useState(null);
@@ -9,17 +9,19 @@ const CameraCapture = ({ onCapture, label = "Proof Photo", required = false }) =
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
-  const startCamera = async () => {
+  const startCamera = async (retryWithAny = false) => {
     setError(null);
     setIsCapturing(true);
     try {
-      const constraints = {
-        video: {
-          facingMode: 'environment',
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        }
-      };
+      const videoConstraints = retryWithAny
+        ? { width: { ideal: 1280 }, height: { ideal: 720 } }
+        : {
+            facingMode: facingMode,
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          };
+
+      const constraints = { video: videoConstraints };
       const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
       setStream(mediaStream);
       if (videoRef.current) {
@@ -27,6 +29,10 @@ const CameraCapture = ({ onCapture, label = "Proof Photo", required = false }) =
       }
     } catch (err) {
       console.error("Camera access error:", err);
+      if (!retryWithAny) {
+        console.log("Retrying with any available camera...");
+        return startCamera(true);
+      }
       setError("Camera access denied. Please enable permissions and try again.");
       setIsCapturing(false);
     }

@@ -100,10 +100,10 @@ const ReportsView = () => {
       const matchesRoute = !selectedRoute || (v.routeName === selectedRoute) || (shop && shop.routeGroup === selectedRoute);
       const matchesPhotos = !showOnlyPhotos || !!v.photo;
       const matchesType = visitType === 'all' ||
-                         (v.notes?.trim()) ||
-                         (!v.notes?.trim()); // Basic logic to match visitType if needed
+                         (visitType === 'with-notes' && v.notes?.trim()) ||
+                         (visitType === 'without-notes' && !v.notes?.trim());
 
-      return matchesSearch && matchesWorker && matchesShop && matchesRoute && matchesPhotos;
+      return matchesSearch && matchesWorker && matchesShop && matchesRoute && matchesPhotos && matchesType;
     }).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
   }, [visits, attendance, orders, shops, searchTerm, dateRange, selectedWorker, selectedShop, selectedRoute, showOnlyPhotos, visitType]);
 
