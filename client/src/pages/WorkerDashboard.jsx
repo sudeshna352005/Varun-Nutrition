@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../api';
 import { MapPin, CheckCircle, ChevronRight, MessageSquare, ExternalLink, Info, Search, Plus, X } from 'lucide-react';
 import Skeleton from '../components/Skeleton';
+import CameraCapture from '../components/CameraCapture';
 
 const WorkerDashboard = ({ user }) => {
   const [shops, setShops] = useState([]);
@@ -300,15 +301,11 @@ const WorkerDashboard = ({ user }) => {
                 onChange={(e) => setNotes(e.target.value)}
               />
 
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Attached Photo</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setPhoto(e.target.files[0])}
-                  className="w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-slate-800 file:text-zinc-300 hover:file:bg-zinc-700 transition-all cursor-pointer"
-                />
-              </div>
+              <CameraCapture
+                onCapture={setPhoto}
+                label="Visit Proof (Required)"
+                required
+              />
 
               <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700">
                 <label className="flex items-center gap-3 cursor-pointer group">
