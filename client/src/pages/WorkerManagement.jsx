@@ -16,7 +16,9 @@ const WorkerManagement = () => {
     username: '',
     password: '',
     role: 'Sales Worker',
-    assignedRoutes: []
+    assignedRoutes: [],
+    dailySalary: 0,
+    additionalAllowance: 0
   });
   const [showPassword, setShowPassword] = useState(false);
   const [visiblePasswords, setVisiblePasswords] = useState({});
@@ -68,7 +70,7 @@ const WorkerManagement = () => {
       }
       setIsModalOpen(false);
       setEditingWorker(null);
-      setFormData({ name: '', username: '', password: '', role: 'Sales Worker', assignedRoutes: [] });
+      setFormData({ name: '', username: '', password: '', role: 'Sales Worker', assignedRoutes: [], dailySalary: 0, additionalAllowance: 0 });
       setShowPassword(false);
       fetchWorkers();
     } catch (err) {
@@ -84,7 +86,9 @@ const WorkerManagement = () => {
       username: worker.username,
       password: '', // Clear password field when editing to avoid sending back the hash
       role: worker.role || 'Sales Worker',
-      assignedRoutes: Array.isArray(worker.assignedRoutes) ? [...worker.assignedRoutes] : []
+      assignedRoutes: Array.isArray(worker.assignedRoutes) ? [...worker.assignedRoutes] : [],
+      dailySalary: worker.dailySalary || 0,
+      additionalAllowance: worker.additionalAllowance || 0
     });
     setIsModalOpen(true);
   };
@@ -369,6 +373,27 @@ const WorkerManagement = () => {
                     <div className="absolute right-4 top-4 pointer-events-none">
                        <User size={16} className="text-slate-600" />
                     </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Daily Salary (₹)</label>
+                    <input
+                      type="number"
+                      className="block w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-green-500 outline-none transition-all"
+                      value={formData.dailySalary}
+                      onChange={(e) => setFormData({ ...formData, dailySalary: parseFloat(e.target.value) || 0 })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Allowance (₹)</label>
+                    <input
+                      type="number"
+                      className="block w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-green-500 outline-none transition-all"
+                      value={formData.additionalAllowance}
+                      onChange={(e) => setFormData({ ...formData, additionalAllowance: parseFloat(e.target.value) || 0 })}
+                    />
                   </div>
                 </div>
 

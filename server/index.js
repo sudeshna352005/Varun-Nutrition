@@ -16,6 +16,7 @@ const Attendance = require('./models/Attendance');
 const Visit = require('./models/Visit');
 const Product = require('./models/Product');
 const Order = require('./models/Order');
+const Payroll = require('./models/Payroll');
 
 // Fallback Mock database state
 let mockDb = {
@@ -68,17 +69,28 @@ async function seedData() {
 
     const defaultWorker = await Worker.findOne({ username: 'worker' });
     if (!defaultWorker) {
-      await Worker.create({ name: 'Sales Worker', username: 'worker', password: 'worker123', role: 'Sales Worker', assignedRoutes: ['Malleswaram'] });
+      await Worker.create({ name: 'Sales Worker', username: 'worker', password: 'worker123', role: 'Sales Worker', assignedRoutes: ['Malleswaram'], dailySalary: 700, additionalAllowance: 100 });
     }
 
-    const rohith = await Worker.findOne({ username: 'rohith' });
-    if (!rohith) {
-      await Worker.create({ name: 'Rohith', username: 'rohith', password: 'delivery123', role: 'Delivery Staff', assignedRoutes: ['Malleswaram'] });
+    // Specific Requirements: Lavanya (Sales), Naveen (Sales), Gopi (Delivery)
+    const lavanya = await Worker.findOne({ username: 'lavanya' });
+    if (!lavanya) {
+      await Worker.create({ name: 'Lavanya', username: 'lavanya', password: 'worker123', role: 'Sales Worker', assignedRoutes: ['Malleswaram'], dailySalary: 700, additionalAllowance: 100 });
+    }
+
+    const naveen = await Worker.findOne({ username: 'naveen' });
+    if (!naveen) {
+      await Worker.create({ name: 'Naveen', username: 'naveen', password: 'worker123', role: 'Sales Worker', assignedRoutes: ['Gayathri Nagar'], dailySalary: 700, additionalAllowance: 100 });
     }
 
     const gopi = await Worker.findOne({ username: 'gopi' });
     if (!gopi) {
-      await Worker.create({ name: 'Gopi', username: 'gopi', password: 'delivery123', role: 'Delivery Staff', assignedRoutes: ['Mahalakshmi Layout'] });
+      await Worker.create({ name: 'Gopi', username: 'gopi', password: 'delivery123', role: 'Delivery Staff', assignedRoutes: ['Mahalakshmi Layout'], dailySalary: 800, additionalAllowance: 100 });
+    }
+
+    const rohith = await Worker.findOne({ username: 'rohith' });
+    if (!rohith) {
+      await Worker.create({ name: 'Rohith', username: 'rohith', password: 'delivery123', role: 'Delivery Staff', assignedRoutes: ['Malleswaram'], dailySalary: 700, additionalAllowance: 100 });
     }
 
     // Legacy password migration: ensure all existing workers have hashed passwords
@@ -111,15 +123,23 @@ async function initMockData() {
   const hashedPassword = await bcrypt.hash('worker123', salt);
   mockDb.workers.push({
     _id: 'w1', id: 'w1', name: 'Sales Worker', username: 'worker',
-    password: hashedPassword, role: 'Sales Worker', assignedRoutes: ['Malleswaram']
+    password: hashedPassword, role: 'Sales Worker', assignedRoutes: ['Malleswaram'], dailySalary: 700, additionalAllowance: 100
   });
   mockDb.workers.push({
     _id: 'w2', id: 'w2', name: 'Rohith', username: 'rohith',
-    password: hashedPassword, role: 'Delivery Staff', assignedRoutes: ['Malleswaram']
+    password: hashedPassword, role: 'Delivery Staff', assignedRoutes: ['Malleswaram'], dailySalary: 700, additionalAllowance: 100
   });
   mockDb.workers.push({
     _id: 'w3', id: 'w3', name: 'Gopi', username: 'gopi',
-    password: hashedPassword, role: 'Delivery Staff', assignedRoutes: ['Mahalakshmi Layout']
+    password: hashedPassword, role: 'Delivery Staff', assignedRoutes: ['Mahalakshmi Layout'], dailySalary: 800, additionalAllowance: 100
+  });
+  mockDb.workers.push({
+    _id: 'w4', id: 'w4', name: 'Lavanya', username: 'lavanya',
+    password: hashedPassword, role: 'Sales Worker', assignedRoutes: ['Malleswaram'], dailySalary: 700, additionalAllowance: 100
+  });
+  mockDb.workers.push({
+    _id: 'w5', id: 'w5', name: 'Naveen', username: 'naveen',
+    password: hashedPassword, role: 'Sales Worker', assignedRoutes: ['Gayathri Nagar'], dailySalary: 700, additionalAllowance: 100
   });
   mockDb.shops = [
     { _id: 's1', id: 's1', name: 'Cauvery Stores', address: 'Malleswaram', routeGroup: 'Malleswaram' }
@@ -149,6 +169,126 @@ const storage = new CloudinaryStorage({
 const upload = multer({ storage });
 
 // --- API ROUTES ---
+
+app.get('/api/payroll', async (req, res) => {
+  if (useMock) return res.json(mockDb.payroll || []);
+  try {
+    const { month, startDate, endDate } = req.query;
+    let query = {};
+    if (month) query.month = month;
+    else if (startDate && endDate) {
+      query.createdAt = { $gte: new Date(startDate), $lte: new Date(endDate) };
+    }
+    const data = await Payroll.find(query);
+    res.json(data);
+  } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+app.post('/api/payroll/calculate', async (req, res) => {
+  const { month } = req.body;
+  if (!month) return res.status(400).json({ message: 'Month is required (YYYY-MM)' });
+
+  if (useMock) {
+    // Basic mock calculation
+    const payrolls = mockDb.workers.map(w => ({
+      id: `pr-${w.id}-${month}`,
+      workerId: w.id,
+      workerName: w.name,
+      month,
+      presentDays: 20,
+      dailySalary: w.dailySalary || 700,
+      additionalAllowance: w.additionalAllowance || 100,
+      baseSalary: (w.dailySalary || 700) * 20,
+      additionalAmount: (w.additionalAllowance || 100) * 20,
+      bonus: 0,
+      deductions: 0,
+      netSalary: ((w.dailySalary || 700) + (w.additionalAllowance || 100)) * 20,
+      status: 'draft'
+    }));
+    mockDb.payroll = payrolls;
+    return res.json(payrolls);
+  }
+
+  try {
+    const workers = await Worker.find();
+    const startDate = new Date(`${month}-01T00:00:00Z`);
+    const endDate = new Date(startDate);
+    endDate.setMonth(endDate.getMonth() + 1);
+
+    const payrollRecords = [];
+
+    for (const worker of workers) {
+      const attendance = await Attendance.find({
+        workerName: worker.name,
+        startTime: { $gte: startDate, $lt: endDate },
+        status: 'completed' // Only count completed shifts as present days
+      });
+
+      const presentDays = attendance.length;
+      const dailySalary = worker.dailySalary || 0;
+      const additionalAllowance = worker.additionalAllowance || 0;
+
+      const baseSalary = presentDays * dailySalary;
+      const additionalAmount = presentDays * additionalAllowance;
+
+      let payroll = await Payroll.findOne({ workerId: worker._id, month });
+
+      if (payroll) {
+        payroll.presentDays = presentDays;
+        payroll.dailySalary = dailySalary;
+        payroll.additionalAllowance = additionalAllowance;
+        payroll.baseSalary = baseSalary;
+        payroll.additionalAmount = additionalAmount;
+        payroll.netSalary = baseSalary + additionalAmount + (payroll.bonus || 0) - (payroll.deductions || 0);
+      } else {
+        payroll = new Payroll({
+          workerId: worker._id,
+          workerName: worker.name,
+          month,
+          presentDays,
+          dailySalary,
+          additionalAllowance,
+          baseSalary,
+          additionalAmount,
+          netSalary: baseSalary + additionalAmount
+        });
+      }
+
+      await payroll.save();
+      payrollRecords.push(payroll);
+    }
+
+    res.json(payrollRecords);
+  } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+app.put('/api/payroll/:id', async (req, res) => {
+  if (useMock) {
+    const idx = (mockDb.payroll || []).findIndex(p => p.id === req.params.id);
+    if (idx !== -1) {
+      mockDb.payroll[idx] = { ...mockDb.payroll[idx], ...req.body };
+      const p = mockDb.payroll[idx];
+      p.netSalary = p.baseSalary + p.additionalAmount + (p.bonus || 0) - (p.deductions || 0);
+      return res.json(p);
+    }
+    return res.status(404).json({ message: 'Payroll not found' });
+  }
+  try {
+    const { bonus, deductions, notes, status } = req.body;
+    const payroll = await Payroll.findById(req.params.id);
+    if (!payroll) return res.status(404).json({ message: 'Payroll not found' });
+
+    if (bonus !== undefined) payroll.bonus = bonus;
+    if (deductions !== undefined) payroll.deductions = deductions;
+    if (notes !== undefined) payroll.notes = notes;
+    if (status !== undefined) payroll.status = status;
+
+    payroll.netSalary = payroll.baseSalary + payroll.additionalAmount + (payroll.bonus || 0) - (payroll.deductions || 0);
+
+    await payroll.save();
+    res.json(payroll);
+  } catch (err) { res.status(400).json({ message: err.message }); }
+});
 
 app.get('/api/health', (req, res) => {
   res.json({

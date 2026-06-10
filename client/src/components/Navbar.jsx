@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Menu, X, LogOut, LayoutDashboard, Store, MapPin, ClipboardList, UserCheck, Users, Package, ShoppingCart } from 'lucide-react';
+import { Menu, X, LogOut, LayoutDashboard, Store, MapPin, ClipboardList, UserCheck, Users, Package, ShoppingCart, CreditCard } from 'lucide-react';
 import Brand from './Brand';
 
 const Navbar = ({ user, onLogout }) => {
@@ -21,6 +21,7 @@ const Navbar = ({ user, onLogout }) => {
     { name: 'Workers', path: '/workers', icon: Users },
     { name: 'Products', path: '/products', icon: Package },
     { name: 'Orders', path: '/orders', icon: ShoppingCart },
+    { name: 'Payroll', path: '/payroll', icon: CreditCard },
     { name: 'Attendance', path: '/attendance', icon: UserCheck },
     { name: 'Reports', path: '/reports', icon: ClipboardList },
   ] : (workerRole === 'Delivery Staff' ? [

@@ -15,6 +15,7 @@ import WorkerManagement from './pages/WorkerManagement';
 import WorkerProfile from './pages/WorkerProfile';
 import ProductManagement from './pages/ProductManagement';
 import OrdersView from './pages/OrdersView';
+import PayrollDashboard from './pages/PayrollDashboard';
 
 function App() {
   const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')));
@@ -81,6 +82,7 @@ function App() {
             <Route path="/worker/:id" element={user?.role === 'owner' ? <WorkerProfile /> : <Navigate to="/" />} />
             <Route path="/products" element={user?.role === 'owner' ? <ProductManagement /> : <Navigate to="/" />} />
             <Route path="/orders" element={user?.role === 'owner' ? <OrdersView user={user} /> : <Navigate to="/" />} />
+            <Route path="/payroll" element={user?.role === 'owner' ? <PayrollDashboard /> : <Navigate to="/" />} />
 
             {/* Worker Routes */}
             <Route path="/worker-attendance" element={user && user.role !== 'owner' ? <WorkerAttendance user={user} /> : <Navigate to="/" />} />
