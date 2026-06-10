@@ -1,11 +1,12 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { Camera, RefreshCw, Check, X, Play } from 'lucide-react';
+import { Camera, RefreshCw, Check, X, Play, SwitchCamera } from 'lucide-react';
 
 const CameraCapture = ({ onCapture, label = "Proof Photo", required = false, facingMode = "environment" }) => {
   const [stream, setStream] = useState(null);
   const [preview, setPreview] = useState(null);
   const [error, setError] = useState(null);
   const [isCapturing, setIsCapturing] = useState(false);
+  const [activeFacingMode, setActiveFacingMode] = useState(facingMode);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
@@ -16,7 +17,7 @@ const CameraCapture = ({ onCapture, label = "Proof Photo", required = false, fac
       const videoConstraints = retryWithAny
         ? { width: { ideal: 1280 }, height: { ideal: 720 } }
         : {
-            facingMode: facingMode,
+            facingMode: activeFacingMode,
             width: { ideal: 1280 },
             height: { ideal: 720 }
           };
@@ -44,6 +45,38 @@ const CameraCapture = ({ onCapture, label = "Proof Photo", required = false, fac
       setStream(null);
     }
     setIsCapturing(false);
+  };
+
+  const toggleCamera = () => {
+    const nextMode = activeFacingMode === 'user' ? 'environment' : 'user';
+    setActiveFacingMode(nextMode);
+    stopCamera();
+    // Use a small delay to ensure stream is fully stopped before restarting
+    setTimeout(() => {
+      // Re-trigger start with nextMode
+      startCameraWithMode(nextMode);
+    }, 100);
+  };
+
+  const startCameraWithMode = async (mode) => {
+    setError(null);
+    setIsCapturing(true);
+    try {
+      const constraints = {
+        video: {
+          facingMode: mode,
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        }
+      };
+      const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+      setStream(mediaStream);
+      if (videoRef.current) videoRef.current.srcObject = mediaStream;
+    } catch (err) {
+      console.error("Camera switch error:", err);
+      // Fallback
+      startCamera(true);
+    }
   };
 
   const capturePhoto = () => {
@@ -131,7 +164,14 @@ const CameraCapture = ({ onCapture, label = "Proof Photo", required = false, fac
               <Camera size={28} />
             </button>
 
-            <div className="w-12" /> {/* Spacer */}
+            <button
+              type="button"
+              onClick={toggleCamera}
+              className="p-3 bg-slate-900/80 text-white rounded-full hover:bg-slate-800 transition-all border border-slate-700"
+              title="Switch Camera"
+            >
+              <SwitchCamera size={20} />
+            </button>
           </div>
         </div>
       )}

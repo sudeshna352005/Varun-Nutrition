@@ -54,6 +54,7 @@ const AttendanceView = () => {
             <thead className="bg-slate-800/50">
               <tr>
                 <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Worker</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Selfie</th>
                 <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Date</th>
                 <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Start Time</th>
                 <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">End Time</th>
@@ -82,6 +83,21 @@ const AttendanceView = () => {
                           ) : record.workerName}
                         </div>
                       </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                       {record.startPhoto ? (
+                         <a href={getImageUrl(record.startPhoto)} target="_blank" rel="noopener noreferrer">
+                           <img
+                             src={getImageUrl(record.startPhoto)}
+                             className="w-10 h-10 rounded-lg object-cover border border-slate-700 hover:border-green-500 transition-colors"
+                             alt="Selfie"
+                           />
+                         </a>
+                       ) : (
+                         <div className="w-10 h-10 bg-slate-800 rounded-lg flex items-center justify-center text-slate-600">
+                           <Camera size={16} />
+                         </div>
+                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-slate-400">{new Date(record.startTime).toLocaleDateString()}</div>
@@ -125,8 +141,19 @@ const AttendanceView = () => {
             <div key={record.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
               <div className="flex justify-between items-start mb-4">
                 <div className="flex items-center">
-                  <div className="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center mr-3 border border-slate-700">
-                    <User className="w-5 h-5 text-slate-400" />
+                  <div className="relative mr-3">
+                    <div className="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center border border-slate-700">
+                      <User className="w-5 h-5 text-slate-400" />
+                    </div>
+                    {record.startPhoto && (
+                      <a href={getImageUrl(record.startPhoto)} target="_blank" rel="noopener noreferrer" className="absolute -bottom-1 -right-1">
+                        <img
+                          src={getImageUrl(record.startPhoto)}
+                          className="w-6 h-6 rounded-full border-2 border-slate-900 object-cover"
+                          alt="Selfie"
+                        />
+                      </a>
+                    )}
                   </div>
                   <div>
                     <div className="text-white font-bold">

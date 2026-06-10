@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import api from '../api';
-import { Play, Square, Calendar, Clock, History, Camera } from 'lucide-react';
+import { Play, Square, Calendar, Clock, History, Camera, UserCheck } from 'lucide-react';
 import CameraCapture from '../components/CameraCapture';
 
 const WorkerAttendance = ({ user }) => {
