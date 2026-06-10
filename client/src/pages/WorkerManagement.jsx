@@ -302,7 +302,7 @@ const WorkerManagement = () => {
 
       {isModalOpen && (
         <div className="fixed inset-0 bg-zinc-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-10 w-full max-w-md shadow-2xl">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 md:p-10 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
             <h2 className="text-2xl font-bold mb-6 text-white">{editingWorker ? 'Edit Worker' : 'Add New Worker'}</h2>
             <form onSubmit={handleSubmit}>
               <div className="space-y-5">
@@ -381,6 +381,7 @@ const WorkerManagement = () => {
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Daily Salary (₹)</label>
                     <input
                       type="number"
+                      min="0"
                       className="block w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-green-500 outline-none transition-all"
                       value={formData.dailySalary}
                       onChange={(e) => setFormData({ ...formData, dailySalary: parseFloat(e.target.value) || 0 })}
@@ -390,6 +391,7 @@ const WorkerManagement = () => {
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Allowance (₹)</label>
                     <input
                       type="number"
+                      min="0"
                       className="block w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-green-500 outline-none transition-all"
                       value={formData.additionalAllowance}
                       onChange={(e) => setFormData({ ...formData, additionalAllowance: parseFloat(e.target.value) || 0 })}

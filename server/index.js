@@ -445,10 +445,17 @@ app.post('/api/workers', async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(req.body.password, salt);
     const worker = { ...req.body, _id: Date.now().toString(), id: Date.now().toString(), password: hashedPassword };
+    if (worker.dailySalary < 0 || worker.additionalAllowance < 0) {
+      return res.status(400).json({ message: 'Salary/Allowance cannot be negative' });
+    }
     mockDb.workers.push(worker);
     return res.status(201).json(worker);
   }
   try {
+    const { dailySalary, additionalAllowance } = req.body;
+    if (dailySalary < 0 || additionalAllowance < 0) {
+      return res.status(400).json({ message: 'Salary/Allowance cannot be negative' });
+    }
     const worker = new Worker(req.body);
     await worker.save();
     res.status(201).json(worker);
@@ -470,14 +477,26 @@ app.put('/api/workers/:id', async (req, res) => {
     return res.status(404).json({ message: 'Worker not found' });
   }
   try {
-    const { name, username, password, role, assignedRoutes } = req.body;
+    const { name, username, password, role, assignedRoutes, dailySalary, additionalAllowance } = req.body;
     const worker = await Worker.findById(req.params.id);
     if (!worker) return res.status(404).json({ message: 'Worker not found' });
+
     if (name) worker.name = name;
     if (username) worker.username = username.toLowerCase().trim();
     if (role) worker.role = role;
     if (assignedRoutes) worker.assignedRoutes = assignedRoutes;
     if (password && !password.startsWith('$2a$')) worker.password = password;
+
+    if (dailySalary !== undefined) {
+      if (dailySalary < 0) return res.status(400).json({ message: 'Daily salary cannot be negative' });
+      worker.dailySalary = dailySalary;
+    }
+
+    if (additionalAllowance !== undefined) {
+      if (additionalAllowance < 0) return res.status(400).json({ message: 'Allowance cannot be negative' });
+      worker.additionalAllowance = additionalAllowance;
+    }
+
     await worker.save();
     res.json(worker);
   } catch (err) { res.status(400).json({ message: err.message }); }
