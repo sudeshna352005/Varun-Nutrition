@@ -69,26 +69,35 @@ const ReportsView = () => {
     const events = [];
 
     attendanceArr.forEach(a => {
+      const worker = workers.find(w => w.name === a.workerName);
+      const workerRoute = worker?.assignedRoutes ? worker.assignedRoutes.join(', ') : 'Unknown';
+
       if (a.startTime && isInRange(a.startTime, dateRange)) {
-        events.push({ ...a, type: 'attendance-start', id: `${a.id || a._id}-start`, timestamp: a.startTime });
+        events.push({ ...a, type: 'attendance-start', id: `${a.id || a._id}-start`, timestamp: a.startTime, routeName: workerRoute });
       }
       if (a.endTime && isInRange(a.endTime, dateRange)) {
-        events.push({ ...a, type: 'attendance-end', id: `${a.id || a._id}-end`, timestamp: a.endTime });
+        events.push({ ...a, type: 'attendance-end', id: `${a.id || a._id}-end`, timestamp: a.endTime, routeName: workerRoute });
       }
     });
 
     visitsArr.forEach(v => {
       if (v.timestamp && isInRange(v.timestamp, dateRange)) {
-        events.push({ ...v, type: 'visit', id: v.id || v._id, timestamp: v.timestamp });
+        const shop = shopsArr.find(s => s.name === v.shopName);
+        const resolvedRoute = v.routeName || shop?.routeGroup || 'Unknown';
+        events.push({ ...v, type: 'visit', id: v.id || v._id, timestamp: v.timestamp, routeName: resolvedRoute });
       }
     });
 
     ordersArr.forEach(o => {
       if (o.timestamp && isInRange(o.timestamp, dateRange)) {
-        events.push({ ...o, type: 'order', id: o.id || o._id, timestamp: o.timestamp });
+        const shop = shopsArr.find(s => s.name === o.shopName);
+        const resolvedRoute = o.routeName || shop?.routeGroup || 'Unknown';
+        events.push({ ...o, type: 'order', id: o.id || o._id, timestamp: o.timestamp, routeName: resolvedRoute });
       }
       if (o.deliveryStatus === 'Delivered' && o.deliveredAt && isInRange(o.deliveredAt, dateRange)) {
-        events.push({ ...o, type: 'delivery', id: `${o.id || o._id}-delivered`, timestamp: o.deliveredAt });
+        const shop = shopsArr.find(s => s.name === o.shopName);
+        const resolvedRoute = o.routeName || shop?.routeGroup || 'Unknown';
+        events.push({ ...o, type: 'delivery', id: `${o.id || o._id}-delivered`, timestamp: o.deliveredAt, routeName: resolvedRoute });
       }
     });
 
@@ -395,9 +404,14 @@ const ReportsView = () => {
                       title = 'START WORK';
                       details = (
                         <div className="flex items-center justify-between gap-4">
-                          <p className="text-sm text-slate-400">
-                            Attendance marked by {workerLink ? <Link to={workerLink} className="font-bold text-white hover:text-green-500 transition-colors uppercase tracking-tight">{item.workerName}</Link> : <span className="font-bold text-white uppercase tracking-tight">{item.workerName}</span>}
-                          </p>
+                    <div>
+                      <p className="text-sm text-slate-400">
+                        Attendance marked by {workerLink ? <Link to={workerLink} className="font-bold text-white hover:text-green-500 transition-colors uppercase tracking-tight">{item.workerName}</Link> : <span className="font-bold text-white uppercase tracking-tight">{item.workerName}</span>}
+                      </p>
+                      <p className="text-[10px] text-slate-500 mt-1 font-bold uppercase tracking-widest">
+                        Assigned Routes: {item.routeName || 'Unknown'}
+                      </p>
+                    </div>
                           {item.photo && (
                             <button onClick={() => setSelectedPhoto(item)} className="w-12 h-12 rounded-lg overflow-hidden border border-slate-700 hover:border-green-500 transition-all shrink-0">
                               <img src={getImageUrl(item.photo)} className="w-full h-full object-cover" alt="Selfie" />
@@ -414,9 +428,14 @@ const ReportsView = () => {
                       colorClass = 'bg-green-500';
                       title = 'WORK COMPLETED';
                       details = (
-                        <p className="text-sm text-slate-400">
-                          {workerLink ? <Link to={workerLink} className="font-bold text-white hover:text-green-500 transition-colors uppercase tracking-tight">{item.workerName}</Link> : <span className="font-bold text-white uppercase tracking-tight">{item.workerName}</span>} finished for the day
-                        </p>
+                  <div>
+                    <p className="text-sm text-slate-400">
+                      {workerLink ? <Link to={workerLink} className="font-bold text-white hover:text-green-500 transition-colors uppercase tracking-tight">{item.workerName}</Link> : <span className="font-bold text-white uppercase tracking-tight">{item.workerName}</span>} finished for the day
+                    </p>
+                    <p className="text-[10px] text-slate-500 mt-1 font-bold uppercase tracking-widest">
+                      Assigned Routes: {item.routeName || 'Unknown'}
+                    </p>
+                  </div>
                       );
                       break;
                     }
@@ -471,7 +490,7 @@ const ReportsView = () => {
                         <div className="flex items-center justify-between gap-4">
                           <div>
                             <p className="text-sm text-slate-300 font-bold">Order placed at {item.shopName}</p>
-                            <p className="text-xs text-slate-500 mt-1 uppercase font-bold tracking-widest">{item.totalQuantity} items • by {workerLink ? <Link to={workerLink} className="text-slate-400 hover:text-green-500 transition-colors">{item.workerName}</Link> : item.workerName}</p>
+                      <p className="text-xs text-slate-500 mt-1 uppercase font-bold tracking-widest">Route: {item.routeName || 'Unknown'} • {item.totalQuantity} items • by {workerLink ? <Link to={workerLink} className="text-slate-400 hover:text-green-500 transition-colors">{item.workerName}</Link> : item.workerName}</p>
                           </div>
                           <div className="text-right">
                              <p className="text-xl font-black text-green-500">₹{(item.totalAmount || 0).toLocaleString()}</p>
@@ -489,7 +508,7 @@ const ReportsView = () => {
                       details = (
                         <div>
                           <p className="text-sm text-slate-300 font-bold">Order Delivered to {item.shopName}</p>
-                          <p className="text-xs text-slate-500 mt-1 uppercase font-bold tracking-widest">Status: {item.deliveryStatus} • by {workerLink ? <Link to={workerLink} className="text-slate-400 hover:text-green-500 transition-colors">{item.workerName}</Link> : item.workerName}</p>
+                    <p className="text-xs text-slate-500 mt-1 uppercase font-bold tracking-widest">Route: {item.routeName || 'Unknown'} • Status: {item.deliveryStatus} • by {workerLink ? <Link to={workerLink} className="text-slate-400 hover:text-green-500 transition-colors">{item.workerName}</Link> : item.workerName}</p>
                         </div>
                       );
                       break;
