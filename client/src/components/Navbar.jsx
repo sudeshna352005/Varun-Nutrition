@@ -16,6 +16,7 @@ const Navbar = ({ user, onLogout }) => {
 
   const navLinks = user?.role === 'owner' ? [
     { name: 'Dashboard', path: '/', icon: LayoutDashboard },
+    { name: 'Analytics', path: '/analytics', icon: BarChart2 },
     { name: 'Shops', path: '/shops', icon: Store },
     { name: 'Routes', path: '/routes', icon: MapPin },
     { name: 'Workers', path: '/workers', icon: Users },
