@@ -185,16 +185,31 @@ app.get('/api/payroll', async (req, res) => {
 });
 
 app.post('/api/payroll/calculate', async (req, res) => {
-  const { month } = req.body;
-  if (!month) return res.status(400).json({ message: 'Month is required (YYYY-MM)' });
+  const { month, customStartDate, customEndDate } = req.body;
+
+  let startDate, endDate, periodLabel;
+
+  if (customStartDate && customEndDate) {
+    startDate = new Date(customStartDate);
+    endDate = new Date(customEndDate);
+    endDate.setHours(23, 59, 59, 999);
+    periodLabel = `${customStartDate} to ${customEndDate}`;
+  } else if (month) {
+    startDate = new Date(`${month}-01T00:00:00Z`);
+    endDate = new Date(startDate);
+    endDate.setMonth(endDate.getMonth() + 1);
+    periodLabel = month;
+  } else {
+    return res.status(400).json({ message: 'Month or Custom Date Range is required' });
+  }
 
   if (useMock) {
     // Basic mock calculation
     const payrolls = mockDb.workers.map(w => ({
-      id: `pr-${w.id}-${month}`,
+      id: `pr-${w.id}-${periodLabel}`,
       workerId: w.id,
       workerName: w.name,
-      month,
+      month: periodLabel,
       presentDays: 20,
       dailySalary: w.dailySalary || 700,
       additionalAllowance: w.additionalAllowance || 100,
@@ -211,27 +226,26 @@ app.post('/api/payroll/calculate', async (req, res) => {
 
   try {
     const workers = await Worker.find();
-    const startDate = new Date(`${month}-01T00:00:00Z`);
-    const endDate = new Date(startDate);
-    endDate.setMonth(endDate.getMonth() + 1);
-
     const payrollRecords = [];
 
     for (const worker of workers) {
       const attendance = await Attendance.find({
         workerName: worker.name,
         startTime: { $gte: startDate, $lt: endDate },
-        status: 'completed' // Only count completed shifts as present days
+        status: 'completed'
       });
 
-      const presentDays = attendance.length;
+      // Implement UNIQUE attendance dates only
+      const uniqueDates = new Set(attendance.map(a => new Date(a.startTime).toDateString()));
+      const presentDays = uniqueDates.size;
+
       const dailySalary = worker.dailySalary || 0;
       const additionalAllowance = worker.additionalAllowance || 0;
 
       const baseSalary = presentDays * dailySalary;
       const additionalAmount = presentDays * additionalAllowance;
 
-      let payroll = await Payroll.findOne({ workerId: worker._id, month });
+      let payroll = await Payroll.findOne({ workerId: worker._id, month: periodLabel });
 
       if (payroll) {
         payroll.presentDays = presentDays;
@@ -244,7 +258,7 @@ app.post('/api/payroll/calculate', async (req, res) => {
         payroll = new Payroll({
           workerId: worker._id,
           workerName: worker.name,
-          month,
+          month: periodLabel,
           presentDays,
           dailySalary,
           additionalAllowance,
@@ -514,8 +528,29 @@ app.delete('/api/workers/:id', async (req, res) => {
 });
 
 app.get('/api/attendance', async (req, res) => {
-  if (useMock) return res.json(mockDb.attendance);
-  try { res.json(await Attendance.find()); } catch (err) { res.status(500).json({ message: err.message }); }
+  if (useMock) {
+    const { workerName, startDate, endDate, status } = req.query;
+    let result = [...mockDb.attendance];
+    if (workerName) result = result.filter(a => a.workerName === workerName);
+    if (status) result = result.filter(a => a.status === status);
+    if (startDate && endDate) {
+      const s = new Date(startDate);
+      const e = new Date(endDate);
+      e.setHours(23, 59, 59, 999);
+      result = result.filter(a => new Date(a.startTime) >= s && new Date(a.startTime) <= e);
+    }
+    return res.json(result);
+  }
+  try {
+    const { workerName, startDate, endDate, status } = req.query;
+    let query = {};
+    if (workerName) query.workerName = workerName;
+    if (status) query.status = status;
+    if (startDate && endDate) {
+      query.startTime = { $gte: new Date(startDate), $lte: new Date(new Date(endDate).setHours(23, 59, 59, 999)) };
+    }
+    res.json(await Attendance.find(query).sort({ startTime: -1 }));
+  } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
 app.post('/api/attendance/start', upload.single('photo'), async (req, res) => {
@@ -549,12 +584,27 @@ app.post('/api/attendance/end', async (req, res) => {
 });
 
 app.get('/api/visits', async (req, res) => {
-  if (useMock) return res.json(mockDb.visits);
+  if (useMock) {
+    const { workerName, shopName, startDate, endDate } = req.query;
+    let result = [...mockDb.visits];
+    if (workerName) result = result.filter(v => v.workerName === workerName);
+    if (shopName) result = result.filter(v => v.shopName === shopName);
+    if (startDate && endDate) {
+      const s = new Date(startDate);
+      const e = new Date(endDate);
+      e.setHours(23, 59, 59, 999);
+      result = result.filter(v => new Date(v.timestamp) >= s && new Date(v.timestamp) <= e);
+    }
+    return res.json(result);
+  }
   try {
-    const { workerName, shopName } = req.query;
+    const { workerName, shopName, startDate, endDate } = req.query;
     let query = {};
     if (workerName) query.workerName = workerName;
     if (shopName) query.shopName = shopName;
+    if (startDate && endDate) {
+      query.timestamp = { $gte: new Date(startDate), $lte: new Date(new Date(endDate).setHours(23, 59, 59, 999)) };
+    }
     res.json(await Visit.find(query).sort({ timestamp: -1 }));
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
@@ -637,19 +687,30 @@ app.delete('/api/products/:id', async (req, res) => {
 
 app.get('/api/orders', async (req, res) => {
   if (useMock) {
-    const { workerId, shopName, deliveryStaffId } = req.query;
+    const { workerId, workerName, shopName, deliveryStaffId, startDate, endDate } = req.query;
     let result = [...mockDb.orders];
     if (workerId) result = result.filter(o => o.workerId === workerId);
+    if (workerName) result = result.filter(o => o.workerName === workerName);
     if (shopName) result = result.filter(o => o.shopName === shopName);
     if (deliveryStaffId) result = result.filter(o => o.assignedDeliveryStaff?.id === deliveryStaffId);
+    if (startDate && endDate) {
+      const s = new Date(startDate);
+      const e = new Date(endDate);
+      e.setHours(23, 59, 59, 999);
+      result = result.filter(o => new Date(o.timestamp) >= s && new Date(o.timestamp) <= e);
+    }
     return res.json(result);
   }
   try {
-    const { workerId, shopName, deliveryStaffId } = req.query;
+    const { workerId, workerName, shopName, deliveryStaffId, startDate, endDate } = req.query;
     let query = {};
     if (workerId) query.workerId = workerId;
+    if (workerName) query.workerName = workerName;
     if (shopName) query.shopName = shopName;
     if (deliveryStaffId) query['assignedDeliveryStaff.id'] = deliveryStaffId;
+    if (startDate && endDate) {
+      query.timestamp = { $gte: new Date(startDate), $lte: new Date(new Date(endDate).setHours(23, 59, 59, 999)) };
+    }
     res.json(await Order.find(query).sort({ timestamp: -1 }));
   } catch (err) { res.status(500).json({ message: err.message }); }
 });

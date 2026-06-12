@@ -1,7 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import api, { getImageUrl } from '../api';
-import { Store, Users, MapPin, ClipboardCheck, ShoppingBag, IndianRupee, Clock, ArrowRight, Briefcase, Camera, Search, Filter, Download, AlertCircle, CheckCircle, Play, Package } from 'lucide-react';
+import {
+  Store, Users, MapPin, ClipboardCheck, ShoppingBag,
+  IndianRupee, Clock, ArrowRight, Briefcase, Camera,
+  Search, Filter, Download, AlertCircle, CheckCircle,
+  Play, Package, X, Eye
+} from 'lucide-react';
 import DashboardAnalytics from '../components/DashboardAnalytics';
 import DateFilter from '../components/DateFilter';
 import Skeleton from '../components/Skeleton';
@@ -21,6 +26,7 @@ const OwnerDashboard = () => {
     routes: []
   });
   const [loading, setLoading] = useState(true);
+  const [selectedPhoto, setSelectedPhoto] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -116,7 +122,7 @@ const OwnerDashboard = () => {
       .slice(0, 5);
   }, [rawData.shops, rawData.visits]);
 
-  const activityTimeline = useMemo(() => {
+  const groupedActivity = useMemo(() => {
     const attendance = Array.isArray(filteredData.attendance) ? filteredData.attendance : [];
     const visits = Array.isArray(filteredData.visits) ? filteredData.visits : [];
     const orders = Array.isArray(filteredData.orders) ? filteredData.orders : [];
@@ -147,7 +153,30 @@ const OwnerDashboard = () => {
       }
     });
 
-    return events.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    const typeOrder = {
+      'attendance-start': 1,
+      'visit': 2,
+      'order': 3,
+      'delivery': 4,
+      'attendance-end': 5
+    };
+
+    const sortedEvents = events.sort((a, b) => {
+      const dateA = new Date(a.timestamp);
+      const dateB = new Date(b.timestamp);
+      if (dateA.toDateString() !== dateB.toDateString()) {
+        return dateA - dateB;
+      }
+      return typeOrder[a.type] - typeOrder[b.type];
+    });
+
+    const groups = {};
+    sortedEvents.forEach(e => {
+      const date = new Date(e.timestamp).toDateString();
+      if (!groups[date]) groups[date] = [];
+      groups[date].push(e);
+    });
+    return groups;
   }, [filteredData]);
 
   const cards = [
@@ -221,7 +250,7 @@ const OwnerDashboard = () => {
                   <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">{card.name}</p>
                   <p className="text-3xl font-bold text-white">{card.value}</p>
                 </div>
-                <div className={`${card.color.split(' ')[0]} p-4 rounded-xl ${card.color.split(' ')[1]}`}>
+                <div className="${card.color.split(' ')[0]} p-4 rounded-xl ${card.color.split(' ')[1]}">
                   <card.icon className="w-6 h-6" />
                 </div>
               </div>
@@ -263,117 +292,137 @@ const OwnerDashboard = () => {
               <Clock className="text-green-500" /> Recent Activity Timeline
             </h2>
 
-            <div className="relative border-l-2 border-slate-800 ml-4 space-y-12 max-h-[800px] overflow-y-auto pr-4 custom-scrollbar py-4">
-              {(Array.isArray(activityTimeline) ? activityTimeline : []).map((item) => {
-                let icon = <Clock size={16} />;
-                let colorClass = 'bg-slate-500';
-                let title = '';
-                let details = null;
-
-                const workerId = item.workerId || item.id || item._id; // Fallback if workerId not direct
-                // Note: workers array is available in rawData.workers
-                const workerObj = rawData.workers.find(w => w.name === item.workerName);
-                const workerLink = workerObj ? `/worker/${workerObj.id || workerObj._id}` : null;
-
-                switch(item.type) {
-                  case 'attendance-start':
-                    icon = <Play size={16} />;
-                    colorClass = 'bg-purple-500';
-                    title = 'START WORK';
-                    details = (
-                      <p className="text-sm text-slate-400">
-                        Attendance marked by {workerLink ? <Link to={workerLink} className="font-bold text-white hover:text-green-500 transition-colors">{item.workerName}</Link> : <span className="font-bold text-white">{item.workerName}</span>}
-                      </p>
-                    );
-                    break;
-                  case 'attendance-end':
-                    icon = <CheckCircle size={16} />;
-                    colorClass = 'bg-green-500';
-                    title = 'WORK COMPLETED';
-                    details = (
-                      <p className="text-sm text-slate-400">
-                        {workerLink ? <Link to={workerLink} className="font-bold text-white hover:text-green-500 transition-colors">{item.workerName}</Link> : <span className="font-bold text-white">{item.workerName}</span>} finished for the day
-                      </p>
-                    );
-                    break;
-                  case 'visit':
-                    icon = <Store size={16} />;
-                    colorClass = 'bg-blue-500';
-                    title = 'SHOP VISITED';
-                    details = (
-                      <div className="space-y-3">
-                        <p className="text-sm text-slate-300 font-bold flex items-center gap-2">
-                          <MapPin size={14} className="text-green-500" /> {item.shopName}
-                        </p>
-                        <p className="text-xs text-slate-500 uppercase font-bold tracking-wider">
-                          Visited by {workerLink ? <Link to={workerLink} className="text-slate-300 hover:text-green-500 transition-colors underline underline-offset-4 decoration-slate-800">{item.workerName}</Link> : item.workerName}
-                        </p>
-                        {item.photo && (
-                          <div className="w-24 h-24 rounded-xl overflow-hidden border border-slate-700 shadow-lg">
-                             <img src={getImageUrl(item.photo)} alt="Visit" className="w-full h-full object-cover" />
-                          </div>
-                        )}
-                      </div>
-                    );
-                    break;
-                  case 'order':
-                    icon = <ShoppingBag size={16} />;
-                    colorClass = 'bg-orange-500';
-                    title = 'ORDER CREATED';
-                    details = (
-                      <div className="flex items-center justify-between gap-4">
-                        <div>
-                          <p className="text-sm text-slate-300">Order placed at <span className="font-bold text-white">{item.shopName}</span></p>
-                          <p className="text-xs text-slate-500 mt-1">
-                            {item.totalQuantity} items • by {workerLink ? <Link to={workerLink} className="text-slate-400 hover:text-green-500 transition-colors">{item.workerName}</Link> : item.workerName}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                           <p className="text-lg font-black text-green-500">₹{(item.totalAmount || 0).toLocaleString()}</p>
-                        </div>
-                      </div>
-                    );
-                    break;
-                  case 'delivery':
-                    icon = <Package size={16} />;
-                    colorClass = 'bg-green-600';
-                    title = 'DELIVERY COMPLETED';
-                    details = (
-                      <div>
-                        <p className="text-sm text-slate-300">Delivered to <span className="font-bold text-white">{item.shopName}</span></p>
-                        <p className="text-xs text-slate-500 mt-1">
-                          Status marked as Delivered by {workerLink ? <Link to={workerLink} className="text-slate-400 hover:text-green-500 transition-colors">{item.workerName}</Link> : item.workerName}
-                        </p>
-                      </div>
-                    );
-                    break;
-                }
-
-                return (
-                  <div key={item.id} className="relative pl-10 animate-in fade-in slide-in-from-left-4 duration-500">
-                    <div className={`absolute -left-[9px] top-0 w-4 h-4 rounded-full border-2 border-zinc-950 shadow-xl ${colorClass}`} />
-
-                    <div className="flex flex-col md:flex-row md:items-center justify-between mb-3 gap-2">
-                       <h4 className={`text-xs font-black tracking-widest ${colorClass.replace('bg-', 'text-')} flex items-center gap-2`}>
-                         {icon} {title}
-                       </h4>
-                       <span className="text-[10px] font-bold text-slate-500 bg-slate-900 border border-slate-800 px-2 py-1 rounded-lg">
-                         {new Date(item.timestamp).toLocaleString([], { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' })}
-                       </span>
-                    </div>
-
-                    <div className="bg-slate-900/60 p-5 rounded-2xl border border-slate-800 hover:border-slate-700 transition-all shadow-lg backdrop-blur-sm group">
-                      {details}
-                    </div>
-                  </div>
-                );
-              })}
-              {activityTimeline.length === 0 && (
+            <div className="space-y-12 max-h-[800px] overflow-y-auto pr-4 custom-scrollbar py-4">
+              {Object.keys(groupedActivity).length === 0 && (
                 <div className="text-center py-20">
                   <Clock className="w-12 h-12 text-slate-800 mx-auto mb-4" />
                   <p className="text-slate-500 italic">No activity found for the selected period.</p>
                 </div>
               )}
+              {Object.keys(groupedActivity).map(date => (
+                <div key={date} className="space-y-6">
+                  <div className="flex items-center gap-4">
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-800/50 px-3 py-1 rounded-full border border-slate-800">
+                      {new Date(date).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })}
+                    </span>
+                    <div className="h-px flex-1 bg-slate-800"></div>
+                  </div>
+
+                  <div className="relative border-l-2 border-slate-800 ml-4 space-y-8 pb-4">
+                    {groupedActivity[date].map((item) => {
+                      let icon = <Clock size={16} />;
+                      let colorClass = 'bg-slate-500';
+                      let title = '';
+                      let details = null;
+
+                      const workerObj = rawData.workers.find(w => w.name === item.workerName);
+                      const workerLink = workerObj ? `/worker/${workerObj.id || workerObj._id}` : null;
+
+                      switch(item.type) {
+                        case 'attendance-start':
+                          icon = <Play size={16} />;
+                          colorClass = 'bg-purple-500';
+                          title = 'START WORK';
+                          details = (
+                            <div className="flex items-center justify-between gap-4">
+                               <p className="text-sm text-slate-400">
+                                 Attendance marked by {workerLink ? <Link to={workerLink} className="font-bold text-white hover:text-green-500 transition-colors">{item.workerName}</Link> : <span className="font-bold text-white">{item.workerName}</span>}
+                               </p>
+                               {item.photo && (
+                                 <button onClick={() => setSelectedPhoto(item)} className="w-10 h-10 rounded-lg overflow-hidden border border-slate-700 hover:border-green-500 transition-all shrink-0">
+                                   <img src={getImageUrl(item.photo)} className="w-full h-full object-cover" alt="Selfie" />
+                                 </button>
+                               )}
+                            </div>
+                          );
+                          break;
+                        case 'attendance-end':
+                          icon = <CheckCircle size={16} />;
+                          colorClass = 'bg-green-500';
+                          title = 'WORK COMPLETED';
+                          details = (
+                            <p className="text-sm text-slate-400">
+                              {workerLink ? <Link to={workerLink} className="font-bold text-white hover:text-green-500 transition-colors">{item.workerName}</Link> : <span className="font-bold text-white">{item.workerName}</span>} finished for the day
+                            </p>
+                          );
+                          break;
+                        case 'visit':
+                          icon = <Store size={16} />;
+                          colorClass = 'bg-blue-500';
+                          title = 'SHOP VISITED';
+                          details = (
+                            <div className="space-y-3">
+                              <p className="text-sm text-slate-300 font-bold flex items-center gap-2">
+                                <MapPin size={14} className="text-green-500" /> {item.shopName}
+                              </p>
+                              <div className="flex items-center justify-between gap-4">
+                                <p className="text-xs text-slate-500 uppercase font-bold tracking-wider">
+                                  Visited by {workerLink ? <Link to={workerLink} className="text-slate-300 hover:text-green-500 transition-colors underline underline-offset-4 decoration-slate-800">{item.workerName}</Link> : item.workerName}
+                                </p>
+                                {item.photo && (
+                                  <button onClick={() => setSelectedPhoto(item)} className="w-12 h-12 rounded-lg overflow-hidden border border-slate-700 hover:border-green-500 transition-all shrink-0">
+                                     <img src={getImageUrl(item.photo)} alt="Visit" className="w-full h-full object-cover" />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          );
+                          break;
+                        case 'order':
+                          icon = <ShoppingBag size={16} />;
+                          colorClass = 'bg-orange-500';
+                          title = 'ORDER CREATED';
+                          details = (
+                            <div className="flex items-center justify-between gap-4">
+                              <div>
+                                <p className="text-sm text-slate-300">Order placed at <span className="font-bold text-white">{item.shopName}</span></p>
+                                <p className="text-xs text-slate-500 mt-1">
+                                  {item.totalQuantity} items • by {workerLink ? <Link to={workerLink} className="text-slate-400 hover:text-green-500 transition-colors">{item.workerName}</Link> : item.workerName}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                 <p className="text-lg font-black text-green-500">₹{(item.totalAmount || 0).toLocaleString()}</p>
+                              </div>
+                            </div>
+                          );
+                          break;
+                        case 'delivery':
+                          icon = <Package size={16} />;
+                          colorClass = 'bg-green-600';
+                          title = 'DELIVERY COMPLETED';
+                          details = (
+                            <div>
+                              <p className="text-sm text-slate-300">Delivered to <span className="font-bold text-white">{item.shopName}</span></p>
+                              <p className="text-xs text-slate-500 mt-1">
+                                Status marked as Delivered by {workerLink ? <Link to={workerLink} className="text-slate-400 hover:text-green-500 transition-colors">{item.workerName}</Link> : item.workerName}
+                              </p>
+                            </div>
+                          );
+                          break;
+                      }
+
+                      return (
+                        <div key={item.id} className="relative pl-10">
+                          <div className={`absolute -left-[9px] top-0 w-4 h-4 rounded-full border-2 border-zinc-950 shadow-xl ${colorClass}`} />
+
+                          <div className="flex flex-col md:flex-row md:items-center justify-between mb-3 gap-2">
+                             <h4 className={`text-[10px] font-black tracking-widest ${colorClass.replace('bg-', 'text-')} flex items-center gap-2`}>
+                               {icon} {title}
+                             </h4>
+                             <span className="text-[10px] font-bold text-slate-600">
+                               {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                             </span>
+                          </div>
+
+                          <div className="bg-slate-900/40 p-4 rounded-2xl border border-slate-800 hover:border-slate-700 transition-all shadow-xl backdrop-blur-sm">
+                            {details}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -402,6 +451,53 @@ const OwnerDashboard = () => {
         </div>
       </div>
     </div>
+    {/* Photo Lightbox Modal */}
+    {selectedPhoto && (
+        <div className="fixed inset-0 bg-zinc-950/95 backdrop-blur-md flex items-center justify-center p-4 z-[100]">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="p-6 flex justify-between items-center border-b border-slate-800">
+              <div>
+                <h3 className="text-xl font-bold text-white">{selectedPhoto.type === 'visit' ? selectedPhoto.shopName : selectedPhoto.workerName}</h3>
+                <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">
+                  {new Date(selectedPhoto.timestamp).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                </p>
+              </div>
+              <button
+                onClick={() => setSelectedPhoto(null)}
+                className="p-2 bg-slate-800 hover:bg-red-500/20 text-slate-400 hover:text-red-500 rounded-full transition-all"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="relative aspect-square md:aspect-[4/5] bg-black">
+               {selectedPhoto.photo ? (
+                 <img
+                  src={getImageUrl(selectedPhoto.photo)}
+                  className="w-full h-full object-contain"
+                  alt="Activity Proof"
+                 />
+               ) : (
+                 <div className="w-full h-full flex flex-col items-center justify-center text-slate-600 gap-4">
+                    <Camera size={64} strokeWidth={1} />
+                    <p className="font-bold italic">Photo missing for this activity.</p>
+                 </div>
+               )}
+            </div>
+
+            <div className="p-6 bg-slate-800/50 flex justify-between items-center">
+                <div>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Activity Type</p>
+                  <p className="text-lg font-black text-white">{selectedPhoto.type.replace('-', ' ').toUpperCase()}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Time Captured</p>
+                  <p className="text-lg font-black text-green-500">{new Date(selectedPhoto.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

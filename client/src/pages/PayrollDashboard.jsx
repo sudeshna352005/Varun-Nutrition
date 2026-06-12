@@ -17,6 +17,11 @@ const PayrollDashboard = () => {
   const [workers, setWorkers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [month, setMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
+  const [dateRange, setDateRange] = useState({
+    start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
+    end: new Date().toISOString().split('T')[0]
+  });
+  const [filterMode, setFilterMode] = useState('month'); // 'month' or 'custom'
   const [searchTerm, setSearchTerm] = useState('');
   const [editingPayroll, setEditingPayroll] = useState(null);
   const [showPayslip, setShowPayslip] = useState(null);
@@ -24,7 +29,7 @@ const PayrollDashboard = () => {
   useEffect(() => {
     fetchWorkers();
     fetchPayroll();
-  }, [month]);
+  }, [month, dateRange, filterMode]);
 
   const fetchWorkers = async () => {
     try {
@@ -36,7 +41,13 @@ const PayrollDashboard = () => {
   const fetchPayroll = async () => {
     setLoading(true);
     try {
-      const res = await api.get(`/api/payroll?month=${month}`);
+      let url = '/api/payroll';
+      if (filterMode === 'month') {
+        url += `?month=${month}`;
+      } else {
+        url += `?startDate=${dateRange.start}&endDate=${dateRange.end}`;
+      }
+      const res = await api.get(url);
       setPayroll(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error(err);
@@ -48,7 +59,10 @@ const PayrollDashboard = () => {
   const handleCalculate = async () => {
     try {
       setLoading(true);
-      await api.post('/api/payroll/calculate', { month });
+      const payload = filterMode === 'month'
+        ? { month }
+        : { customStartDate: dateRange.start, customEndDate: dateRange.end };
+      await api.post('/api/payroll/calculate', payload);
       fetchPayroll();
     } catch (err) {
       console.error(err);
@@ -82,9 +96,10 @@ const PayrollDashboard = () => {
   }, [filteredPayroll]);
 
   const exportExcel = () => {
+    const label = filterMode === 'month' ? month : `${dateRange.start}_to_${dateRange.end}`;
     const data = filteredPayroll.map(p => ({
       'Worker Name': p.workerName,
-      'Month': p.month,
+      'Payroll Period': p.month,
       'Present Days': p.presentDays,
       'Daily Salary': p.dailySalary,
       'Allowance': p.additionalAllowance,
@@ -98,16 +113,18 @@ const PayrollDashboard = () => {
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Payroll");
-    XLSX.writeFile(wb, `Payroll_${month}.xlsx`);
+    XLSX.writeFile(wb, `Payroll_${label}.xlsx`);
   };
 
   const exportPDF = () => {
+    const label = filterMode === 'month' ? month : `${dateRange.start} to ${dateRange.end}`;
     const doc = new jsPDF();
-    doc.text(`Payroll Report - ${month}`, 14, 15);
+    doc.text(`Payroll Report - ${label}`, 14, 15);
 
-    const tableColumn = ["Worker", "Days", "Daily", "Allowance", "Bonus", "Ded.", "Net Salary"];
+    const tableColumn = ["Worker", "Period", "Days", "Daily", "Allowance", "Bonus", "Ded.", "Net Salary"];
     const tableRows = filteredPayroll.map(p => [
       p.workerName,
+      p.month,
       p.presentDays,
       p.dailySalary,
       p.additionalAllowance,
@@ -122,6 +139,41 @@ const PayrollDashboard = () => {
 
   if (loading && payroll.length === 0) return <div className="text-center py-20 text-slate-500 italic font-medium">Loading Payroll Data...</div>;
 
+  const setQuickFilter = (type) => {
+    const now = new Date();
+    let start, end;
+    setFilterMode('custom');
+
+    switch(type) {
+      case 'thisMonth':
+        start = new Date(now.getFullYear(), now.getMonth(), 1);
+        end = now;
+        break;
+      case 'lastMonth':
+        start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        end = new Date(now.getFullYear(), now.getMonth(), 0);
+        break;
+      case 'firstHalf':
+        start = new Date(now.getFullYear(), now.getMonth(), 1);
+        end = new Date(now.getFullYear(), now.getMonth(), 15);
+        break;
+      case 'secondHalf':
+        start = new Date(now.getFullYear(), now.getMonth(), 16);
+        end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        break;
+      case 'last7':
+        start = new Date();
+        start.setDate(now.getDate() - 7);
+        end = now;
+        break;
+    }
+
+    setDateRange({
+      start: start.toISOString().split('T')[0],
+      end: end.toISOString().split('T')[0]
+    });
+  };
+
   return (
     <div className="space-y-8 pb-20">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
@@ -130,12 +182,46 @@ const PayrollDashboard = () => {
         </h1>
 
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-          <input
-            type="month"
-            className="bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-sm text-white focus:ring-2 focus:ring-green-500 outline-none"
-            value={month}
-            onChange={(e) => setMonth(e.target.value)}
-          />
+          <div className="flex bg-slate-900 border border-slate-800 rounded-xl p-1">
+            <button
+              onClick={() => setFilterMode('month')}
+              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${filterMode === 'month' ? 'bg-green-600 text-zinc-900' : 'text-slate-500 hover:text-white'}`}
+            >
+              Month
+            </button>
+            <button
+              onClick={() => setFilterMode('custom')}
+              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${filterMode === 'custom' ? 'bg-green-600 text-zinc-900' : 'text-slate-500 hover:text-white'}`}
+            >
+              Custom Range
+            </button>
+          </div>
+
+          {filterMode === 'month' ? (
+            <input
+              type="month"
+              className="bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-sm text-white focus:ring-2 focus:ring-green-500 outline-none"
+              value={month}
+              onChange={(e) => setMonth(e.target.value)}
+            />
+          ) : (
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                className="bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-sm text-white focus:ring-2 focus:ring-green-500 outline-none"
+                value={dateRange.start}
+                onChange={(e) => setDateRange({...dateRange, start: e.target.value})}
+              />
+              <span className="text-slate-500">to</span>
+              <input
+                type="date"
+                className="bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-sm text-white focus:ring-2 focus:ring-green-500 outline-none"
+                value={dateRange.end}
+                onChange={(e) => setDateRange({...dateRange, end: e.target.value})}
+              />
+            </div>
+          )}
+
           <button
             onClick={handleCalculate}
             className="bg-green-600 text-zinc-900 px-6 py-2 rounded-xl font-bold hover:bg-green-500 transition-all flex items-center gap-2 shadow-lg shadow-green-600/20"
@@ -143,6 +229,25 @@ const PayrollDashboard = () => {
             <TrendingUp size={18} /> Recalculate
           </button>
         </div>
+      </div>
+
+      {/* Quick Filters */}
+      <div className="flex flex-wrap gap-2">
+         {[
+           { label: 'This Month', type: 'thisMonth' },
+           { label: 'Last Month', type: 'lastMonth' },
+           { label: '1st - 15th', type: 'firstHalf' },
+           { label: '16th - End', type: 'secondHalf' },
+           { label: 'Last 7 Days', type: 'last7' }
+         ].map(f => (
+           <button
+            key={f.type}
+            onClick={() => setQuickFilter(f.type)}
+            className="px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-[10px] font-bold text-slate-400 hover:text-green-500 hover:border-green-500/50 transition-all uppercase tracking-widest"
+           >
+             {f.label}
+           </button>
+         ))}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -207,6 +312,7 @@ const PayrollDashboard = () => {
                   </td>
                   <td className="px-6 py-4 text-center">
                     <p className="text-xs text-white font-medium">₹{p.dailySalary} + ₹{p.additionalAllowance}</p>
+                    <p className="text-[10px] text-slate-500 font-bold mt-0.5">₹{p.dailySalary + p.additionalAllowance} Total</p>
                   </td>
                   <td className="px-6 py-4 text-right text-blue-400 font-bold">₹{p.bonus || 0}</td>
                   <td className="px-6 py-4 text-right text-red-400 font-bold">₹{p.deductions || 0}</td>
