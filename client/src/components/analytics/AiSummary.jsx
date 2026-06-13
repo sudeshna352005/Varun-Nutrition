@@ -1,53 +1,77 @@
 import React, { useState, useMemo } from 'react';
 import { Zap, Brain, Sparkles, ChevronRight, BarChart, TrendingUp, User, MapPin } from 'lucide-react';
 
-const AiSummary = ({ data }) => {
+const AiSummary = ({ data, period }) => {
   const [isGenerating, setIsWorking] = useState(false);
   const [summary, setSummary] = useState(null);
-  const [period, setPeriod] = useState('weekly');
+
+  React.useEffect(() => {
+    generateInsights();
+  }, [period, data]);
 
   const generateInsights = () => {
+    if (!data) return;
     setIsWorking(true);
+    setSummary(null);
 
-    // Simulate AI delay
     setTimeout(() => {
-      const { visits, orders, workers, routes, shops } = data;
+      try {
+        const {
+          visits: filteredVisits = [],
+          orders: filteredOrders = [],
+          shops: allShops = []
+        } = data;
 
-      const totalSales = orders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+        const conversionRate = filteredVisits.length > 0
+          ? Math.round((filteredOrders.length / filteredVisits.length) * 100)
+          : 0;
 
-      // Best performing worker logic
-      const workerStats = {};
-      orders.forEach(o => {
-        workerStats[o.workerName] = (workerStats[o.workerName] || 0) + (o.totalAmount || 0);
-      });
-      const bestWorkerName = Object.keys(workerStats).sort((a, b) => workerStats[b] - workerStats[a])[0] || 'N/A';
+        const visitedShopsSet = new Set(filteredVisits.map(v => v.shopName));
+        const unvisitedShopsCount = allShops.length - visitedShopsSet.size;
 
-      // Route insights
-      const routeStats = {};
-      orders.forEach(o => {
-        routeStats[o.routeName] = (routeStats[o.routeName] || 0) + (o.totalAmount || 0);
-      });
-      const mostProductiveRoute = Object.keys(routeStats).sort((a, b) => routeStats[b] - routeStats[a])[0] || 'N/A';
+        const workerStats = {};
+        filteredOrders.forEach(o => {
+          workerStats[o.workerName] = (workerStats[o.workerName] || 0) + (o.totalAmount || 0);
+        });
+        const bestWorkerName = Object.keys(workerStats).sort((a, b) => workerStats[b] - workerStats[a])[0] || 'N/A';
 
-      const insights = {
-        title: `${period.toUpperCase()} PERFORMANCE INSIGHTS`,
-        timestamp: new Date().toLocaleString(),
-        metrics: [
-          { label: 'Network Reach', value: `${visits.length} Visits`, detail: `Across ${new Set(visits.map(v => v.shopName)).size} unique shops` },
-          { label: 'Revenue Generated', value: `₹${totalSales.toLocaleString()}`, detail: `${orders.length} orders recorded` },
-          { label: 'Force Efficiency', value: bestWorkerName, detail: `Top grossing sales worker this ${period}`, icon: User },
-          { label: 'Optimal Corridor', value: mostProductiveRoute, detail: `Highest order volume recorded here`, icon: MapPin }
-        ],
-        observation: `Business activity is ${totalSales > 10000 ? 'trending upwards' : 'stable'}. The conversion rate from visit to order is approximately ${visits.length > 0 ? Math.round((orders.length / visits.length) * 100) : 0}%.`,
-        recommendations: [
-          `Prioritize follow-ups for ${shops.length - new Set(visits.map(v => v.shopName)).size} shops that were not visited this period.`,
-          `Analyze ${bestWorkerName}'s route strategy to replicate successful patterns across the team.`,
-          `Review low-volume shops in ${mostProductiveRoute} to maximize existing route efficiency.`
-        ]
-      };
+        const routeStats = {};
+        filteredOrders.forEach(o => {
+          routeStats[o.routeName] = (routeStats[o.routeName] || 0) + (o.totalAmount || 0);
+        });
+        const mostProductiveRoute = Object.keys(routeStats).sort((a, b) => routeStats[b] - routeStats[a])[0] || 'N/A';
 
-      setSummary(insights);
-      setIsWorking(false);
+        const trend = totalSales > (period === 'daily' ? 1000 : period === 'weekly' ? 5000 : 20000) ? 'trending upwards' : 'stable';
+
+        const insights = {
+          title: `${period.toUpperCase()} PERFORMANCE INSIGHTS`,
+          timestamp: new Date().toLocaleString(),
+          metrics: [
+            { label: 'Network Reach', value: `${filteredVisits.length} Visits`, detail: `Across ${visitedShopsSet.size} unique shops` },
+            { label: 'Revenue Generated', value: `₹${totalSales.toLocaleString()}`, detail: `${filteredOrders.length} orders recorded` },
+            { label: 'Force Efficiency', value: bestWorkerName, detail: `Top grossing sales worker this ${period}`, icon: User },
+            { label: 'Optimal Corridor', value: mostProductiveRoute, detail: `Highest order volume recorded here`, icon: MapPin }
+          ],
+          observation: `For the ${period} period, business activity is ${trend}. Your visit-to-order conversion rate is ${conversionRate}%, with ${filteredVisits.length} total visits logged.`,
+          recommendations: [
+            unvisitedShopsCount > 0
+              ? `Prioritize follow-ups for ${unvisitedShopsCount} shops that were not visited this ${period}.`
+              : `Excellent coverage! Focus on increasing the average order value at currently visited shops.`,
+            bestWorkerName !== 'N/A'
+              ? `Analyze ${bestWorkerName}'s route strategy to replicate successful patterns across the team.`
+              : `No orders recorded yet for this period. Review worker attendance and visit frequency.`,
+            conversionRate < 30 && filteredVisits.length > 5
+              ? `Conversion rate is below 30%. Consider reviewing product pricing or sales pitches for better closure.`
+              : `Review low-volume shops in ${mostProductiveRoute} to maximize existing route efficiency.`
+          ]
+        };
+
+        setSummary(insights);
+      } catch (err) {
+        console.error("AI Generation Error:", err);
+      } finally {
+        setIsWorking(false);
+      }
     }, 1500);
   };
 
@@ -65,15 +89,9 @@ const AiSummary = ({ data }) => {
         </div>
 
         <div className="flex items-center gap-3">
-          <select
-            value={period}
-            onChange={(e) => setPeriod(e.target.value)}
-            className="bg-slate-800 border border-slate-700 text-white px-4 py-2.5 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-500 transition-all cursor-pointer"
-          >
-            <option value="daily">Daily View</option>
-            <option value="weekly">Weekly View</option>
-            <option value="monthly">Monthly View</option>
-          </select>
+          <div className="hidden md:flex bg-slate-800 border border-slate-700 px-4 py-2 rounded-xl text-xs font-bold text-slate-400 uppercase tracking-widest">
+            {period} Period Active
+          </div>
           <button
             onClick={generateInsights}
             disabled={isGenerating}
