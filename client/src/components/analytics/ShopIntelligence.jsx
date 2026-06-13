@@ -8,6 +8,7 @@ import { Store, TrendingUp, AlertCircle, ShoppingBag, Target } from 'lucide-reac
 
 const ShopIntelligence = ({ shops = [], visits = [], orders = [] }) => {
   const stats = useMemo(() => {
+    if (!Array.isArray(shops)) return null;
     const shopMap = {};
     shops.forEach(s => {
       shopMap[s.name] = {
@@ -58,6 +59,8 @@ const ShopIntelligence = ({ shops = [], visits = [], orders = [] }) => {
   }, [shops, visits, orders]);
 
   const COLORS = ['#22c55e', '#3b82f6', '#eab308', '#ec4899', '#8b5cf6'];
+
+  if (!stats) return null;
 
   return (
     <div className="space-y-8">

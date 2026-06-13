@@ -9,6 +9,7 @@ const ProductivityHeatmap = ({ visits = [], orders = [] }) => {
   const heatmapData = useMemo(() => {
     const visitsArr = Array.isArray(visits) ? visits : [];
     const ordersArr = Array.isArray(orders) ? orders : [];
+    if (visitsArr.length === 0 && ordersArr.length === 0) return null;
 
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const dayMap = days.map(day => ({ name: day, visits: 0, orders: 0 }));
@@ -47,6 +48,16 @@ const ProductivityHeatmap = ({ visits = [], orders = [] }) => {
 
     return { dayMap, hourMap };
   }, [visits, orders]);
+
+  if (!heatmapData) {
+    return (
+      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-xl flex flex-col items-center justify-center text-center min-h-[400px]">
+         <Clock size={48} className="text-slate-800 mb-4" />
+         <h3 className="text-xl font-bold text-white mb-2">Productivity Heatmap</h3>
+         <p className="text-slate-500 text-sm max-w-xs">Insufficient data to generate a productivity heatmap. Analysis requires logged visits or orders.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-xl">
