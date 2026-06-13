@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import api from '../api';
 import {
   TrendingUp, Store, Zap, CreditCard,
-  BarChart2, Calendar, RefreshCw, AlertCircle
+  BarChart, Calendar, RefreshCw, AlertCircle
 } from 'lucide-react';
 import Skeleton from '../components/Skeleton';
 import SalesForecast from '../components/analytics/SalesForecast';
@@ -84,7 +84,7 @@ const AnalyticsView = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
           <h1 className="text-4xl font-extrabold text-white tracking-tight flex items-center gap-3">
-            <BarChart2 className="text-green-500" /> Sales Force Analytics
+            <BarChart className="text-green-500" /> Sales Force Analytics
           </h1>
           <p className="text-slate-500 mt-1 font-medium italic">AI-powered business intelligence and forecasting.</p>
         </div>
