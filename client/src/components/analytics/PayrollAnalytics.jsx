@@ -9,6 +9,7 @@ import { CreditCard, Users, TrendingUp, DollarSign } from 'lucide-react';
 const PayrollAnalytics = ({ payroll = [], workers = [], attendance = [] }) => {
   const stats = useMemo(() => {
     const payrollArr = Array.isArray(payroll) ? payroll : [];
+    if (payrollArr.length === 0) return null;
 
     const totalCost = payrollArr.reduce((sum, p) => sum + (p.netSalary || 0), 0);
     const totalBonus = payrollArr.reduce((sum, p) => sum + (p.bonus || 0), 0);
@@ -49,6 +50,16 @@ const PayrollAnalytics = ({ payroll = [], workers = [], attendance = [] }) => {
   }, [payroll]);
 
   const COLORS = ['#22c55e', '#3b82f6', '#eab308', '#ec4899', '#8b5cf6'];
+
+  if (!stats) {
+    return (
+      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-xl flex flex-col items-center justify-center text-center min-h-[300px]">
+         <CreditCard size={48} className="text-slate-800 mb-4" />
+         <h3 className="text-xl font-bold text-white mb-2">Payroll Analytics</h3>
+         <p className="text-slate-500 text-sm max-w-xs">No payroll data available for the selected period.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-xl space-y-10">

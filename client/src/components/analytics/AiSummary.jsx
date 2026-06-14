@@ -10,18 +10,20 @@ const AiSummary = ({ data, period }) => {
   }, [period, data]);
 
   const generateInsights = () => {
-    if (!data) return;
+    if (!data) {
+      console.warn("AI Summary: Data is missing, cannot generate insights.");
+      return;
+    }
     setIsWorking(true);
     setSummary(null);
 
     setTimeout(() => {
       try {
-        const {
-          visits: filteredVisits = [],
-          orders: filteredOrders = [],
-          shops: allShops = []
-        } = data;
+        const filteredVisits = Array.isArray(data.visits) ? data.visits : [];
+        const filteredOrders = Array.isArray(data.orders) ? data.orders : [];
+        const allShops = Array.isArray(data.shops) ? data.shops : [];
 
+        const totalSales = filteredOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
         const conversionRate = filteredVisits.length > 0
           ? Math.round((filteredOrders.length / filteredVisits.length) * 100)
           : 0;
@@ -76,7 +78,7 @@ const AiSummary = ({ data, period }) => {
   };
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
+    <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl min-h-[400px]">
       <div className="bg-gradient-to-r from-green-600/20 to-blue-600/20 p-8 border-b border-slate-800 flex flex-col md:flex-row justify-between items-center gap-6">
         <div className="flex items-center gap-4">
           <div className="w-14 h-14 bg-green-500 rounded-2xl flex items-center justify-center text-slate-950 shadow-lg shadow-green-500/20">
@@ -103,7 +105,20 @@ const AiSummary = ({ data, period }) => {
         </div>
       </div>
 
-      {summary ? (
+      {isGenerating ? (
+        <div className="p-12 space-y-10 animate-pulse">
+           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              {[1,2,3,4].map(i => <div key={i} className="h-24 bg-slate-800/50 rounded-2xl"></div>)}
+           </div>
+           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-2 space-y-6">
+                 <div className="h-32 bg-slate-800/30 rounded-2xl"></div>
+                 <div className="h-48 bg-slate-800/30 rounded-2xl"></div>
+              </div>
+              <div className="h-80 bg-slate-800/50 rounded-2xl"></div>
+           </div>
+        </div>
+      ) : summary ? (
         <div className="p-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
               {summary.metrics.map((m, idx) => (

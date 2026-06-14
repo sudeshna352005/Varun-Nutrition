@@ -8,7 +8,7 @@ import { TrendingUp, TrendingDown, Calendar, ShoppingBag, IndianRupee } from 'lu
 const SalesForecast = ({ orders = [] }) => {
   const forecastData = useMemo(() => {
     const ordersArr = Array.isArray(orders) ? orders : [];
-    if (ordersArr.length === 0) return [];
+    if (ordersArr.length === 0) return null;
 
     // Group orders by date
     const dailyData = {};
@@ -61,7 +61,7 @@ const SalesForecast = ({ orders = [] }) => {
     return { chartData, next7, next30, history };
   }, [orders]);
 
-  if (orders.length === 0) {
+  if (!forecastData || orders.length === 0) {
     return (
       <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 h-full flex flex-col items-center justify-center text-center">
         <IndianRupee size={48} className="text-slate-800 mb-4" />
