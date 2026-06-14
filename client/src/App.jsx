@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import api from './api';
-import Navbar from './components/Navbar';
+import Sidebar from './components/Sidebar';
+import { Menu } from 'lucide-react';
 import Login from './pages/Login';
 import OwnerDashboard from './pages/OwnerDashboard';
 import ShopManagement from './pages/ShopManagement';
@@ -21,6 +22,8 @@ import AnalyticsView from './pages/AnalyticsView';
 function App() {
   const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')));
   const [workerRole, setWorkerRole] = useState(localStorage.getItem('workerRole') || '');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -60,10 +63,37 @@ function App() {
 
   return (
     <Router>
-      <div className="min-h-screen bg-zinc-950 text-zinc-100">
-        {user && <Navbar user={user} onLogout={handleLogout} />}
-        <main className="container mx-auto py-6 px-4">
-          <Routes>
+      <div className="min-h-screen bg-zinc-950 text-zinc-100 flex">
+        {user && (
+          <Sidebar
+            user={user}
+            onLogout={handleLogout}
+            isOpen={isSidebarOpen}
+            setIsOpen={setIsSidebarOpen}
+            isCollapsed={isSidebarCollapsed}
+            setIsCollapsed={setIsSidebarCollapsed}
+          />
+        )}
+
+        <div className="flex-1 flex flex-col min-w-0 transition-all duration-300">
+          {user && (
+            <header className="lg:hidden p-4 flex items-center bg-slate-900 border-b border-slate-800 sticky top-0 z-30">
+              <button
+                onClick={() => setIsSidebarOpen(true)}
+                className="p-2 text-slate-400 hover:text-white"
+              >
+                <Menu size={24} />
+              </button>
+              <div className="ml-4 flex items-center gap-2">
+                 <img src="/assets/logo.png" alt="VN" className="h-8 w-auto" />
+                 <span className="font-bold text-sm">Varun Nutritions</span>
+              </div>
+            </header>
+          )}
+
+          <main className={`flex-1 overflow-y-auto ${user ? (isSidebarCollapsed ? 'lg:pl-20' : 'lg:pl-72') : ''} transition-all duration-300`}>
+             <div className={`max-w-[1600px] mx-auto py-8 px-4 sm:px-6 lg:px-10`}>
+              <Routes>
             <Route path="/login" element={!user ? <Login onLogin={setUser} /> : <Navigate to="/" />} />
             
             <Route path="/" element={
@@ -89,8 +119,10 @@ function App() {
             {/* Worker Routes */}
             <Route path="/worker-attendance" element={user && user.role !== 'owner' ? <WorkerAttendance user={user} /> : <Navigate to="/" />} />
             <Route path="/worker-orders" element={user && user.role !== 'owner' ? <OrdersView user={user} /> : <Navigate to="/" />} />
-          </Routes>
-        </main>
+              </Routes>
+             </div>
+          </main>
+        </div>
       </div>
     </Router>
   );
