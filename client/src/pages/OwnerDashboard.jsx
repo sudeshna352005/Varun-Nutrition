@@ -250,7 +250,7 @@ const OwnerDashboard = () => {
                   <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">{card.name}</p>
                   <p className="text-3xl font-bold text-white">{card.value}</p>
                 </div>
-                <div className="${card.color.split(' ')[0]} p-4 rounded-xl ${card.color.split(' ')[1]}">
+                <div className={`${card.color.split(' ')[0]} p-4 rounded-xl ${card.color.split(' ')[1]}`}>
                   <card.icon className="w-6 h-6" />
                 </div>
               </div>
