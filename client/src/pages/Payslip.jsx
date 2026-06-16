@@ -13,30 +13,78 @@ const Payslip = ({ payroll, onClose }) => {
     try {
       setIsExporting(true);
 
-      // Ensure the element is visible and has dimensions
       const element = payslipRef.current;
-      const { width, height } = element.getBoundingClientRect();
-
-      if (width <= 0 || height <= 0) {
-        throw new Error("Payslip element has no dimensions. Please ensure it is visible.");
-      }
 
       const canvas = await html2canvas(element, {
-        backgroundColor: '#09090b',
-        scale: 2,
+        backgroundColor: '#ffffff',
+        scale: 3,
         useCORS: true,
         logging: false,
-        // Ignore any chart elements that might be present in the DOM but not in the payslip
-        ignoreElements: (el) => el.classList.contains('recharts-wrapper') || el.tagName === 'svg' && !el.closest('.lucide')
+        windowWidth: 800,
+        onclone: (clonedDoc) => {
+          const clonedEl = clonedDoc.getElementById('payslip-content');
+          if (!clonedEl) return;
+
+          // Universal light mode override for the cloned element
+          clonedEl.style.backgroundColor = '#ffffff';
+          clonedEl.style.color = '#000000';
+          clonedEl.style.borderColor = '#000000';
+          clonedEl.style.borderWidth = '1px';
+          clonedEl.style.borderRadius = '0';
+          clonedEl.style.padding = '40px';
+          clonedEl.style.boxShadow = 'none';
+
+          clonedEl.querySelectorAll('*').forEach(el => {
+            // Remove existing inline styles that might interfere
+            el.style.backgroundColor = 'transparent';
+
+            // Text color overrides
+            if (el.tagName === 'H1' || el.tagName === 'P' || el.tagName === 'TD' || el.tagName === 'SPAN') {
+               el.style.color = '#000000';
+            }
+
+            // Tables
+            if (el.tagName === 'THEAD') {
+              el.style.backgroundColor = '#f1f5f9';
+            }
+            if (el.tagName === 'TH') {
+              el.style.color = '#334155';
+              el.style.borderColor = '#cbd5e1';
+            }
+            if (el.tagName === 'TD' || el.tagName === 'TR') {
+              el.style.borderColor = '#cbd5e1';
+            }
+
+            // Totals section
+            if (el.getAttribute('data-section') === 'totals') {
+              el.style.backgroundColor = '#f8fafc';
+              el.style.borderColor = '#000000';
+              el.style.borderWidth = '2px';
+            }
+
+            // Net salary amount
+            if (el.getAttribute('data-type') === 'net-salary') {
+              el.style.color = '#166534';
+            }
+
+            // Accent colors
+            if (el.style.color === 'rgb(96, 165, 250)') el.style.color = '#2563eb';
+            if (el.style.color === 'rgb(248, 113, 113)') el.style.color = '#dc2626';
+          });
+        },
+        ignoreElements: (el) => el.classList.contains('recharts-wrapper') || (el.tagName === 'svg' && !el.closest('.lucide'))
       });
 
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgProps = pdf.getImageProperties(imgData);
       const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
 
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      const imgProps = pdf.getImageProperties(imgData);
+      const margin = 15;
+      const contentWidth = pdfWidth - (margin * 2);
+      const contentHeight = (imgProps.height * contentWidth) / imgProps.width;
+
+      pdf.addImage(imgData, 'PNG', margin, margin, contentWidth, contentHeight);
       pdf.save(`Payslip_${payroll.workerName}_${payroll.month}.pdf`);
     } catch (err) {
       console.error("PDF Export Error:", err);
@@ -74,12 +122,13 @@ const Payslip = ({ payroll, onClose }) => {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar bg-slate-950">
           {/* Apply inline styles with hex colors to avoid oklch parsing issues in html2canvas */}
           <div
             ref={payslipRef}
+            id="payslip-content"
             style={{ backgroundColor: '#09090b', color: '#f4f4f5', borderColor: '#1e293b' }}
-            className="p-10 rounded-2xl border space-y-10"
+            className="p-10 rounded-2xl border space-y-10 shadow-2xl"
           >
              {/* Header */}
              <div style={{ borderColor: '#1e293b' }} className="flex justify-between items-start border-b pb-8">
@@ -158,10 +207,14 @@ const Payslip = ({ payroll, onClose }) => {
              </div>
 
              {/* Footer Totals */}
-             <div style={{ backgroundColor: 'rgba(22, 163, 74, 0.1)', borderColor: 'rgba(22, 163, 74, 0.2)' }} className="flex justify-between items-center border-2 p-8 rounded-2xl">
+             <div
+                data-section="totals"
+                style={{ backgroundColor: 'rgba(22, 163, 74, 0.1)', borderColor: 'rgba(22, 163, 74, 0.2)' }}
+                className="flex justify-between items-center border-2 p-8 rounded-2xl"
+             >
                 <div>
                    <p style={{ color: 'rgba(34, 197, 94, 0.6)' }} className="text-[10px] font-black uppercase tracking-widest">Net Amount Payable</p>
-                   <p style={{ color: '#22c55e' }} className="text-3xl font-black">₹{payroll.netSalary.toLocaleString()}</p>
+                   <p data-type="net-salary" style={{ color: '#22c55e' }} className="text-3xl font-black">₹{payroll.netSalary.toLocaleString()}</p>
                 </div>
                 <div className="text-right">
                    <p style={{ color: '#64748b' }} className="text-[10px] font-bold uppercase mb-2">Signature of Authority</p>
