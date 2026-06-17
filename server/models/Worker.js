@@ -7,7 +7,7 @@ const workerSchema = new mongoose.Schema({
   password: { type: String, required: true },
   role: {
     type: String,
-    enum: ['Sales Worker', 'Delivery Staff'],
+    enum: ['Sales Worker', 'Delivery Staff', 'Sales & Delivery'],
     default: 'Sales Worker',
     index: true
   },

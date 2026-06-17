@@ -29,7 +29,7 @@ function App() {
     if (user) {
       localStorage.setItem('user', JSON.stringify(user));
       if (user.role !== 'owner' && !workerRole) {
-        if (user.role === 'Sales Worker' || user.role === 'Delivery Staff') {
+        if (user.role === 'Sales Worker' || user.role === 'Delivery Staff' || user.role === 'Sales & Delivery') {
           setWorkerRole(user.role);
           localStorage.setItem('workerRole', user.role);
         } else {
@@ -100,7 +100,9 @@ function App() {
               user ? (
                 user.role === 'owner'
                 ? <OwnerDashboard />
-                : (workerRole === 'Delivery Staff' ? <DeliveryDashboard user={user} /> : <WorkerDashboard user={user} />)
+                : (workerRole === 'Delivery Staff'
+                    ? <DeliveryDashboard user={user} />
+                    : <WorkerDashboard user={user} />)
               ) : <Navigate to="/login" />
             } />
 
@@ -119,6 +121,7 @@ function App() {
             {/* Worker Routes */}
             <Route path="/worker-attendance" element={user && user.role !== 'owner' ? <WorkerAttendance user={user} /> : <Navigate to="/" />} />
             <Route path="/worker-orders" element={user && user.role !== 'owner' ? <OrdersView user={user} /> : <Navigate to="/" />} />
+            <Route path="/worker-deliveries" element={user && (workerRole === 'Delivery Staff' || workerRole === 'Sales & Delivery') ? <DeliveryDashboard user={user} /> : <Navigate to="/" />} />
               </Routes>
              </div>
           </main>
