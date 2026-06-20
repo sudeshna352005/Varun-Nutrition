@@ -29,6 +29,11 @@ const Sidebar = ({ user, onLogout, isOpen, setIsOpen, isCollapsed, setIsCollapse
     { name: 'Payroll', path: '/payroll', icon: CreditCard },
     { name: 'Attendance', path: '/attendance', icon: UserCheck },
     { name: 'Reports', path: '/reports', icon: ClipboardList },
+  ] : (workerRole === 'Sales & Delivery' ? [
+    { name: 'My Routes', path: '/', icon: MapPin },
+    { name: 'Orders', path: '/worker-orders', icon: ShoppingCart },
+    { name: 'Deliveries', path: '/worker-deliveries', icon: Package },
+    { name: 'Attendance', path: '/worker-attendance', icon: UserCheck },
   ] : (workerRole === 'Delivery Staff' ? [
     { name: 'Deliveries', path: '/', icon: Package },
     { name: 'Attendance', path: '/worker-attendance', icon: UserCheck },
@@ -36,7 +41,7 @@ const Sidebar = ({ user, onLogout, isOpen, setIsOpen, isCollapsed, setIsCollapse
     { name: 'My Routes', path: '/', icon: MapPin },
     { name: 'Orders', path: '/worker-orders', icon: ShoppingCart },
     { name: 'Attendance', path: '/worker-attendance', icon: UserCheck },
-  ]);
+  ]));
 
   const isActive = (path) => location.pathname === path;
 

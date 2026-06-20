@@ -161,13 +161,13 @@ const WorkerManagement = () => {
           </div>
 
           <div className="flex bg-slate-900 border border-slate-800 rounded-xl p-1 w-full md:w-auto">
-            {['all', 'Sales Worker', 'Delivery Staff'].map(r => (
+            {['all', 'Sales Worker', 'Delivery Staff', 'Sales & Delivery'].map(r => (
               <button
                 key={r}
                 onClick={() => setRoleFilter(r)}
-                className={`flex-1 px-3 py-1.5 text-[9px] uppercase font-bold rounded-lg transition-all ${roleFilter === r ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-white'}`}
+                className={`flex-1 px-2.5 py-1.5 text-[9px] uppercase font-bold rounded-lg transition-all ${roleFilter === r ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-white'}`}
               >
-                {r === 'all' ? 'All Roles' : r.split(' ')[0]}
+                {r === 'all' ? 'All Roles' : (r === 'Sales & Delivery' ? 'Hybrid' : r.split(' ')[0])}
               </button>
             ))}
           </div>
@@ -214,7 +214,11 @@ const WorkerManagement = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${
-                        (worker.role || 'Sales Worker') === 'Delivery Staff' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-green-500/10 text-green-400 border border-green-500/20'
+                        worker.role === 'Sales & Delivery'
+                          ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
+                          : (worker.role || 'Sales Worker') === 'Delivery Staff'
+                            ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                            : 'bg-green-500/10 text-green-400 border border-green-500/20'
                       }`}>
                         {worker.role || 'Sales Worker'}
                       </span>
@@ -267,7 +271,11 @@ const WorkerManagement = () => {
                   </div>
                 </Link>
                 <span className={`px-2 py-1 rounded-md text-[9px] font-bold uppercase tracking-wider ${
-                  (worker.role || 'Sales Worker') === 'Delivery Staff' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-green-500/10 text-green-400 border border-green-500/20'
+                  worker.role === 'Sales & Delivery'
+                    ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
+                    : (worker.role || 'Sales Worker') === 'Delivery Staff'
+                      ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                      : 'bg-green-500/10 text-green-400 border border-green-500/20'
                 }`}>
                   {worker.role || 'Sales Worker'}
                 </span>
@@ -369,6 +377,7 @@ const WorkerManagement = () => {
                     >
                       <option value="Sales Worker">Sales Worker</option>
                       <option value="Delivery Staff">Delivery Staff</option>
+                      <option value="Sales & Delivery">Sales & Delivery (Hybrid)</option>
                     </select>
                     <div className="absolute right-4 top-4 pointer-events-none">
                        <User size={16} className="text-slate-600" />
@@ -401,7 +410,7 @@ const WorkerManagement = () => {
 
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-                    {formData.role === 'Delivery Staff' ? 'Assign Delivery Areas' : 'Assign Routes'}
+                    {formData.role === 'Delivery Staff' ? 'Assign Delivery Areas' : (formData.role === 'Sales & Delivery' ? 'Assign Areas/Routes' : 'Assign Routes')}
                   </label>
                   <div className="grid grid-cols-2 gap-3 mt-2 max-h-40 overflow-y-auto p-2 bg-slate-800 rounded-xl border border-slate-700">
                     {(Array.isArray(routes) ? routes : []).map(route => (

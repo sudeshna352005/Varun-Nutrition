@@ -112,7 +112,18 @@ const WorkerProfile = () => {
             <User size={48} strokeWidth={2.5} />
           </div>
           <div className="text-center md:text-left flex-1">
-            <h1 className="text-4xl md:text-5xl font-extrabold mb-2 tracking-tighter">{worker.name}</h1>
+            <div className="flex flex-col md:flex-row items-center md:items-baseline gap-4 mb-2">
+              <h1 className="text-4xl md:text-5xl font-extrabold tracking-tighter">{worker.name}</h1>
+              <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest border ${
+                worker.role === 'Sales & Delivery'
+                  ? 'bg-purple-500/10 text-purple-400 border-purple-500/20'
+                  : (worker.role || 'Sales Worker') === 'Delivery Staff'
+                    ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                    : 'bg-green-500/10 text-green-400 border-green-500/20'
+              }`}>
+                {worker.role || 'Sales Worker'}
+              </span>
+            </div>
             <p className="text-slate-400 flex items-center justify-center md:justify-start gap-2 font-medium">
               <Mail size={16} className="text-green-500" /> {worker.username}
             </p>
