@@ -13,7 +13,9 @@ const workerSchema = new mongoose.Schema({
   },
   assignedRoutes: { type: [String], default: [], index: true },
   dailySalary: { type: Number, default: 0, min: 0 },
-  additionalAllowance: { type: Number, default: 0, min: 0 }
+  additionalAllowance: { type: Number, default: 0, min: 0 },
+  lastLogin: { type: Date },
+  lastPasswordChange: { type: Date }
 }, {
   timestamps: true,
   toJSON: { virtuals: true },

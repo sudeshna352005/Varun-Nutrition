@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Menu, X, LogOut, LayoutDashboard, Store, MapPin,
   ClipboardList, UserCheck, Users, Package,
-  ShoppingCart, CreditCard, BarChart, ChevronLeft, ChevronRight
+  ShoppingCart, CreditCard, BarChart, ChevronLeft, ChevronRight, Settings
 } from 'lucide-react';
 import Brand from './Brand';
 
@@ -29,6 +29,7 @@ const Sidebar = ({ user, onLogout, isOpen, setIsOpen, isCollapsed, setIsCollapse
     { name: 'Payroll', path: '/payroll', icon: CreditCard },
     { name: 'Attendance', path: '/attendance', icon: UserCheck },
     { name: 'Reports', path: '/reports', icon: ClipboardList },
+    { name: 'Settings', path: '/settings', icon: Settings },
   ] : (workerRole === 'Sales & Delivery' ? [
     { name: 'My Routes', path: '/', icon: MapPin },
     { name: 'Orders', path: '/worker-orders', icon: ShoppingCart },
