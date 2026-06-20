@@ -13,8 +13,11 @@ const WorkerDashboard = ({ user }) => {
   const [notes, setNotes] = useState('');
   const [photo, setPhoto] = useState(null);
   const [createOrder, setCreateOrder] = useState(false);
+  const [createReturn, setCreateReturn] = useState(false);
   const [products, setProducts] = useState([]);
+  const [deliveredProducts, setDeliveredProducts] = useState([]);
   const [orderItems, setOrderItems] = useState([]);
+  const [returnItems, setReturnItems] = useState([]);
   const [visitHistory, setVisitHistory] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -114,12 +117,37 @@ const WorkerDashboard = ({ user }) => {
         });
       }
 
-      console.log("Visit/Order saved");
+      // Save returns if requested
+      if (createReturn && returnItems.length > 0) {
+        for (const item of returnItems) {
+          const formDataRet = new FormData();
+          formDataRet.append('shopId', selectedShop.id || selectedShop._id);
+          formDataRet.append('shopName', selectedShop.name);
+          formDataRet.append('workerId', user.id || user._id);
+          formDataRet.append('workerName', user.name);
+          formDataRet.append('routeName', selectedShop.routeGroup);
+          formDataRet.append('productId', item.productId);
+          formDataRet.append('productName', item.name);
+          formDataRet.append('quantityReturned', item.quantity);
+          formDataRet.append('reason', item.reason);
+          formDataRet.append('notes', item.notes || '');
+          formDataRet.append('returnValue', item.total);
+          if (item.photo) formDataRet.append('photo', item.photo);
+
+          await api.post('/api/returns', formDataRet, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+          });
+        }
+      }
+
+      console.log("Visit/Order/Return saved");
       setSelectedShop(null);
       setNotes('');
       setPhoto(null);
       setCreateOrder(false);
+      setCreateReturn(false);
       setOrderItems([]);
+      setReturnItems([]);
       await fetchData();
     } catch (err) {
       console.error("Failed to save visit", err);
@@ -129,6 +157,48 @@ const WorkerDashboard = ({ user }) => {
 
   const addOrderItem = () => {
     setOrderItems([...orderItems, { productId: '', name: '', packSize: '', quantity: 1, price: 0, total: 0 }]);
+  };
+
+  const fetchDeliveredProducts = async (shopName) => {
+    try {
+      const res = await api.get(`/api/delivered-products/${shopName}`);
+      setDeliveredProducts(res.data || []);
+    } catch (err) {
+      console.error("Failed to fetch delivered products", err);
+    }
+  };
+
+  const addReturnItem = () => {
+    setReturnItems([...returnItems, { productId: '', name: '', quantity: 1, reason: 'Damaged', notes: '', price: 0, total: 0, maxQty: 0 }]);
+  };
+
+  const removeReturnItem = (index) => {
+    setReturnItems(returnItems.filter((_, i) => i !== index));
+  };
+
+  const updateReturnItem = (index, field, value) => {
+    const newItems = [...returnItems];
+    const item = { ...newItems[index] };
+
+    if (field === 'productId') {
+      const product = deliveredProducts.find(p => p.productId === value);
+      item.productId = value;
+      item.name = product.name;
+      item.price = product.price;
+      item.maxQty = product.deliveredQty;
+      if (item.quantity > item.maxQty) item.quantity = item.maxQty;
+    } else {
+      item[field] = value;
+    }
+
+    if (field === 'quantity' && item.maxQty > 0 && value > item.maxQty) {
+      alert(`Return quantity exceeds available delivered stock. Max available: ${item.maxQty}`);
+      item.quantity = item.maxQty;
+    }
+
+    item.total = item.quantity * item.price;
+    newItems[index] = item;
+    setReturnItems(newItems);
   };
 
   const removeOrderItem = (index) => {
@@ -307,16 +377,31 @@ const WorkerDashboard = ({ user }) => {
                 required
               />
 
-              <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700">
-                <label className="flex items-center gap-3 cursor-pointer group">
-                  <input
-                    type="checkbox"
-                    className="size-5 rounded border-slate-600 bg-slate-800 text-green-500 focus:ring-green-500/20"
-                    checked={createOrder}
-                    onChange={(e) => setCreateOrder(e.target.checked)}
-                  />
-                  <span className="text-sm font-bold text-slate-300 group-hover:text-white transition-colors">Create Order</span>
-                </label>
+              <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700 space-y-4">
+                <div className="flex flex-wrap gap-6">
+                  <label className="flex items-center gap-3 cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      className="size-5 rounded border-slate-600 bg-slate-800 text-green-500 focus:ring-green-500/20"
+                      checked={createOrder}
+                      onChange={(e) => setCreateOrder(e.target.checked)}
+                    />
+                    <span className="text-sm font-bold text-slate-300 group-hover:text-white transition-colors">Create Order</span>
+                  </label>
+
+                  <label className="flex items-center gap-3 cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      className="size-5 rounded border-slate-600 bg-slate-800 text-green-500 focus:ring-green-500/20"
+                      checked={createReturn}
+                      onChange={(e) => {
+                        setCreateReturn(e.target.checked);
+                        if (e.target.checked) fetchDeliveredProducts(selectedShop.name);
+                      }}
+                    />
+                    <span className="text-sm font-bold text-slate-300 group-hover:text-white transition-colors">Create Return</span>
+                  </label>
+                </div>
 
                 {createOrder && (
                   <div className="mt-6 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
@@ -381,6 +466,88 @@ const WorkerDashboard = ({ user }) => {
                       <div className="pt-4 border-t border-slate-700 flex justify-between items-center">
                         <p className="text-xs font-bold text-slate-400">Total Amount</p>
                         <p className="text-lg font-black text-green-500">₹{orderItems.reduce((sum, i) => sum + i.total, 0).toFixed(2)}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {createReturn && (
+                  <div className="mt-8 pt-8 border-t border-slate-700 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div className="flex justify-between items-center">
+                      <p className="text-[10px] font-bold text-orange-500 uppercase tracking-widest">Return Items (Delivered Only)</p>
+                      <button
+                        onClick={addReturnItem}
+                        type="button"
+                        className="text-xs font-bold text-orange-500 hover:text-orange-400 flex items-center gap-1"
+                      >
+                        <Plus size={14} /> Add Return
+                      </button>
+                    </div>
+
+                    {deliveredProducts.length === 0 && (
+                      <p className="text-xs text-slate-500 italic">No delivered products found for this shop.</p>
+                    )}
+
+                    {(Array.isArray(returnItems) ? returnItems : []).map((item, idx) => (
+                      <div key={idx} className="p-3 bg-slate-900 rounded-lg border border-orange-500/20 space-y-3">
+                        <div className="flex justify-between items-start gap-2">
+                          <select
+                            className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white outline-none focus:ring-1 focus:ring-orange-500"
+                            value={item.productId}
+                            onChange={(e) => updateReturnItem(idx, 'productId', e.target.value)}
+                          >
+                            <option value="">Select Product</option>
+                            {(Array.isArray(deliveredProducts) ? deliveredProducts : []).map(p => (
+                              <option key={p.productId} value={p.productId}>{p.name} (Delivered: {p.deliveredQty})</option>
+                            ))}
+                          </select>
+                          <button onClick={() => removeReturnItem(idx)} className="text-red-500 p-1 hover:bg-red-500/10 rounded">
+                            <X size={14} />
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Reason</label>
+                            <select
+                              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white"
+                              value={item.reason}
+                              onChange={(e) => updateReturnItem(idx, 'reason', e.target.value)}
+                            >
+                              {['Damaged', 'Expired', 'Unsold Stock', 'Wrong Product', 'Packaging Issue', 'Customer Complaint', 'Other'].map(r => (
+                                <option key={r} value={r}>{r}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Qty (Max: {item.maxQty || 0})</label>
+                            <input
+                              type="number"
+                              min="1"
+                              max={item.maxQty}
+                              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white"
+                              value={item.quantity}
+                              onChange={(e) => updateReturnItem(idx, 'quantity', parseInt(e.target.value) || 0)}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                           <Camera className="text-slate-500" size={14} />
+                           <input
+                             type="file"
+                             accept="image/*"
+                             className="text-[10px] text-slate-400 file:bg-slate-800 file:border-none file:text-slate-400 file:rounded file:px-2 file:py-1"
+                             onChange={(e) => updateReturnItem(idx, 'photo', e.target.files[0])}
+                           />
+                        </div>
+                      </div>
+                    ))}
+
+                    {returnItems.length > 0 && (
+                      <div className="pt-4 border-t border-slate-700 flex justify-between items-center">
+                        <p className="text-xs font-bold text-slate-400">Total Return Value</p>
+                        <p className="text-lg font-black text-orange-500">₹{returnItems.reduce((sum, i) => sum + i.total, 0).toFixed(2)}</p>
                       </div>
                     )}
                   </div>

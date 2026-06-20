@@ -14,6 +14,7 @@ const ReportsView = () => {
   const [routes, setRoutes] = useState([]);
   const [attendance, setAttendance] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [returns, setReturns] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Filter states
@@ -39,13 +40,14 @@ const ReportsView = () => {
       const end = dateRange.end ? new Date(dateRange.end).toISOString().split('T')[0] : '';
       const query = (start && end) ? `?startDate=${start}&endDate=${end}` : '';
 
-      const [workersRes, shopsRes, routesRes, visitsRes, attendanceRes, ordersRes] = await Promise.all([
+      const [workersRes, shopsRes, routesRes, visitsRes, attendanceRes, ordersRes, returnsRes] = await Promise.all([
         api.get('/api/workers'),
         api.get('/api/shops'),
         api.get('/api/routes'),
         api.get(`/api/visits${query}`),
         api.get(`/api/attendance${query}`),
-        api.get(`/api/orders${query}`)
+        api.get(`/api/orders${query}`),
+        api.get(`/api/returns${query}`)
       ]);
       setWorkers(Array.isArray(workersRes.data) ? workersRes.data : []);
       setShops(Array.isArray(shopsRes.data) ? shopsRes.data : []);
@@ -53,6 +55,7 @@ const ReportsView = () => {
       setVisits(Array.isArray(visitsRes.data) ? visitsRes.data : []);
       setAttendance(Array.isArray(attendanceRes.data) ? attendanceRes.data : []);
       setOrders(Array.isArray(ordersRes.data) ? ordersRes.data : []);
+      setReturns(Array.isArray(returnsRes.data) ? returnsRes.data : []);
     } catch (err) {
       console.error("Failed to fetch data", err);
     } finally {
@@ -64,6 +67,7 @@ const ReportsView = () => {
     const visitsArr = Array.isArray(visits) ? visits : [];
     const attendanceArr = Array.isArray(attendance) ? attendance : [];
     const ordersArr = Array.isArray(orders) ? orders : [];
+    const returnsArr = Array.isArray(returns) ? returns : [];
     const shopsArr = Array.isArray(shops) ? shops : [];
 
     const events = [];
@@ -101,12 +105,19 @@ const ReportsView = () => {
       }
     });
 
+    returnsArr.forEach(r => {
+      if (r.createdAt && isInRange(r.createdAt, dateRange)) {
+        events.push({ ...r, type: 'return', id: r.id || r._id, timestamp: r.createdAt });
+      }
+    });
+
     const typeOrder = {
       'attendance-start': 1,
       'visit': 2,
       'order': 3,
-      'delivery': 4,
-      'attendance-end': 5
+      'return': 4,
+      'delivery': 5,
+      'attendance-end': 6
     };
 
     return events.filter(v => {
@@ -509,6 +520,29 @@ const ReportsView = () => {
                         <div>
                           <p className="text-sm text-slate-300 font-bold">Order Delivered to {item.shopName}</p>
                     <p className="text-xs text-slate-500 mt-1 uppercase font-bold tracking-widest">Route: {item.routeName || 'Unknown'} • Status: {item.deliveryStatus} • by {workerLink ? <Link to={workerLink} className="text-slate-400 hover:text-green-500 transition-colors">{item.workerName}</Link> : item.workerName}</p>
+                        </div>
+                      );
+                      break;
+                    }
+                    case 'return': {
+                      const workerObj = workers.find(w => w.name === item.workerName);
+                      const workerLink = workerObj ? `/worker/${workerObj.id || workerObj._id}` : null;
+                      icon = <RotateCcw size={16} />;
+                      colorClass = 'bg-orange-600';
+                      title = 'PRODUCT RETURNED';
+                      details = (
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <p className="text-sm text-slate-300 font-bold">{item.productName} returned from {item.shopName}</p>
+                              <p className="text-xs text-slate-500 mt-1 uppercase font-bold tracking-widest">Reason: <span className="text-red-400">{item.reason}</span> • by {workerLink ? <Link to={workerLink} className="text-slate-400 hover:text-green-500 transition-colors">{item.workerName}</Link> : item.workerName}</p>
+                            </div>
+                            <div className="text-right">
+                               <p className="text-lg font-black text-orange-500">₹{(item.returnValue || 0).toLocaleString()}</p>
+                               <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{item.quantityReturned} units</p>
+                            </div>
+                          </div>
+                          {item.notes && <p className="text-xs text-slate-400 italic border-l-2 border-slate-800 pl-3">"{item.notes}"</p>}
                         </div>
                       );
                       break;
