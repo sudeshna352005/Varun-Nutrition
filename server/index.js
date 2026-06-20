@@ -18,6 +18,7 @@ const Product = require('./models/Product');
 const Order = require('./models/Order');
 const Payroll = require('./models/Payroll');
 const SystemSettings = require('./models/SystemSettings');
+const Return = require('./models/Return');
 
 // Fallback Mock database state
 let mockDb = {
@@ -722,6 +723,118 @@ app.get('/api/orders', async (req, res) => {
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
+// --- RETURNS MANAGEMENT ---
+
+app.get('/api/returns', async (req, res) => {
+  try {
+    const { startDate, endDate, shopName, routeName, productName, workerName, reason } = req.query;
+    let query = {};
+    if (startDate && endDate) {
+      query.createdAt = { $gte: new Date(startDate), $lte: new Date(new Date(endDate).setHours(23, 59, 59, 999)) };
+    }
+    if (shopName) query.shopName = shopName;
+    if (routeName) query.routeName = routeName;
+    if (productName) query.productName = productName;
+    if (workerName) query.workerName = workerName;
+    if (reason) query.reason = reason;
+
+    const returns = await Return.find(query).sort({ createdAt: -1 });
+    res.json(returns);
+  } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+app.get('/api/delivered-products/:shopName', async (req, res) => {
+  try {
+    const { shopName } = req.params;
+
+    // 1. Get all delivered orders for this shop
+    const deliveredOrders = await Order.find({
+      shopName: shopName,
+      deliveryStatus: 'Delivered'
+    });
+
+    if (deliveredOrders.length === 0) return res.json([]);
+
+    // 2. Aggregate quantities by product
+    const deliveredMap = {};
+    deliveredOrders.forEach(order => {
+      order.items.forEach(item => {
+        const key = item.productId.toString();
+        if (!deliveredMap[key]) {
+          deliveredMap[key] = {
+            productId: item.productId,
+            name: item.name,
+            packSize: item.packSize,
+            deliveredQty: 0,
+            price: item.price
+          };
+        }
+        deliveredMap[key].deliveredQty += item.quantity;
+      });
+    });
+
+    // 3. Subtract already returned quantities
+    const previousReturns = await Return.find({ shopName: shopName });
+    previousReturns.forEach(ret => {
+      const key = ret.productId.toString();
+      if (deliveredMap[key]) {
+        deliveredMap[key].deliveredQty -= ret.quantityReturned;
+      }
+    });
+
+    // 4. Return products with remaining delivered stock
+    const availableForReturn = Object.values(deliveredMap).filter(p => p.deliveredQty > 0);
+    res.json(availableForReturn);
+  } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+app.post('/api/returns', upload.single('photo'), async (req, res) => {
+  try {
+    const {
+      shopId, shopName, workerId, workerName, routeName,
+      productId, productName, quantityReturned, reason, notes, returnValue
+    } = req.body;
+
+    const qty = parseInt(quantityReturned);
+
+    // Backend Validation
+    // 1. Get delivered total for this product at this shop
+    const deliveredOrders = await Order.find({
+      shopName: shopName,
+      deliveryStatus: 'Delivered',
+      'items.productId': productId
+    });
+
+    let totalDelivered = 0;
+    deliveredOrders.forEach(o => {
+      const item = o.items.find(i => i.productId.toString() === productId);
+      if (item) totalDelivered += item.quantity;
+    });
+
+    // 2. Get previous returns
+    const previousReturns = await Return.find({ shopName, productId });
+    const totalReturned = previousReturns.reduce((sum, r) => sum + r.quantityReturned, 0);
+
+    const availableStock = totalDelivered - totalReturned;
+
+    if (qty > availableStock) {
+      return res.status(400).json({ message: `Return quantity exceeds available delivered stock. Available: ${availableStock}` });
+    }
+
+    const newReturn = new Return({
+      shopId, shopName, workerId, workerName, routeName,
+      productId, productName,
+      quantityReturned: qty,
+      reason, notes,
+      returnValue: parseFloat(returnValue),
+      returnPhoto: req.file ? req.file.path : null
+    });
+
+    await newReturn.save();
+    res.status(201).json(newReturn);
+  } catch (err) { res.status(400).json({ message: err.message }); }
+});
+
 // --- SETTINGS & SECURITY ---
 
 app.get('/api/settings', async (req, res) => {
@@ -806,6 +919,7 @@ app.get('/api/export/:type', async (req, res) => {
     else if (type === 'payroll') data = await Payroll.find();
     else if (type === 'shops') data = await Shop.find();
     else if (type === 'routes') data = await Route.find();
+    else if (type === 'returns') data = await Return.find();
     else return res.status(400).json({ message: 'Invalid export type' });
 
     res.json(data);
