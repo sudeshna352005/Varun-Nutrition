@@ -17,6 +17,7 @@ const Visit = require('./models/Visit');
 const Product = require('./models/Product');
 const Order = require('./models/Order');
 const Payroll = require('./models/Payroll');
+const SystemSettings = require('./models/SystemSettings');
 
 // Fallback Mock database state
 let mockDb = {
@@ -318,7 +319,11 @@ app.post('/api/login', async (req, res) => {
   console.log(`Login attempt: ${normalizedUsername}`);
 
   if (normalizedUsername === 'owner' && password === 'owner123') {
-    return res.json({ role: 'owner', name: 'Varun Owner' });
+    // Record last login for owner
+    if (!useMock) {
+       await Worker.findOneAndUpdate({ username: 'owner' }, { lastLogin: new Date() }).catch(e => console.error("Could not update owner login time", e));
+    }
+    return res.json({ role: 'owner', name: 'Varun Owner', username: 'owner' });
   }
 
   if (useMock) {
@@ -342,6 +347,8 @@ app.post('/api/login', async (req, res) => {
   try {
     const worker = await Worker.findOne({ username: { $regex: new RegExp(`^${normalizedUsername}$`, 'i') } });
     if (worker && await worker.comparePassword(password)) {
+      worker.lastLogin = new Date();
+      await worker.save();
       return res.json({ role: worker.role, name: worker.name, id: worker._id, username: worker.username, assignedRoutes: worker.assignedRoutes });
     }
     res.status(401).json({ message: 'Invalid username or password' });
@@ -712,6 +719,96 @@ app.get('/api/orders', async (req, res) => {
       query.timestamp = { $gte: new Date(startDate), $lte: new Date(new Date(endDate).setHours(23, 59, 59, 999)) };
     }
     res.json(await Order.find(query).sort({ timestamp: -1 }));
+  } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+// --- SETTINGS & SECURITY ---
+
+app.get('/api/settings', async (req, res) => {
+  if (useMock) return res.json(mockDb.settings || { companyName: 'Varun Nutritions' });
+  try {
+    let settings = await SystemSettings.findOne();
+    if (!settings) {
+      settings = new SystemSettings();
+      await settings.save();
+    }
+    res.json(settings);
+  } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+app.post('/api/settings', upload.single('logo'), async (req, res) => {
+  if (useMock) {
+    mockDb.settings = { ...req.body };
+    return res.json(mockDb.settings);
+  }
+  try {
+    let settings = await SystemSettings.findOne();
+    if (!settings) settings = new SystemSettings();
+
+    settings.companyName = req.body.companyName || settings.companyName;
+    settings.contactNumber = req.body.contactNumber || settings.contactNumber;
+    settings.businessAddress = req.body.businessAddress || settings.businessAddress;
+    if (req.file) settings.companyLogo = req.file.path;
+
+    await settings.save();
+    res.json(settings);
+  } catch (err) { res.status(400).json({ message: err.message }); }
+});
+
+app.post('/api/owner/change-password', async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  if (useMock) {
+     if (currentPassword === 'owner123') return res.json({ message: 'Password updated (Mock)' });
+     return res.status(401).json({ message: 'Invalid current password' });
+  }
+  try {
+    // For now, owner credentials are still somewhat special but we track it in Worker model
+    let owner = await Worker.findOne({ username: 'owner' });
+    if (!owner) {
+      // Create owner if not exists to track security fields
+      owner = new Worker({
+        name: 'Varun Owner',
+        username: 'owner',
+        password: 'owner123',
+        role: 'Sales Worker' // Temporary role until we add 'owner' or similar
+      });
+    }
+
+    const isMatch = await owner.comparePassword(currentPassword);
+    if (!isMatch) return res.status(401).json({ message: 'Invalid current password' });
+
+    owner.password = newPassword;
+    owner.lastPasswordChange = new Date();
+    await owner.save();
+
+    res.json({ message: 'Password updated successfully' });
+  } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+app.get('/api/owner/security-stats', async (req, res) => {
+  if (useMock) return res.json({ lastLogin: new Date(), lastPasswordChange: new Date() });
+  try {
+    const owner = await Worker.findOne({ username: 'owner' });
+    res.json({
+      lastLogin: owner?.lastLogin || null,
+      lastPasswordChange: owner?.lastPasswordChange || null
+    });
+  } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+app.get('/api/export/:type', async (req, res) => {
+  const { type } = req.params;
+  try {
+    let data = [];
+    if (type === 'workers') data = await Worker.find();
+    else if (type === 'attendance') data = await Attendance.find();
+    else if (type === 'orders') data = await Order.find();
+    else if (type === 'payroll') data = await Payroll.find();
+    else if (type === 'shops') data = await Shop.find();
+    else if (type === 'routes') data = await Route.find();
+    else return res.status(400).json({ message: 'Invalid export type' });
+
+    res.json(data);
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
