@@ -387,20 +387,20 @@ const WorkerDashboard = ({ user }) => {
       </div>
 
       {selectedShop && (
-        <div className="fixed inset-0 bg-zinc-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl max-h-[90vh] flex flex-col overflow-hidden">
+        <div className="fixed inset-0 bg-zinc-950/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-[95vw] md:max-w-4xl shadow-2xl max-h-[95vh] md:max-h-[90vh] flex flex-col overflow-hidden">
             {/* Modal Header */}
-            <div className="p-6 border-b border-slate-800/50">
-              <h2 className="text-2xl font-bold mb-1 text-white">Visit: {selectedShop.name}</h2>
-              <p className="text-slate-500 text-xs uppercase tracking-wider font-bold">Log visit details</p>
+            <div className="p-4 sm:p-6 border-b border-slate-800/50">
+              <h2 className="text-xl sm:text-2xl font-bold mb-1 text-white break-words">Visit: {selectedShop.name}</h2>
+              <p className="text-slate-500 text-[10px] sm:text-xs uppercase tracking-wider font-bold">Log visit details</p>
             </div>
 
             {/* Modal Body - Scrollable */}
-            <div className="p-6 overflow-y-auto flex-1 space-y-6 custom-scrollbar">
+            <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-6 custom-scrollbar overflow-x-hidden">
               <ErrorBoundary>
               <textarea
                 placeholder="e.g., Stock checked, order placed for 50 units."
-                className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 h-32 focus:ring-2 focus:ring-green-500 outline-none text-white placeholder-zinc-600 transition-all"
+                className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 h-24 sm:h-32 focus:ring-2 focus:ring-green-500 outline-none text-white placeholder-zinc-600 transition-all text-sm"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
               />
@@ -411,8 +411,8 @@ const WorkerDashboard = ({ user }) => {
                 required
               />
 
-              <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700 space-y-4">
-                <div className="flex flex-wrap gap-6">
+              <div className="p-3 sm:p-4 bg-slate-800/50 rounded-xl border border-slate-700 space-y-4">
+                <div className="flex flex-col sm:flex-row flex-wrap gap-4 sm:gap-6">
                   <label className="flex items-center gap-3 cursor-pointer group">
                     <input
                       type="checkbox"
@@ -452,9 +452,9 @@ const WorkerDashboard = ({ user }) => {
 
                     {(Array.isArray(orderItems) ? orderItems : []).map((item, idx) => (
                       <div key={idx} className="p-3 bg-slate-900 rounded-lg border border-slate-700 space-y-3">
-                        <div className="flex justify-between items-start gap-2">
+                        <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
                           <select
-                            className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white outline-none focus:ring-1 focus:ring-green-500"
+                            className="w-full sm:flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2 py-2 sm:py-1.5 text-xs text-white outline-none focus:ring-1 focus:ring-green-500"
                             value={item.productId}
                             onChange={(e) => updateOrderItem(idx, 'productId', e.target.value)}
                           >
@@ -463,34 +463,35 @@ const WorkerDashboard = ({ user }) => {
                               <option key={p.id || p._id} value={p.id || p._id}>{p.name} ({p.packSize})</option>
                             ))}
                           </select>
-                          <button onClick={() => removeOrderItem(idx)} className="text-red-500 p-1 hover:bg-red-500/10 rounded">
-                            <X size={14} />
+                          <button onClick={() => removeOrderItem(idx)} className="self-end sm:self-start text-red-500 p-2 hover:bg-red-500/10 rounded-lg border border-red-500/20 sm:border-none">
+                            <span className="sm:hidden text-[10px] font-bold uppercase mr-2">Remove</span>
+                            <X size={16} className="inline" />
                           </button>
                         </div>
 
                         <div className="grid grid-cols-3 gap-3">
                           <div>
-                            <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Qty</label>
+                            <label className="block text-[9px] sm:text-[10px] font-bold text-slate-600 uppercase mb-1">Qty</label>
                             <input
                               type="number"
                               min="1"
-                              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white"
+                              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white"
                               value={item.quantity}
                               onChange={(e) => updateOrderItem(idx, 'quantity', parseInt(e.target.value) || 0)}
                             />
                           </div>
                           <div>
-                            <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Price</label>
+                            <label className="block text-[9px] sm:text-[10px] font-bold text-slate-600 uppercase mb-1">Price</label>
                             <input
                               type="number"
-                              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white"
+                              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white"
                               value={item.price}
                               onChange={(e) => updateOrderItem(idx, 'price', parseFloat(e.target.value) || 0)}
                             />
                           </div>
                           <div>
-                            <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Total</label>
-                            <div className="w-full py-1 text-xs font-bold text-green-500">₹{item.total.toFixed(2)}</div>
+                            <label className="block text-[9px] sm:text-[10px] font-bold text-slate-600 uppercase mb-1">Total</label>
+                            <div className="w-full py-1.5 text-[11px] sm:text-xs font-bold text-green-500 truncate">₹{item.total.toFixed(2)}</div>
                           </div>
                         </div>
                       </div>
@@ -532,10 +533,10 @@ const WorkerDashboard = ({ user }) => {
                     )}
 
                     {(Array.isArray(returnItems) ? returnItems : []).map((item, idx) => (
-                      <div key={idx} className="p-3 bg-slate-900 rounded-lg border border-orange-500/20 space-y-3">
-                        <div className="flex justify-between items-start gap-2">
+                      <div key={idx} className="p-3 bg-slate-900 rounded-lg border border-orange-500/20 space-y-4">
+                        <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
                           <select
-                            className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white outline-none focus:ring-1 focus:ring-orange-500"
+                            className="w-full sm:flex-1 bg-slate-800 border border-slate-700 rounded-lg px-2 py-2 sm:py-1.5 text-xs text-white outline-none focus:ring-1 focus:ring-orange-500"
                             value={item.productId}
                             onChange={(e) => updateReturnItem(idx, 'productId', e.target.value)}
                           >
@@ -544,16 +545,17 @@ const WorkerDashboard = ({ user }) => {
                               <option key={p.productId} value={p.productId}>{p.name} (Delivered: {p.deliveredQty})</option>
                             ))}
                           </select>
-                          <button onClick={() => removeReturnItem(idx)} className="text-red-500 p-1 hover:bg-red-500/10 rounded">
-                            <X size={14} />
+                          <button onClick={() => removeReturnItem(idx)} className="self-end sm:self-start text-red-500 p-2 hover:bg-red-500/10 rounded-lg border border-red-500/20 sm:border-none">
+                            <span className="sm:hidden text-[10px] font-bold uppercase mr-2">Remove</span>
+                            <X size={16} className="inline" />
                           </button>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-3">
                           <div>
-                            <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Reason</label>
+                            <label className="block text-[9px] sm:text-[10px] font-bold text-slate-600 uppercase mb-1">Reason</label>
                             <select
-                              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white"
+                              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-2 sm:py-1 text-xs text-white"
                               value={item.reason}
                               onChange={(e) => updateReturnItem(idx, 'reason', e.target.value)}
                             >
@@ -563,24 +565,24 @@ const WorkerDashboard = ({ user }) => {
                             </select>
                           </div>
                           <div>
-                            <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Qty (Max: {item.maxQty || 0})</label>
+                            <label className="block text-[9px] sm:text-[10px] font-bold text-slate-600 uppercase mb-1">Qty (Max: {item.maxQty || 0})</label>
                             <input
                               type="number"
                               min="1"
                               max={item.maxQty}
-                              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white"
+                              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-2 sm:py-1 text-xs text-white"
                               value={item.quantity}
                               onChange={(e) => updateReturnItem(idx, 'quantity', parseInt(e.target.value) || 0)}
                             />
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-3">
-                           <Camera className="text-slate-500" size={14} />
+                        <div className="flex items-center gap-3 p-2 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                           <Camera className="text-slate-500 shrink-0" size={16} />
                            <input
                              type="file"
                              accept="image/*"
-                             className="text-[10px] text-slate-400 file:bg-slate-800 file:border-none file:text-slate-400 file:rounded file:px-2 file:py-1"
+                             className="text-[10px] text-slate-400 file:bg-slate-800 file:border-none file:text-slate-400 file:rounded file:px-2 file:py-1 w-full"
                              onChange={(e) => updateReturnItem(idx, 'photo', e.target.files[0])}
                            />
                         </div>
@@ -600,17 +602,17 @@ const WorkerDashboard = ({ user }) => {
             </div>
 
             {/* Modal Footer - Fixed */}
-            <div className="p-6 border-t border-slate-800/50">
-              <div className="flex gap-4">
+            <div className="p-4 sm:p-6 border-t border-slate-800/50 bg-slate-900">
+              <div className="flex flex-col-reverse sm:flex-row gap-3 sm:gap-4">
                 <button
                   onClick={() => setSelectedShop(null)}
-                  className="flex-1 px-6 py-3 bg-slate-800 text-slate-400 font-bold rounded-xl hover:bg-zinc-700 transition-all"
+                  className="w-full sm:flex-1 px-6 py-3 sm:py-3 bg-slate-800 text-slate-400 font-bold rounded-xl hover:bg-zinc-700 transition-all text-sm uppercase tracking-widest"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleVisit}
-                  className="flex-[2] px-6 py-3 bg-green-600 text-zinc-900 font-bold rounded-xl hover:bg-green-500 transition-all shadow-lg shadow-green-600/20 flex items-center justify-center"
+                  className="w-full sm:flex-[2] px-6 py-4 sm:py-3 bg-green-600 text-zinc-900 font-bold rounded-xl hover:bg-green-500 transition-all shadow-lg shadow-green-600/20 flex items-center justify-center text-sm uppercase tracking-widest"
                 >
                   <CheckCircle className="w-5 h-5 mr-2" /> Finish Visit
                 </button>

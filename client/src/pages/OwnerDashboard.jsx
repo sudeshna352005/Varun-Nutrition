@@ -5,7 +5,7 @@ import {
   Store, Users, MapPin, ClipboardCheck, ShoppingBag,
   IndianRupee, Clock, ArrowRight, Briefcase, Camera,
   Search, Filter, Download, AlertCircle, CheckCircle,
-  Play, Package, X, Eye
+  Play, Package, X, Eye, RotateCcw
 } from 'lucide-react';
 import DashboardAnalytics from '../components/DashboardAnalytics';
 import DateFilter from '../components/DateFilter';

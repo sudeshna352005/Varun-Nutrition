@@ -4,7 +4,7 @@ import {
   Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend,
   LineChart, Line
 } from 'recharts';
-import { RotateCcw, TrendingDown, Package, MapPin } from 'lucide-react';
+import { RotateCcw, TrendingDown, Package, MapPin, Store } from 'lucide-react';
 
 const ReturnsAnalytics = ({ returns = [] }) => {
   const stats = useMemo(() => {
