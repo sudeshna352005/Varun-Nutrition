@@ -436,7 +436,7 @@ const WorkerDashboard = ({ user }) => {
                     <span className="text-sm font-bold text-slate-300 group-hover:text-white transition-colors">Create Return</span>
                   </label>
                 </div>
-
+</div>
                 {createOrder && (
                   <div className="mt-6 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
                     <div className="flex justify-between items-center">
@@ -617,7 +617,6 @@ const WorkerDashboard = ({ user }) => {
               </div>
             </div>
           </div>
-        </div>
       )}
     </div>
   );
