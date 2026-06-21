@@ -1,8 +1,35 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Component } from 'react';
 import api from '../api';
-import { MapPin, CheckCircle, ChevronRight, MessageSquare, ExternalLink, Info, Search, Plus, X } from 'lucide-react';
+import { MapPin, CheckCircle, ChevronRight, MessageSquare, ExternalLink, Info, Search, Plus, X, Camera, AlertTriangle } from 'lucide-react';
 import Skeleton from '../components/Skeleton';
 import CameraCapture from '../components/CameraCapture';
+
+class ErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError(error) { return { hasError: true }; }
+  componentDidCatch(error, errorInfo) { console.error("Modal Error Boundary:", error, errorInfo); }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-8 text-center space-y-4">
+          <AlertTriangle className="mx-auto text-red-500" size={48} />
+          <h3 className="text-lg font-bold text-white">Something went wrong</h3>
+          <p className="text-sm text-slate-500">The return form encountered an error. Please try reopening the modal.</p>
+          <button
+            onClick={() => this.setState({ hasError: false })}
+            className="px-6 py-2 bg-slate-800 text-white rounded-xl text-sm font-bold"
+          >
+            Retry
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const WorkerDashboard = ({ user }) => {
   const [shops, setShops] = useState([]);
@@ -14,6 +41,7 @@ const WorkerDashboard = ({ user }) => {
   const [photo, setPhoto] = useState(null);
   const [createOrder, setCreateOrder] = useState(false);
   const [createReturn, setCreateReturn] = useState(false);
+  const [isFetchingDelivered, setIsFetchingDelivered] = useState(false);
   const [products, setProducts] = useState([]);
   const [deliveredProducts, setDeliveredProducts] = useState([]);
   const [orderItems, setOrderItems] = useState([]);
@@ -160,11 +188,14 @@ const WorkerDashboard = ({ user }) => {
   };
 
   const fetchDeliveredProducts = async (shopName) => {
+    setIsFetchingDelivered(true);
     try {
       const res = await api.get(`/api/delivered-products/${shopName}`);
       setDeliveredProducts(res.data || []);
     } catch (err) {
       console.error("Failed to fetch delivered products", err);
+    } finally {
+      setIsFetchingDelivered(false);
     }
   };
 
@@ -181,12 +212,14 @@ const WorkerDashboard = ({ user }) => {
     const item = { ...newItems[index] };
 
     if (field === 'productId') {
-      const product = deliveredProducts.find(p => p.productId === value);
-      item.productId = value;
-      item.name = product.name;
-      item.price = product.price;
-      item.maxQty = product.deliveredQty;
-      if (item.quantity > item.maxQty) item.quantity = item.maxQty;
+      const product = deliveredProducts.find(p => String(p.productId) === String(value));
+      if (product) {
+        item.productId = value;
+        item.name = product.name;
+        item.price = product.price;
+        item.maxQty = product.deliveredQty;
+        if (item.quantity > item.maxQty) item.quantity = item.maxQty;
+      }
     } else {
       item[field] = value;
     }
@@ -364,6 +397,7 @@ const WorkerDashboard = ({ user }) => {
 
             {/* Modal Body - Scrollable */}
             <div className="p-6 overflow-y-auto flex-1 space-y-6 custom-scrollbar">
+              <ErrorBoundary>
               <textarea
                 placeholder="e.g., Stock checked, order placed for 50 units."
                 className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 h-32 focus:ring-2 focus:ring-green-500 outline-none text-white placeholder-zinc-600 transition-all"
@@ -484,8 +518,17 @@ const WorkerDashboard = ({ user }) => {
                       </button>
                     </div>
 
-                    {deliveredProducts.length === 0 && (
-                      <p className="text-xs text-slate-500 italic">No delivered products found for this shop.</p>
+                    {isFetchingDelivered ? (
+                      <div className="flex items-center gap-2 text-xs text-slate-500 italic">
+                         <div className="w-3 h-3 border-2 border-orange-500/30 border-t-orange-500 rounded-full animate-spin" />
+                         Fetching delivered stock...
+                      </div>
+                    ) : (
+                      deliveredProducts.length === 0 && (
+                        <div className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-xl">
+                           <p className="text-xs text-orange-500 font-bold">No delivered products available for return.</p>
+                        </div>
+                      )
                     )}
 
                     {(Array.isArray(returnItems) ? returnItems : []).map((item, idx) => (
@@ -552,6 +595,7 @@ const WorkerDashboard = ({ user }) => {
                     )}
                   </div>
                 )}
+              </ErrorBoundary>
               </div>
             </div>
 
