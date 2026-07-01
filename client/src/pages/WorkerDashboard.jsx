@@ -597,6 +597,7 @@ const WorkerDashboard = ({ user }) => {
                     )}
                   </div>
                 )}
+              </div>
 
                 {/* Action Buttons - Now part of the natural scroll flow */}
                 <div className="mt-10 pt-8 border-t border-slate-800">
