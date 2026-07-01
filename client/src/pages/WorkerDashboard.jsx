@@ -602,11 +602,11 @@ const WorkerDashboard = ({ user }) => {
             </div>
 
             {/* Modal Footer - Fixed */}
-            <div className="p-4 sm:p-6 border-t border-slate-800/50 bg-slate-900">
-              <div className="flex flex-col-reverse sm:flex-row gap-3 sm:gap-4">
+            <div className="p-4 sm:p-6 border-t border-slate-800 bg-slate-900">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                 <button
                   onClick={() => setSelectedShop(null)}
-                  className="w-full sm:flex-1 px-6 py-3 sm:py-3 bg-slate-800 text-slate-400 font-bold rounded-xl hover:bg-zinc-700 transition-all text-sm uppercase tracking-widest"
+                  className="w-full sm:flex-1 px-6 py-3 bg-slate-800 text-slate-400 font-bold rounded-xl hover:bg-zinc-700 transition-all text-sm uppercase tracking-widest"
                 >
                   Cancel
                 </button>
