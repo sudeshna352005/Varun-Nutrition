@@ -388,15 +388,15 @@ const WorkerDashboard = ({ user }) => {
 
       {selectedShop && (
         <div className="fixed inset-0 bg-zinc-950/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-[95vw] md:max-w-4xl shadow-2xl max-h-[95vh] md:max-h-[90vh] flex flex-col overflow-hidden">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-[95vw] md:max-w-4xl shadow-2xl overflow-y-auto max-h-[95vh] md:max-h-[90vh] custom-scrollbar overflow-x-hidden">
             {/* Modal Header */}
             <div className="p-4 sm:p-6 border-b border-slate-800/50">
               <h2 className="text-xl sm:text-2xl font-bold mb-1 text-white break-words">Visit: {selectedShop.name}</h2>
               <p className="text-slate-500 text-[10px] sm:text-xs uppercase tracking-wider font-bold">Log visit details</p>
             </div>
 
-            {/* Modal Body - Scrollable */}
-            <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-6 custom-scrollbar overflow-x-hidden">
+            {/* Modal Body */}
+            <div className="p-4 sm:p-6 space-y-6">
               <ErrorBoundary>
               <textarea
                 placeholder="e.g., Stock checked, order placed for 50 units."
@@ -597,26 +597,26 @@ const WorkerDashboard = ({ user }) => {
                     )}
                   </div>
                 )}
-              </ErrorBoundary>
               </div>
-            </div>
 
-            {/* Modal Footer - Fixed */}
-            <div className="p-4 sm:p-6 border-t border-slate-800 bg-slate-900">
-              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-                <button
-                  onClick={() => setSelectedShop(null)}
-                  className="w-full sm:flex-1 px-6 py-3 bg-slate-800 text-slate-400 font-bold rounded-xl hover:bg-zinc-700 transition-all text-sm uppercase tracking-widest"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleVisit}
-                  className="w-full sm:flex-[2] px-6 py-4 sm:py-3 bg-green-600 text-zinc-900 font-bold rounded-xl hover:bg-green-500 transition-all shadow-lg shadow-green-600/20 flex items-center justify-center text-sm uppercase tracking-widest"
-                >
-                  <CheckCircle className="w-5 h-5 mr-2" /> Finish Visit
-                </button>
-              </div>
+                {/* Action Buttons - Now part of the natural scroll flow */}
+                <div className="mt-10 pt-8 border-t border-slate-800">
+                  <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                    <button
+                      onClick={() => setSelectedShop(null)}
+                      className="w-full sm:flex-1 px-6 py-3 bg-slate-800 text-slate-400 font-bold rounded-xl hover:bg-zinc-700 transition-all text-sm uppercase tracking-widest"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleVisit}
+                      className="w-full sm:flex-[2] px-6 py-4 sm:py-3 bg-green-600 text-zinc-900 font-bold rounded-xl hover:bg-green-500 transition-all shadow-lg shadow-green-600/20 flex items-center justify-center text-sm uppercase tracking-widest"
+                    >
+                      <CheckCircle className="w-5 h-5 mr-2" /> Finish Visit
+                    </button>
+                  </div>
+                </div>
+              </ErrorBoundary>
             </div>
           </div>
       )}
